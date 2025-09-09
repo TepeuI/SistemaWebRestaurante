@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema de Inventario MR</title>
+        <!-- Google Fonts: Poppins -->
+        <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+        <style>
+            body, h1, h2, h3, h4, h5, h6, label, input, button, table, th, td {
+                font-family: 'Poppins', Arial, Helvetica, sans-serif !important;
+            }
+        </style>
+    <!-- Frameworks y librerías base -->
+    <link rel="stylesheet" href="css/bootstrap.min.css">
+    <link rel="stylesheet" href="css/animate.min.css">
+    <link rel="stylesheet" href="css/boxicons.min.css">
+    <link rel="stylesheet" href="css/swiper-bundle.min.css">
+    <link rel="stylesheet" href="css/glightbox.min.css">
+    <!-- Estilos personalizados globales -->
+    <link rel="stylesheet" href="css/diseñoModulos.css">
+    <!-- Estilos específicos del sistema de inventario -->
+</head>
+<body>
+    <header class="mb-4">
+        <div class="container d-flex flex-column flex-md-row align-items-center justify-content-between py-3">
+            <h1 class="mb-0">SISTEMA DE INVENTARIO MAREA ROJA</h1>
+            
+                <ul class="nav nav-pills gap-2 mb-0">
+                    <li class="nav-item"><a href="#" class="nav-link">Inicio</a></li>
+                    <li class="nav-item"><a href="#" class="nav-link">Salir</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+    <main class="container">
+        <section class="card shadow mb-4 p-4">
+            <h2 class="card__title mb-3">Registro Inventario</h2>
+            <form id="form-inventario" class="row g-3">
+                <div class="col-md-3">
+                    <label class="form-label" for="inv-id">ID Inventario:</label>
+                    <input type="number" class="form-control" id="inv-id" required placeholder="Ej. 1">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label" for="inv-nombre">Nombre:</label>
+                    <input type="text" class="form-control" id="inv-nombre" required placeholder="Ej. Churrasco">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label" for="inv-tipo">ID Tipo Inventario:</label>
+                    <input type="number" class="form-control" id="inv-tipo" required placeholder="Ej. 1">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label" for="inv-cantidad">Cantidad:</label>
+                    <input type="number" class="form-control" id="inv-cantidad" required placeholder="Ej. 13">
+                </div>
+                <div class="col-12 d-flex gap-2 mt-3">
+                    <button type="button" class="btn btn-danger">Nuevo</button>
+                    <button type="submit" class="btn btn-success">Guardar</button>
+                    <button type="button" class="btn btn-warning">Actualizar</button>
+                    <button type="button" class="btn btn-secondary">Eliminar</button>
+                </div>
+            </form>
+            <div class="result mt-3" id="resultado"></div>
+            <div class="table-responsive mt-3">
+                <table class="table table-striped table-bordered" id="tabla-inventario">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>ID Inventario</th>
+                            <th>Nombre</th>
+                            <th>ID Tipo Inventario</th>
+                            <th>Cantidad</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>1</td>
+                            <td>Churrasco</td>
+                            <td>1</td>
+                            <td>13</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+        <section class="card shadow mb-4 p-4">
+            <h2 class="card__title mb-3">Registro Tipo de Inventario</h2>
+            <form id="form-tipo" class="row g-3">
+                <div class="col-md-6">
+                    <label class="form-label" for="tipo-id">ID Tipo Inventario:</label>
+                    <input type="number" class="form-control" id="tipo-id" required placeholder="Ej. 1">
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label" for="tipo-desc">Descripción:</label>
+                    <input type="text" class="form-control" id="tipo-desc" required placeholder="Ej. Comida">
+                </div>
+                <div class="col-12 d-flex gap-2 mt-3">
+                    <button type="button" class="btn btn-danger">Nuevo</button>
+                    <button type="submit" class="btn btn-success">Guardar</button>
+                    <button type="button" class="btn btn-warning">Actualizar</button>
+                    <button type="button" class="btn btn-secondary">Eliminar</button>
+                </div>
+            </form>
+            <div class="table-responsive mt-3">
+                <table class="table table-striped table-bordered" id="tabla-tipo">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>ID Tipo Inventario</th>
+                            <th>Descripción</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>1</td>
+                            <td>Comida</td>
+                        </tr>
+                        <tr>
+                            <td>2</td>
+                            <td>Mobiliario</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+        <section class="card shadow mb-4 p-4">
+            <h2 class="card__title mb-3">Registro Control de Inventario</h2>
+            <form id="form-control" class="row g-3">
+                <div class="col-md-2">
+                    <label class="form-label" for="control-id">ID Control:</label>
+                    <input type="number" class="form-control" id="control-id" required placeholder="Ej. 1">
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label" for="control-inv">ID Inventario:</label>
+                    <input type="number" class="form-control" id="control-inv" required placeholder="Ej. 1">
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label" for="control-estado">Estado:</label>
+                    <input type="text" class="form-control" id="control-estado" required placeholder="Ej. Bueno">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label" for="control-entrada">Fecha de Entrada:</label>
+                    <input type="date" class="form-control" id="control-entrada" required>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label" for="control-caducidad">Fecha de Caducidad:</label>
+                    <input type="date" class="form-control" id="control-caducidad" required>
+                </div>
+                <div class="col-12 d-flex gap-2 mt-3">
+                    <button type="button" class="btn btn-danger">Nuevo</button>
+                    <button type="submit" class="btn btn-success">Guardar</button>
+                    <button type="button" class="btn btn-warning">Actualizar</button>
+                    <button type="button" class="btn btn-secondary">Eliminar</button>
+                </div>
+            </form>
+            <div class="table-responsive mt-3">
+                <table class="table table-striped table-bordered" id="tabla-control">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>ID Control</th>
+                            <th>ID Inventario</th>
+                            <th>Estado</th>
+                            <th>Fecha de Entrada</th>
+                            <th>Fecha de Caducidad</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td></td>
+                            <td></td>
+                            <td></td>
+                            <td></td>
+                            <td></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    </main>
+    <script src="inventario.js"></script>
+</body>
+</html>
