@@ -1,0 +1,110 @@
+/* ====== Reset ====== */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+}
+
+body {
+    background: #f4f6f8;
+    color: #333;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+}
+
+/* ====== Contenedor principal ====== */
+.login-container {
+    width: 100%;
+    max-width: 400px;
+    padding: 20px;
+}
+
+/* ====== Caja del login ====== */
+.login-box {
+    background: #fff;
+    padding: 30px 25px;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    text-align: center;
+}
+
+.login-box h1 {
+    margin-bottom: 20px;
+    color: #b22222;
+    font-size: 1.5rem;
+}
+
+/* ====== Campos del formulario ====== */
+.form-group {
+    text-align: left;
+    margin-bottom: 15px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 6px;
+    font-weight: 600;
+    color: #333;
+}
+
+.form-group input {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    font-size: 0.95rem;
+    transition: border 0.3s;
+}
+
+.form-group input:focus {
+    border-color: #b22222;
+    outline: none;
+}
+
+/* ====== Botón ====== */
+.btn {
+    background: #b22222;
+    color: #fff;
+    border: none;
+    padding: 12px;
+    width: 100%;
+    border-radius: 6px;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: background 0.3s;
+}
+
+.btn:hover {
+    background: #8b1a1a;
+}
+
+/* ====== Link auxiliar ====== */
+.link {
+    margin-top: 15px;
+    font-size: 0.9rem;
+    color: #555;
+}
+
+.link a {
+    color: #b22222;
+    text-decoration: none;
+    font-weight: 500;
+}
+
+.link a:hover {
+    color: #8b1a1a;
+    text-decoration: underline;
+}
+
+/* ====== Responsive ====== */
+@media (max-width: 480px) {
+    .login-box {
+        padding: 20px 15px;
+    }
+    .login-box h1 {
+        font-size: 1.2rem;
+    }
+}
