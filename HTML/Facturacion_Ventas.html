@@ -3,95 +3,227 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Marea Roja | Ventas</title>
+    <title>Sistema de Ventas MR</title>
+
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body, h1, h2, h3, h4, h5, h6, label, input, button, table, th, td {
+            font-family: 'Poppins', Arial, Helvetica, sans-serif !important;
+        }
+    </style>
+
+    <!-- Frameworks -->
+    <link rel="stylesheet" href="../css/bootstrap.min.css">
+    <link rel="stylesheet" href="../css/animate.min.css">
+    <link rel="stylesheet" href="../css/boxicons.min.css">
+    <link rel="stylesheet" href="../css/swiper-bundle.min.css">
+    <link rel="stylesheet" href="../css/glightbox.min.css">
+
+    <!-- Estilos personalizados -->
     <link rel="stylesheet" href="../css/diseñoModulos.css">
 </head>
 <body>
-    <header>
-        <h1>🍽️ Marea Roja</h1>
-        <nav>
-            <ul>
-                <li><a href="#">Inicio</a></li>
-                <li><a href="#">Reservaciones</a></li>
-                <li><a href="#">Menú</a></li>
-                <li><a href="#">Empleados</a></li>
-				 <li><a href="#">Inventarios</a></li>
-                <li><a href="#" class="active">Facturar Ventas</a></li>
-                <li><a href="#">Salir</a></li>
+    <header class="mb-4">
+        <div class="container d-flex flex-column flex-md-row align-items-center justify-content-between py-3">
+            <h1 class="mb-0">SISTEMA DE VENTAS MAREA ROJA</h1>
+            <ul class="nav nav-pills gap-2 mb-0">
+                <li class="nav-item"><a href="#" class="nav-link">Inicio</a></li>
+                <li class="nav-item"><a href="#" class="nav-link">Reservaciones</a></li>
+                <li class="nav-item"><a href="#" class="nav-link">Menú</a></li>
+                <li class="nav-item"><a href="#" class="nav-link">Empleados</a></li>
+                <li class="nav-item"><a href="#" class="nav-link">Inventarios</a></li>
+                <li class="nav-item"><a href="#" class="nav-link active">Facturar Ventas</a></li>
+                <li class="nav-item"><a href="#" class="nav-link">Salir</a></li>
             </ul>
-        </nav>
+        </div>
     </header>
 
     <main class="container">
-        <!-- Submenú -->
-        <div class="submenu">
-            <a href="#">⬅️ Regresar</a>
-        </div>
-
-        <h2>Registro de Ventas</h2>
-        <p>En este módulo podrás registrar nuevas ventas y generar facturas.</p>
-
-        <!-- Formulario -->
-        <form id="form-ventas" method="POST" action="guardar_venta.php" class="formulario">
-            <fieldset>
-                <legend>Datos de la Venta</legend>
-                
-                <label for="id_venta">ID Venta:</label>
-                <input type="number" id="id_venta" name="id_venta" required>
-
-                <label for="nit_cliente">NIT Cliente:</label>
-                <input type="text" id="nit_cliente" name="nit_cliente" required>
-
-                <label for="cantidad">Cantidad:</label>
-                <input type="number" id="cantidad" name="cantidad" required>
-
-                <label for="id_plato">ID Plato:</label>
-                <input type="number" id="id_plato" name="id_plato" required>
-
-                <label for="monto_total">Monto Total:</label>
-                <input type="number" id="monto_total" name="monto_total" step="0.01" required>
-
-                <label for="fecha_venta">Fecha de Venta:</label>
-                <input type="date" id="fecha_venta" name="fecha_venta" required>
-            </fieldset>
-
-            <fieldset>
-                <legend>Datos de la Factura</legend>
-
-                <label for="id_factura">ID Factura:</label>
-                <input type="number" id="id_factura" name="id_factura" required>
-
-                <label for="codigo_serie">Código de Serie:</label>
-                <input type="text" id="codigo_serie" name="codigo_serie" required>
-
-                <label for="descripcion_factura">Descripción Factura:</label>
-                <input type="text" id="descripcion_factura" name="descripcion_factura" required>
-
-                <label for="id_tipo_factura">Tipo de Factura:</label>
-                <select id="id_tipo_factura" name="id_tipo_factura" required>
-                    <option value="">-- Selecciona --</option>
-                    <option value="1">Comida</option>
-                    <option value="2">Bebida</option>
-                    <option value="3">Otro</option>
-                </select>
-
-                <label for="monto_factura">Monto Total:</label>
-                <input type="number" id="monto_factura" name="monto_factura" step="0.01" required>
-            </fieldset>
-
-            <div class="acciones">
-                <button type="submit">💾 Guardar Venta</button>
+        <!-- ================== REGISTRO DE VENTAS ================== -->
+        <section class="card shadow mb-4 p-4">
+            <h2 class="card__title mb-3">Registro de Ventas</h2>
+            <form id="form-ventas" class="row g-3">
+                <div class="col-md-2">
+                    <label class="form-label" for="id_venta">ID Venta:</label>
+                    <input type="number" class="form-control" id="id_venta" required>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label" for="nit_cliente">NIT Cliente:</label>
+                    <input type="text" class="form-control" id="nit_cliente" required>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label" for="cantidad">Cantidad:</label>
+                    <input type="number" class="form-control" id="cantidad" required>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label" for="id_plato">ID Plato:</label>
+                    <input type="number" class="form-control" id="id_plato" required>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label" for="monto_total">Monto Total:</label>
+                    <input type="number" step="0.01" class="form-control" id="monto_total" required>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label" for="fecha_venta">Fecha Venta:</label>
+                    <input type="date" class="form-control" id="fecha_venta" required>
+                </div>
+                <div class="col-12 d-flex gap-2 mt-3">
+                    <button type="button" class="btn btn-danger">Nuevo</button>
+                    <button type="submit" class="btn btn-success">Guardar</button>
+                    <button type="button" class="btn btn-warning">Actualizar</button>
+                    <button type="button" class="btn btn-secondary">Eliminar</button>
+                </div>
+            </form>
+            <div class="table-responsive mt-3">
+                <table class="table table-striped table-bordered">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>ID Venta</th>
+                            <th>NIT Cliente</th>
+                            <th>Cantidad</th>
+                            <th>ID Plato</th>
+                            <th>Monto Total</th>
+                            <th>Fecha Venta</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>1</td><td>1234567-8</td><td>2</td><td>5</td><td>150.00</td><td>2025-09-25</td>
+                        </tr>
+                    </tbody>
+                </table>
             </div>
-        </form>
+        </section>
 
-        <!-- Sección donde luego se mostrarán las ventas -->
-        <section id="tabla-ventas">
-            <!-- Aquí se inyectará la tabla con PHP/JS -->
+        <!-- ================== REGISTRO DE FACTURAS ================== -->
+        <section class="card shadow mb-4 p-4">
+            <h2 class="card__title mb-3">Registro de Facturas</h2>
+            <form id="form-facturas" class="row g-3">
+                <div class="col-md-2">
+                    <label class="form-label" for="id_factura">ID Factura:</label>
+                    <input type="number" class="form-control" id="id_factura" required>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label" for="codigo_serie">Código Serie:</label>
+                    <input type="text" class="form-control" id="codigo_serie" required>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label" for="fecha_emision">Fecha de Emisión:</label>
+                    <input type="date" class="form-control" id="fecha_emision" required>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label" for="nit_factura">NIT Cliente:</label>
+                    <input type="text" class="form-control" id="nit_factura" required>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label" for="monto_factura">Monto Total:</label>
+                    <input type="number" step="0.01" class="form-control" id="monto_factura" required>
+                </div>
+                <div class="col-12 d-flex gap-2 mt-3">
+                    <button type="button" class="btn btn-danger">Nuevo</button>
+                    <button type="submit" class="btn btn-success">Guardar</button>
+                    <button type="button" class="btn btn-warning">Actualizar</button>
+                    <button type="button" class="btn btn-secondary">Eliminar</button>
+                </div>
+            </form>
+            <div class="table-responsive mt-3">
+                <table class="table table-striped table-bordered">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>ID Factura</th>
+                            <th>Código Serie</th>
+                            <th>Fecha Emisión</th>
+                            <th>NIT Cliente</th>
+                            <th>Monto Total</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>1</td><td>A001</td><td>2025-09-25</td><td>1234567-8</td><td>150.00</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- ================== DETALLE DE COBRO ================== -->
+        <section class="card shadow mb-4 p-4">
+            <h2 class="card__title mb-3">Detalle de Cobro</h2>
+            <form id="form-detalle" class="row g-3">
+                <div class="col-md-3">
+                    <label class="form-label" for="detalle-idfactura">ID Factura:</label>
+                    <input type="number" class="form-control" id="detalle-idfactura" required>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label" for="detalle-idtipo">ID Tipo de Cobro:</label>
+                    <input type="number" class="form-control" id="detalle-idtipo" required>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label" for="detalle-monto">Monto:</label>
+                    <input type="number" step="0.01" class="form-control" id="detalle-monto" required>
+                </div>
+                <div class="col-12 d-flex gap-2 mt-3">
+                    <button type="button" class="btn btn-danger">Nuevo</button>
+                    <button type="submit" class="btn btn-success">Guardar</button>
+                    <button type="button" class="btn btn-warning">Actualizar</button>
+                    <button type="button" class="btn btn-secondary">Eliminar</button>
+                </div>
+            </form>
+            <div class="table-responsive mt-3">
+                <table class="table table-striped table-bordered">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>ID Factura</th>
+                            <th>ID Tipo Cobro</th>
+                            <th>Monto</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>1</td><td>1</td><td>100.00</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- ================== TIPOS DE COBRO ================== -->
+        <section class="card shadow mb-4 p-4">
+            <h2 class="card__title mb-3">Tipos de Cobro</h2>
+            <form id="form-tipoCobro" class="row g-3">
+                <div class="col-md-3">
+                    <label class="form-label" for="tipo-id">ID Tipo Cobro:</label>
+                    <input type="number" class="form-control" id="tipo-id" required>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label" for="tipo-desc">Descripción:</label>
+                    <input type="text" class="form-control" id="tipo-desc" required>
+                </div>
+                <div class="col-12 d-flex gap-2 mt-3">
+                    <button type="button" class="btn btn-danger">Nuevo</button>
+                    <button type="submit" class="btn btn-success">Guardar</button>
+                    <button type="button" class="btn btn-warning">Actualizar</button>
+                    <button type="button" class="btn btn-secondary">Eliminar</button>
+                </div>
+            </form>
+            <div class="table-responsive mt-3">
+                <table class="table table-striped table-bordered">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>ID Tipo Cobro</th>
+                            <th>Tipo de Cobro</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr><td>1</td><td>Efectivo</td></tr>
+                        <tr><td>2</td><td>Tarjeta</td></tr>
+                    </tbody>
+                </table>
+            </div>
         </section>
     </main>
 
-    <footer>
-        &copy; 2025 Marea Roja - Sistema de Ventas
-    </footer>
+    <script src="ventas.js"></script>
 </body>
 </html>
