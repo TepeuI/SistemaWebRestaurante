@@ -13,7 +13,7 @@ body {
 
 /* ====== Header & Navbar ====== */
 header {
-    background: #b22222;
+    background: #1E3A8A; /* Azul elegante */
     color: #fff;
     padding: 15px 30px;
     display: flex;
@@ -41,7 +41,7 @@ nav ul li a {
 
 nav ul li a:hover,
 nav ul li a.active {
-    color: #ffd700;
+    color: #ffd700; /* Dorado para contraste elegante */
 }
 
 /* ====== Layout ====== */
@@ -55,7 +55,7 @@ nav ul li a.active {
 
 .submenu a {
     text-decoration: none;
-    background: #b22222;
+    background: #1E3A8A; /* Azul principal */
     color: #fff;
     padding: 10px 16px;
     border-radius: 6px;
@@ -64,13 +64,13 @@ nav ul li a.active {
 }
 
 .submenu a:hover {
-    background: #8b1a1a;
+    background: #162A63; /* Azul más oscuro */
 }
 
 h2 {
     margin-bottom: 15px;
-    color: #b22222;
-    border-left: 5px solid #b22222;
+    color: #1E3A8A; /* Azul elegante */
+    border-left: 5px solid #1E3A8A;
     padding-left: 10px;
 }
 
@@ -80,7 +80,7 @@ h2 {
 }
 
 .acciones button {
-    background: #b22222;
+    background: #1E3A8A; /* Azul principal */
     color: #fff;
     border: none;
     padding: 12px 20px;
@@ -91,7 +91,7 @@ h2 {
 }
 
 .acciones button:hover {
-    background: #8b1a1a;
+    background: #162A63; /* Azul más oscuro */
 }
 
 /* ====== Sección dinámica ====== */
@@ -114,7 +114,7 @@ footer {
     margin-top: 40px;
     padding: 15px;
     text-align: center;
-    background: #b22222;
+    background: #1E3A8A; /* Azul */
     color: #fff;
     font-size: 0.85rem;
 }
