@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Marea Roja | Ventas</title>
+    <link rel="stylesheet" href="../css/diseñoModulos.css">
+</head>
+<body>
+    <header>
+        <h1>🍽️ Marea Roja</h1>
+        <nav>
+            <ul>
+                <li><a href="#">Inicio</a></li>
+                <li><a href="#">Reservaciones</a></li>
+                <li><a href="#">Menú</a></li>
+                <li><a href="#">Empleados</a></li>
+				 <li><a href="#">Inventarios</a></li>
+                <li><a href="#" class="active">Facturar Ventas</a></li>
+                <li><a href="#">Salir</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <main class="container">
+        <!-- Submenú -->
+        <div class="submenu">
+            <a href="#">⬅️ Regresar</a>
+        </div>
+
+        <h2>Registro de Ventas</h2>
+        <p>En este módulo podrás registrar nuevas ventas y generar facturas.</p>
+
+        <!-- Formulario -->
+        <form id="form-ventas" method="POST" action="guardar_venta.php" class="formulario">
+            <fieldset>
+                <legend>Datos de la Venta</legend>
+                
+                <label for="id_venta">ID Venta:</label>
+                <input type="number" id="id_venta" name="id_venta" required>
+
+                <label for="nit_cliente">NIT Cliente:</label>
+                <input type="text" id="nit_cliente" name="nit_cliente" required>
+
+                <label for="cantidad">Cantidad:</label>
+                <input type="number" id="cantidad" name="cantidad" required>
+
+                <label for="id_plato">ID Plato:</label>
+                <input type="number" id="id_plato" name="id_plato" required>
+
+                <label for="monto_total">Monto Total:</label>
+                <input type="number" id="monto_total" name="monto_total" step="0.01" required>
+
+                <label for="fecha_venta">Fecha de Venta:</label>
+                <input type="date" id="fecha_venta" name="fecha_venta" required>
+            </fieldset>
+
+            <fieldset>
+                <legend>Datos de la Factura</legend>
+
+                <label for="id_factura">ID Factura:</label>
+                <input type="number" id="id_factura" name="id_factura" required>
+
+                <label for="codigo_serie">Código de Serie:</label>
+                <input type="text" id="codigo_serie" name="codigo_serie" required>
+
+                <label for="descripcion_factura">Descripción Factura:</label>
+                <input type="text" id="descripcion_factura" name="descripcion_factura" required>
+
+                <label for="id_tipo_factura">Tipo de Factura:</label>
+                <select id="id_tipo_factura" name="id_tipo_factura" required>
+                    <option value="">-- Selecciona --</option>
+                    <option value="1">Comida</option>
+                    <option value="2">Bebida</option>
+                    <option value="3">Otro</option>
+                </select>
+
+                <label for="monto_factura">Monto Total:</label>
+                <input type="number" id="monto_factura" name="monto_factura" step="0.01" required>
+            </fieldset>
+
+            <div class="acciones">
+                <button type="submit">💾 Guardar Venta</button>
+            </div>
+        </form>
+
+        <!-- Sección donde luego se mostrarán las ventas -->
+        <section id="tabla-ventas">
+            <!-- Aquí se inyectará la tabla con PHP/JS -->
+        </section>
+    </main>
+
+    <footer>
+        &copy; 2025 Marea Roja - Sistema de Ventas
+    </footer>
+</body>
+</html>
