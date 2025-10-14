@@ -3,310 +3,118 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sistema de Inventario </title>
-        <!-- Google Fonts: Poppins -->
-        <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
-        <style>
-            body, h1, h2, h3, h4, h5, h6, label, input, button, table, th, td {
-                font-family: 'Poppins', Arial, Helvetica, sans-serif !important;
-            }
-        </style>
-    <!-- Frameworks y librerías base -->
+    <title>Sistema de Inventario</title>
+
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body, h1, h2, h3, label, input, button, table, th, td {
+            font-family: 'Poppins', Arial, Helvetica, sans-serif !important;
+        }
+    </style>
+
+    <!-- Bootstrap y librerías base -->
     <link rel="stylesheet" href="../css/bootstrap.min.css">
     <link rel="stylesheet" href="../css/animate.min.css">
     <link rel="stylesheet" href="../css/boxicons.min.css">
     <link rel="stylesheet" href="../css/swiper-bundle.min.css">
     <link rel="stylesheet" href="../css/glightbox.min.css">
-    <!-- Estilos personalizados globales -->
     <link rel="stylesheet" href="../css/diseñoModulos.css">
-    <!-- Estilos específicos del sistema de inventario -->
 </head>
+
 <body>
-    <header class="mb-4">
-        <div class="container d-flex flex-column flex-md-row align-items-center justify-content-between py-3">
-            <h1 class="mb-0">SISTEMA DE INVENTARIO INGREDIENTES MAREA ROJA</h1>
-            
-                <ul class="nav nav-pills gap-2 mb-0">
-                    <li class="nav-item"><a href="menu_empleados.html" class="nav-link">Regresar</a></li>
-                </ul>
-            </nav>
-        </div>
-    </header>
-    <main class="container">
-        <section class="card shadow mb-4 p-4">
-            <h2 class="card__title mb-3">INVENTARIO INGREDIENTES</h2>
-            <form id="form-inventario" class="row g-3">
-                <div class="col-md-3">
-                    <label class="form-label" for="inv-id">ID INGREDIENTES:</label>
-                    <input type="number" class="form-control" id="inv-id" required placeholder="Ej. 1">
-                </div>
-                <div class="col-md-3">
-                    <label class="form-label" for="inv-nombre">NOMBRE INGREDIENTE:</label>
-                    <input type="text" class="form-control" id="inv-nombre" required placeholder="Ej. Churrasco">
-                </div>
-                <div class="col-md-3">
-                    <label class="form-label" for="inv-tipo">DESCRIPCION:</label>
-                    <input type="number" class="form-control" id="inv-tipo" required placeholder="Ej. 1">
-                </div>
-                <div class="col-md-3">
-                    <label class="form-label" for="inv-cantidad">CANTIDAD EN STOCK:</label>
-                    <input type="number" class="form-control" id="inv-cantidad" required placeholder="Ej. 13">
-                </div>
-                <div class="col-12 d-flex gap-2 mt-3">
-                    <button type="button" class="btn btn-danger">Nuevo</button>
-                    <button type="submit" class="btn btn-success">Guardar</button>
-                    <button type="button" class="btn btn-warning">Actualizar</button>
-                    <button type="button" class="btn btn-secondary">Eliminar</button>
-                </div>
-            </form>
-            <div class="result mt-3" id="resultado"></div>
-            <div class="table-responsive mt-3">
-                <table class="table table-striped table-bordered" id="tabla-inventario">
-                    <thead class="table-dark">
-                        <tr>
-                            <th>ID Inventario</th>
-                            <th>Nombre</th>
-                            <th>ID Tipo Inventario</th>
-                            <th>Cantidad</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr>
-                            <td>1</td>
-                            <td>Churrasco</td>
-                            <td>1</td>
-                            <td>13</td>
-                        </tr>
-                    </tbody>
-                </table>
+<header class="mb-4">
+    <div class="container d-flex flex-column flex-md-row align-items-center justify-content-between py-3">
+        <h1 class="mb-0">SISTEMA DE INVENTARIO INGREDIENTES MAREA ROJA</h1>
+        <ul class="nav nav-pills gap-2 mb-0">
+            <li class="nav-item"><a href="menu_empleados.html" class="nav-link">Regresar</a></li>
+        </ul>
+    </div>
+</header>
+
+<main class="container">
+    <section class="card shadow mb-4 p-4">
+        <h2 class="card__title mb-3">FORMULARIO GENERAL DE INVENTARIO</h2>
+
+        <form id="form-inventario-general" class="row g-3">
+
+            <!-- ===== SECCIÓN 1: INVENTARIO INGREDIENTES ===== -->
+            <h4 class="mt-4">Inventario de Ingredientes</h4>
+            <div class="col-md-3">
+                <label class="form-label" for="inv-id">ID Ingrediente:</label>
+                <input type="number" class="form-control" id="inv-id" required placeholder="Ej. 1">
             </div>
-        </section>
-        <section class="card shadow mb-4 p-4">
-            <h2 class="card__title mb-3">COMPRAS DE INGREDIENTES</h2>
-            <form id="form-tipo" class="row g-3">
-                <div class="col-md-6">
-                    <label class="form-label" for="tipo-id">ID COMPRA INGREDIENTE:</label>
-                    <input type="number" class="form-control" id="tipo-id" required placeholder="Ej. 1">
-                </div>
-                <div class="col-md-6">
-                    <label class="form-label" for="tipo-desc">ID PROVEEDOR:</label>
-                    <input type="text" class="form-control" id="tipo-desc" required placeholder="Ej. Comida">
-                </div>
-                 <div class="col-md-6">
-                    <label class="form-label" for="tipo-desc">FECHA DE COMPRA:</label>
-                    <input type="text" class="form-control" id="tipo-desc" required placeholder="Ej. Comida">
-                </div>
-                   <div class="col-md-6">
-                    <label class="form-label" for="tipo-desc">MONTO TOTAL DE COMPRA:</label>
-                    <input type="text" class="form-control" id="tipo-desc" required placeholder="Ej. Comida">
-                </div>
-                <div class="col-12 d-flex gap-2 mt-3">
-                    <button type="button" class="btn btn-danger">Nuevo</button>
-                    <button type="submit" class="btn btn-success">Guardar</button>
-                    <button type="button" class="btn btn-warning">Actualizar</button>
-                    <button type="button" class="btn btn-secondary">Eliminar</button>
-                </div>
-            </form>
-            <div class="table-responsive mt-3">
-                <table class="table table-striped table-bordered" id="tabla-tipo">
-                    <thead class="table-dark">
-                        <tr>
-                            <th>ID COMPRA INGREDIENTE</th>
-                            <th>ID PROVEEDOR</th>
-                              <th>FECHA DE COMPRA</th>
-                            <th>MONTO TOTAL DE COMPRA</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr>
-                            <td>1</td>
-                            <td>101</td>
-                            <td>25/9/2025</td>
-                            <td>2000</td>
-                        </tr>
-                        <tr>
-                             <td>2</td>
-                            <td>102</td>
-                            <td>25/9/2025</td>
-                            <td>5000</td>
-                        </tr>
-                    </tbody>
-                </table>
+            <div class="col-md-3">
+                <label class="form-label" for="inv-nombre">Nombre Ingrediente:</label>
+                <input type="text" class="form-control" id="inv-nombre" required placeholder="Ej. Churrasco">
             </div>
-        </section>
-        <section class="card shadow mb-4 p-4">
-            <h2 class="card__title mb-3">DETALLE COMPRAS DE INGREDIENTES</h2>
-            <form id="form-tipo" class="row g-3">
-                <div class="col-md-6">
-                    <label class="form-label" for="tipo-id">ID COMPRA INGREDIENTE:</label>
-                    <input type="number" class="form-control" id="tipo-id" required placeholder="Ej. 1">
-                </div>
-                <div class="col-md-6">
-                    <label class="form-label" for="tipo-desc">ID INGREDIENTE:</label>
-                    <input type="text" class="form-control" id="tipo-desc" required placeholder="Ej. Comida">
-                </div>
-                 <div class="col-md-6">
-                    <label class="form-label" for="tipo-desc">CANTIDAD DE COMPRA:</label>
-                    <input type="text" class="form-control" id="tipo-desc" required placeholder="Ej. Comida">
-                </div>
-                   <div class="col-md-6">
-                    <label class="form-label" for="tipo-desc">ID UNIDAD DE MEDIDA:</label>
-                    <input type="text" class="form-control" id="tipo-desc" required placeholder="Ej. Comida">
-                </div>
-                   </div>
-                   <div class="col-md-6">
-                    <label class="form-label" for="tipo-desc">ID PRECIO UNITARIO:</label>
-                    <input type="text" class="form-control" id="tipo-desc" required placeholder="Ej. Comida">
-                </div>
-                  <div class="col-md-6">
-                    <label class="form-label" for="tipo-desc">ID TOTAL POR INGREDIENTE:</label>
-                    <input type="text" class="form-control" id="tipo-desc" required placeholder="Ej. Comida">
-                </div>
-                <div class="col-12 d-flex gap-2 mt-3">
-                    <button type="button" class="btn btn-danger">Nuevo</button>
-                    <button type="submit" class="btn btn-success">Guardar</button>
-                    <button type="button" class="btn btn-warning">Actualizar</button>
-                    <button type="button" class="btn btn-secondary">Eliminar</button>
-                </div>
-            </form>
-            <div class="table-responsive mt-3">
-                <table class="table table-striped table-bordered" id="tabla-tipo">
-                    <thead class="table-dark">
-                        <tr>
-                            <th>ID COMPRA INGREDIENTE</th>
-                            <th>ID INGREDIENTE</th>
-                              <th>CANTIDAD DE COMPRA</th>
-                            <th>ID UNIDAD DE MEDIDA</th>
-                            <th>ID PRECIO UNITARIO</th>
-                            <th>ID TOTAL POR INGREDIENTE</th>   
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr>
-                            <td>1</td>
-                            <td>101</td>
-                            <td>25/9/2025</td>
-                            <td>2000</td>
-                        </tr>
-                        <tr>
-                             <td>2</td>
-                            <td>102</td>
-                            <td>25/9/2025</td>
-                            <td>5000</td>
-                        </tr>
-                    </tbody>
-                </table>
+            <div class="col-md-3">
+                <label class="form-label" for="inv-descripcion">Descripción:</label>
+                <input type="text" class="form-control" id="inv-descripcion" required placeholder="Ej. Carne Premium">
             </div>
-        </section>
-        
-         <section class="card shadow mb-4 p-4">
-            <h2 class="card__title mb-3">Registro Control de Inventario Ingredientes</h2>
-            <form id="form-control" class="row g-3">
-                <div class="col-md-2">
-                    <label class="form-label" for="control-id">ID Control:</label>
-                    <input type="number" class="form-control" id="control-id" required placeholder="Ej. 1">
-                </div>
-                <div class="col-md-2">
-                    <label class="form-label" for="control-inv">ID Ingredientes:</label>
-                    <input type="number" class="form-control" id="control-inv" required placeholder="Ej. 1">
-                </div>
-                <div class="col-md-2">
-                    <label class="form-label" for="control-estado">Estado:</label>
-                    <input type="text" class="form-control" id="control-estado" required placeholder="Ej. Bueno">
-                </div>
-                <div class="col-md-3">
-                    <label class="form-label" for="control-entrada">Fecha de Entrada:</label>
-                    <input type="date" class="form-control" id="control-entrada" required>
-                </div>
-                <div class="col-md-3">
-                    <label class="form-label" for="control-caducidad">Fecha de Caducidad:</label>
-                    <input type="date" class="form-control" id="control-caducidad" required>
-                </div>
-                <div class="col-12 d-flex gap-2 mt-3">
-                    <button type="button" class="btn btn-danger">Nuevo</button>
-                    <button type="submit" class="btn btn-success">Guardar</button>
-                    <button type="button" class="btn btn-warning">Actualizar</button>
-                    <button type="button" class="btn btn-secondary">Eliminar</button>
-                </div>
-            </form>
-            <div class="table-responsive mt-3">
-                <table class="table table-striped table-bordered" id="tabla-control">
-                    <thead class="table-dark">
-                        <tr>
-                            <th>ID Control</th>
-                            <th>ID Inventario</th>
-                            <th>Estado</th>
-                            <th>Fecha de Entrada</th>
-                            <th>Fecha de Caducidad</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr>
-                            <td></td>
-                            <td></td>
-                            <td></td>
-                            <td></td>
-                            <td></td>
-                        </tr>
-                    </tbody>
-                </table>
+            <div class="col-md-3">
+                <label class="form-label" for="inv-cantidad">Cantidad en Stock:</label>
+                <input type="number" class="form-control" id="inv-cantidad" required placeholder="Ej. 13">
             </div>
-        </section>
-        <section class="card shadow mb-4 p-4">
-            <h2 class="card__title mb-3">PERIDAS DE INVENTARIO</h2>
-            <form id="form-control" class="row g-3">
-                <div class="col-md-2">
-                    <label class="form-label" for="control-id">ID PERDIDA:</label>
-                    <input type="number" class="form-control" id="control-id" required placeholder="Ej. 1">
-                </div>
-                <div class="col-md-2">
-                    <label class="form-label" for="control-inv">DESCRIPCION:</label>
-                    <input type="number" class="form-control" id="control-inv" required placeholder="Ej. 1">
-                </div>
-                <div class="col-md-2">
-                    <label class="form-label" for="control-estado">ID INGREDIENTE:</label>
-                    <input type="text" class="form-control" id="control-estado" required placeholder="Ej. Bueno">
-                </div>
-                <div class="col-md-3">
-                    <label class="form-label" for="control-entrada">CANTIDAD PERDIDA EN UNIDADES:</label>
-                    <input type="date" class="form-control" id="control-entrada" required>
-                </div>
-                <div class="col-md-3">
-                    <label class="form-label" for="control-caducidad">COSTO DE PERDIDA:</label>
-                    <input type="date" class="form-control" id="control-caducidad" required>
-                </div>
-                <div class="col-12 d-flex gap-2 mt-3">
-                    <button type="button" class="btn btn-danger">Nuevo</button>
-                    <button type="submit" class="btn btn-success">Guardar</button>
-                    <button type="button" class="btn btn-warning">Actualizar</button>
-                    <button type="button" class="btn btn-secondary">Eliminar</button>
-                </div>
-            </form>
-            <div class="table-responsive mt-3">
-                <table class="table table-striped table-bordered" id="tabla-control">
-                    <thead class="table-dark">
-                        <tr>
-                            <th>ID PERDIDA</th>
-                            <th>DESCRIPCION</th>
-                            <th>ID INGREDIENTE</th>
-                            <th>CANTIDAD PERDIDA EN UNIDADES</th>
-                            <th>COSTO DE PERDIDA</th>
-                 
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr>
-                            <td></td>
-                            <td></td>
-                            <td></td>
-                            <td></td>
-                            <td></td>
-                        </tr>
-                    </tbody>
-                </table>
+
+          
+            <!-- ===== SECCIÓN 4: CONTROL INVENTARIO ===== -->
+            <h4 class="mt-4">Control de Inventario</h4>
+            <div class="col-md-2">
+                <label class="form-label" for="control-id">ID Control:</label>
+                <input type="number" class="form-control" id="control-id" required>
             </div>
-        </section>
-    </main>
-    <script src="inventario.js"></script>
+            <div class="col-md-2">
+                <label class="form-label" for="control-ingrediente">ID Ingrediente:</label>
+                <input type="number" class="form-control" id="control-ingrediente" required>
+            </div>
+                <div class="col-md-2 d-flex align-items-center">
+                <label class="form-label me-2" for="control-estado">Expirado:</label>
+                <input type="checkbox" class="form-check-input" id="control-estado">
+                </div>
+            <div class="col-md-3">
+                <label class="form-label" for="control-entrada">Fecha de Entrada:</label>
+                <input type="date" class="form-control" id="control-entrada" required>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label" for="control-caducidad">Fecha de Caducidad:</label>
+                <input type="date" class="form-control" id="control-caducidad" required>
+            </div>
+
+            <!-- ===== SECCIÓN 5: PÉRDIDAS ===== -->
+            <h4 class="mt-4">Pérdidas de Inventario</h4>
+            <div class="col-md-2">
+                <label class="form-label" for="perdida-id">ID Pérdida:</label>
+                <input type="number" class="form-control" id="perdida-id" required>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label" for="perdida-descripcion">Descripción:</label>
+                <input type="text" class="form-control" id="perdida-descripcion" required>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label" for="perdida-ing-id">ID Ingrediente:</label>
+                <input type="number" class="form-control" id="perdida-ing-id" required>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label" for="perdida-cantidad">Cantidad Perdida:</label>
+                <input type="number" class="form-control" id="perdida-cantidad" required>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label" for="perdida-costo">Costo de Pérdida:</label>
+                <input type="number" class="form-control" id="perdida-costo" required>
+            </div>
+
+            <!-- BOTONES GLOBALES -->
+            <div class="col-12 d-flex gap-2 mt-4">
+                <button type="button" class="btn btn-danger">Nuevo</button>
+                <button type="submit" class="btn btn-success">Guardar</button>
+                <button type="button" class="btn btn-warning">Actualizar</button>
+                <button type="button" class="btn btn-secondary">Eliminar</button>
+            </div>
+        </form>
+    </section>
+</main>
+
+<script src="inventario.js"></script>
 </body>
 </html>
