@@ -84,6 +84,7 @@ header h1 img:hover {
     transform: translateX(-20px);
     opacity: 0;
     animation: slideInLeft 0.6s ease forwards;
+    position: relative;
 }
 
 .sidebar-empleados ul li:nth-child(1) { animation-delay: 0.2s; }
@@ -145,6 +146,56 @@ header h1 img:hover {
 
 .sidebar-empleados ul li a:hover span {
     transform: scale(1.2) rotate(15deg);
+}
+
+/* === SUBMENU STYLES === */
+.sidebar-empleados ul li .submenu {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.3s ease;
+    background: rgba(0,0,0,0.1);
+    border-radius: 0 0 12px 12px;
+    margin-top: 5px;
+    padding: 0;
+}
+
+.sidebar-empleados ul li.active .submenu {
+    max-height: 200px;
+    padding: 10px 0;
+}
+
+.sidebar-empleados ul li .submenu li {
+    margin: 0;
+    padding: 0;
+    animation: none;
+    transform: none;
+    opacity: 1;
+}
+
+.sidebar-empleados ul li .submenu li a {
+    padding: 12px 20px 12px 50px;
+    font-size: 0.9rem;
+    background: transparent;
+    border: none;
+    backdrop-filter: none;
+    margin: 2px 0;
+}
+
+.sidebar-empleados ul li .submenu li a:hover {
+    background: rgba(255,255,255,0.2);
+    transform: translateX(10px);
+    box-shadow: none;
+}
+
+.submenu-toggle::after {
+    content: '▼';
+    float: right;
+    font-size: 0.8em;
+    transition: transform 0.3s ease;
+}
+
+.submenu-toggle.active::after {
+    transform: rotate(180deg);
 }
 
 /* === CONTENEDOR PRINCIPAL === */
