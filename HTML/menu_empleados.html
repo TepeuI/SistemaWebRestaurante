@@ -16,10 +16,38 @@
     
     <div class="sidebar-empleados">
         <ul>
-            <li><a href="Reservaciones.html"><span>📅</span> Reservaciones</a></li>
-            <li><a href="menu_menu.html"><span>🪑</span> Gestión de Mobiliario</a></li>
-            <li><a href="Gestion_Inventario_Ingredientes.html"><span>🥘</span> Inventario Ingredientes</a></li>
-            <li><a href="Facturacion_Ventas.html"><span>💰</span> Facturaciones</a></li>
+            <li>
+                <a href="#" class="submenu-toggle"><span>📅</span> Reservaciones</a>
+                <ul class="submenu">
+                <!--- sub paginas de Reservaciones --->
+                </ul>
+            </li>
+            
+            <li>
+                <a href="#" class="submenu-toggle"><span>🪑</span> Gestión de Mobiliario</a>
+                <ul class="submenu">
+                    <!--- sub paginas de Gestión de Mobiliario --->
+                </ul>
+            </li>
+            
+            <li>
+                <a href="#" class="submenu-toggle"><span>🥘</span> Inventario Ingredientes</a>
+                <ul class="submenu">
+                  <!--- sub paginas de Inventario Ingredientes --->
+                  <li><a href="gestion_ingrediente.html">Gestion de Ingrediente</a></li>
+                  <li><a href="stock_ingredientes.html">Compra de Ingredientes</a></li>
+                </ul>
+            </li>
+            
+            <li>
+                <a href="#" class="submenu-toggle"><span>💰</span> Facturaciones</a>
+                <ul class="submenu">
+                    <li><a href="nueva_factura.html">Nueva Factura</a></li>
+                    <li><a href="historial_ventas.html">Historial de Ventas</a></li>
+                    <li><a href="reportes.html">Reportes</a></li>
+                </ul>
+            </li>
+            
             <li><a href="login.html"><span>🚪</span> Cerrar Sesión</a></li>
         </ul>
     </div>
@@ -35,5 +63,6 @@
     <footer>
         &copy; 2025 Marea Roja - Sistema de Gestión
     </footer>
+    <script src="../javascript/submenu.js"></script>
 </body>
 </html>
