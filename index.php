@@ -58,6 +58,7 @@
           <li><a class="nav-link scrollto" href="#about">Sobre Nosotros</a></li>
           <li><a class="nav-link scrollto" href="#menu">Menu</a></li>
           <li><a class="nav-link scrollto" href="#gallery">Galeria</a></li>
+          <li><a class="nav-link scrollto" href="./html/login.html">Empleados</a></li>
 
           
 
