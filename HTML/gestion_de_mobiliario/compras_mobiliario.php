@@ -23,67 +23,70 @@
 <body>
     <header class="mb-4">
         <div class="container d-flex flex-column flex-md-row align-items-center justify-content-between py-3">
-            <h1 class="mb-0">Taller de Vechiculos</h1>
+            <h1 class="mb-0">INVENTARIO MOBILIARIO</h1>
             <ul class="nav nav-pills gap-2 mb-0">
-                <li class="nav-item"><a href="menu_empleados.html" class="nav-link">Regresar</a></li>
+                <li class="nav-item"><a href="../menu_empleados.php" class="nav-link">Regresar</a></li>
             </ul>
         </div>
     </header>
 
     <main class="container my-4">
         <section class="card shadow p-4">
-            <h2 class="card__title text-primary mb-4">FORMULARIO - TALLER</h2>
-
-            <!-- Inventario Mobiliario (copiado de inventario.html) -->
-            <h2 class="card__title mb-3">Taller</h2>
-            <form id="form-inventario" class="row g-3">
+            <h2 class="card__title text-primary mb-4">FORMULARIO - COMPRAS DE MOBILIARIO</h2>
+            <!-- Compras de Mobiliario -->
+            <h2 class="card__title mb-3 mt-4">Compras de Mobiliario</h2>
+            <form id="form-compras" class="row g-3">
                 <div class="col-md-3">
-                    <label class="form-label" for="inv-cantidad">ID del taller</label>
-                    <input type="number" class="form-control" id="inv-cantidad_stock" required placeholder="Ej. 1">
+                    <label class="form-label" for="compra-id">ID Compra:</label>
+                    <input type="number" class="form-control" id="compra-id" required placeholder="Ej. 1">
                 </div>
                 <div class="col-md-3">
-                    <label class="form-label" for="inv-id">Nombre del taller</label>
-                    <input type="text" class="form-control" id="inv-id" required placeholder="Ej. .....">
+                    <label class="form-label" for="compra-proveedor">ID Proveedor:</label>
+                    <input type="number" class="form-control" id="compra-proveedor" required placeholder="Ej. 1">
                 </div>
                 <div class="col-md-3">
-                    <label class="form-label" for="inv-nombre">Telefono</label>
-                    <input type="number" class="form-control" id="inv-nombre" placeholder="Ej. 123456789">
+                    <label class="form-label" for="detalle-cantidad">Cantidad Compra:</label>
+                    <input type="number" class="form-control" id="detalle-cantidad" required placeholder="Ej. 5">
                 </div>
                 <div class="col-md-3">
-                    <label class="form-label" for="inv-cantidad">Correo</label>
-                    <input type="email" class="form-control" id="inv-cantidad_stock" required placeholder="Ej. ejemplo@correo.com">
+                    <label class="form-label" for="compra-fecha">Fecha Compra:</label>
+                    <input type="date" class="form-control" id="compra-fecha" required>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label" for="detalle-mobiliario">ID Mobiliario:</label>
+                    <input type="number" class="form-control" id="detalle-mobiliario" required placeholder="Ej. 1">
                 </div>
                 <div class="col-md-3">
-                    <label class="form-label" for="inv-tipo">ID especialidad de la reapración</label>
-                    <input type="text" class="form-control" id="inv-descrip" required placeholder="Ej. .....">
+                    <label class="form-label" for="detalle-unitario">Costo Unitario:</label>
+                    <input type="number" step="0.01" class="form-control" id="detalle-unitario" required placeholder="Ej. 250.00">
                 </div>
-                
                 <div class="col-md-3">
-                    <label class="form-label" for="inv-cantidad">Descripción</label>
-                    <input type="number" class="form-control" id="inv-cantidad_stock" required placeholder="Ej. .....">
+                    <label class="form-label" for="compra-monto">Monto Total:</label>
+                    <input type="number" step="0.01" class="form-control" id="compra-monto" required placeholder="Ej. 2500.00">
                 </div>
-                
             </form>
             <div class="table-responsive mt-3">
-                <table class="table table-striped table-bordered" id="tabla-inventario">
+                <table class="table table-striped table-bordered" id="tabla-compras">
                     <thead class="table-dark">
                         <tr>
-                            <th>ID taller</th>
-                            <th>Nombre del taller</th>
-                            <th>Telefono</th>
-                            <th>Correo</th>
-                            <th>ID especialidad de la reapración</th>
-                            <th>Descripción</th>
+                            <th>ID Compra</th>
+                            <th>ID Proveedor</th>
+                            <th>Cantidad Compra</th>
+                            <th>Fecha Compra</th>\
+                            <th>ID mobiliario</th>
+                            <th>costo unitario</th>
+                            <th>Monto Total</th>
                         </tr>
                     </thead>
                     <tbody>
                         <tr>
                             <td>1</td>
-                            <td>Taller los doritoss</td>
-                            <td>123456789</td>
-                            <td>TLLdoritos@correo.com</td>
-                            <td>1</td>
-                            <td>arreglo de suspensiones</td>
+                            <td>2</td>
+                            <td>5</td>
+                            <td>2024-06-15</td>
+                            <td>3</td>
+                            <td>300.00</td>
+                            <td>1500.00</td>
                         </tr>
                     </tbody>
                 </table>

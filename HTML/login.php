@@ -10,8 +10,16 @@
     <div class="login-container">
         <div class="login-box">
             <h1>Ingreso de Empleados</h1>
-            <!-- redirige a Reservaciones.html -->
-            <form action="menu_empleados.html" method="get">
+            
+            <!-- Mostrar error si existe -->
+            <?php if (isset($_GET['error'])): ?>
+                <div class="error-message">
+                    <?php echo htmlspecialchars($_GET['error']); ?>
+                </div>
+            <?php endif; ?>
+
+            <!-- El formulario ahora apunta a procesar_login.php -->
+            <form action="procesar_login.php" method="post">
                 <div class="form-group">
                     <label for="usuario">Usuario</label>
                     <input type="text" id="usuario" name="usuario" placeholder="Ingresa tu usuario" required>
