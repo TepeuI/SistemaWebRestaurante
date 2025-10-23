@@ -23,66 +23,84 @@
 <body>
     <header class="mb-4">
         <div class="container d-flex flex-column flex-md-row align-items-center justify-content-between py-3">
-            <h1 class="mb-0">Vechiculos</h1>
+            <h1 class="mb-0">INVENTARIO MOBILIARIO</h1>
             <ul class="nav nav-pills gap-2 mb-0">
-                <li class="nav-item"><a href="menu_empleados.html" class="nav-link">Regresar</a></li>
+                <li class="nav-item"><a href="../menu_empleados.html" class="nav-link">Regresar</a></li>
             </ul>
         </div>
     </header>
 
     <main class="container my-4">
         <section class="card shadow p-4">
-            <h2 class="card__title text-primary mb-4">FORMULARIO - Vehiculos</h2>
+            <h2 class="card__title text-primary mb-4">FORMULARIO - CONTROL DE MOBILIARIO</h2>
 
             <!-- Inventario Mobiliario (copiado de inventario.html) -->
-            <h2 class="card__title mb-3">Detalle de Vehiculos</h2>
+                <h2 class="card__title mb-3">Registro Mobiliario</h2>
             <form id="form-inventario" class="row g-3">
                 <div class="col-md-3">
-                    <label class="form-label" for="inv-id">ID mobiliario Vehiculo:</label>
+                    <label class="form-label" for="control-id">ID Control:</label>
+                    <input type="number" class="form-control" id="control-id" required placeholder="Ej. 1">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label" for="control-inv">ID Inventario:</label>
+                    <input type="number" class="form-control" id="control-inv" required placeholder="Ej. 1">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label" for="inv-id">ID Mobiliario:</label>
                     <input type="number" class="form-control" id="inv-id" required placeholder="Ej. 1">
                 </div>
                 <div class="col-md-3">
-                    <label class="form-label" for="inv-nombre">Año:</label>
-                    <input type="number" class="form-control" id="inv-nombre" required placeholder="Ej. 2009">
+                    <label class="form-label" for="inv-nombre">Nombre Mobiliario:</label>
+                    <input type="text" class="form-control" id="inv-nombre" required placeholder="Ej. Silla de oficina">
                 </div>
                 <div class="col-md-3">
-                    <label class="form-label" for="inv-cantidad">Marca</label>
-                    <input type="text" class="form-control" id="inv-cantidad_stock" required placeholder="Ej. .....">
+                    <label class="form-label" for="inv-cantidad">Cantidad:</label>
+                    <input type="number" class="form-control" id="inv-cantidad_stock" required placeholder="Ej. 13">
                 </div>
                 <div class="col-md-3">
-                    <label class="form-label" for="inv-tipo">Modelo</label>
+                    <label class="form-label" for="control-entrada">Fecha de Entrada:</label>
+                    <input type="date" class="form-control" id="control-entrada" required>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label" for="control-caducidad">Fecha de Caducidad:</label>
+                    <input type="date" class="form-control" id="control-caducidad" required>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label" for="control-estado">Estado:</label>
+                    <input type="text" class="form-control" id="control-estado" required placeholder="Ej. Bueno">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label" for="inv-tipo">Descripción</label>
                     <input type="text" class="form-control" id="inv-descrip" required placeholder="Ej. .....">
-                </div>
-                <div class="col-md-3">
-                    <label class="form-label" for="inv-cantidad">Placa</label>
-                    <input type="text" class="form-control" id="inv-cantidad_stock" required placeholder="Ej. P000AAA">
-                </div>
-                
-                <div class="col-md-3">
-                    <label class="form-label" for="inv-cantidad">Descripción</label>
-                    <input type="text" class="form-control" id="inv-cantidad_stock" required placeholder="Ej. .....">
                 </div>
             </form>
             <div class="table-responsive mt-3">
                 <table class="table table-striped table-bordered" id="tabla-inventario">
                     <thead class="table-dark">
                         <tr>
-                            <th>ID Mobiliario Vechiculo</th>
-                            <th>Año</th>
-                            <th>Marca</th>
-                            <th>Modelo</th>
-                            <th>Placa</th>
-                            <th>Descripción</th>
+                            <th>ID control</th>
+                            <th>ID inventario</th>
+                            <th>ID mobiliario</th>
+                            <th>nombre del mobiliario</th>
+                            <th>cantidad</th>
+                            <th>fecha de entrada</th>
+                            <th>fecha de caducidad</th>
+                            <th>estado</th>
+                            <th>descripción</th>
+
                         </tr>
                     </thead>
                     <tbody>
                         <tr>
                             <td>1</td>
-                            <td>2014</td>
-                            <td>Ford</td>
-                            <td>Ranger</td>
-                            <td>P812HYN</td>
-                            <td>Pickup de 4 metros</td>
+                            <td>1</td>
+                            <td>1</td>
+                            <td>Silla de oficina</td>
+                            <td>13</td>
+                            <td>2025-09-20</td>
+                            <td>2028-09-20</td>
+                            <td>Bueno</td>
+                            <td>Ergonómica, color</td>
                         </tr>
                     </tbody>
                 </table>
