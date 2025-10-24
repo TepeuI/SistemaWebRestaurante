@@ -26,16 +26,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 function crearEmpleado() {
     $conn = conectar();
+    $id_empleado = $_POST['id_empleado'] ?? '';
     $nombre = $_POST['nombre'] ?? '';
     $apellido = $_POST['apellido'] ?? '';
     $departamento = $_POST['departamento'] ?? null;
-    $telefono = $_POST['telefono'] ?? '';
-    $correo = $_POST['correo'] ?? '';
-    $estado = $_POST['estado'] ?? 'ACTIVO';
 
-    $sql = "INSERT INTO empleados (nombre, apellido, id_departamento, telefono, correo, estado) VALUES (?, ?, ?, ?, ?, ?)";
+
+    $sql = "INSERT INTO empleados (Id_empleado, nombre, apellido, id_departamento) VALUES (?, ?, ?, ?)";
     $stmt = $conn->prepare($sql);
-    $stmt->bind_param('ssisss', $nombre, $apellido, $departamento, $telefono, $correo, $estado);
+    $stmt->bind_param('isss', $id_empleado, $nombre, $apellido, $departamento);
 
     if ($stmt->execute()) {
         $_SESSION['mensaje'] = 'Empleado creado exitosamente';
@@ -47,7 +46,7 @@ function crearEmpleado() {
 
     $stmt->close();
     desconectar($conn);
-    header('Location: control_empleados.php');
+    header('Location: Empleados.php');
     exit();
 }
 
@@ -57,13 +56,10 @@ function actualizarEmpleado() {
     $nombre = $_POST['nombre'] ?? '';
     $apellido = $_POST['apellido'] ?? '';
     $departamento = $_POST['departamento'] ?? null;
-    $telefono = $_POST['telefono'] ?? '';
-    $correo = $_POST['correo'] ?? '';
-    $estado = $_POST['estado'] ?? '';
 
-    $sql = "UPDATE empleados SET nombre = ?, apellido = ?, id_departamento = ?, telefono = ?, correo = ?, estado = ? WHERE id_empleado = ?";
+    $sql = "UPDATE empleados SET nombre = ?, apellido = ?, id_departamento = ? WHERE id_empleado = ?";
     $stmt = $conn->prepare($sql);
-    $stmt->bind_param('ssisssi', $nombre, $apellido, $departamento, $telefono, $correo, $estado, $id_empleado);
+    $stmt->bind_param('ssisi', $id_empleado, $nombre, $apellido, $departamento);
 
     if ($stmt->execute()) {
         $_SESSION['mensaje'] = 'Empleado actualizado exitosamente';
@@ -75,7 +71,7 @@ function actualizarEmpleado() {
 
     $stmt->close();
     desconectar($conn);
-    header('Location: control_empleados.php');
+    header('Location: Empleados.php');
     exit();
 }
 
@@ -97,7 +93,7 @@ function eliminarEmpleado() {
 
     $stmt->close();
     desconectar($conn);
-    header('Location: control_empleados.php');
+    header('Location: Empleados.php');
     exit();
 }
 
@@ -124,7 +120,7 @@ $empleados = obtenerEmpleados();
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Control de Empleados</title>
+    <title>Formulario Empleados</title>
 
     <!-- Google Fonts: Poppins -->
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
@@ -137,7 +133,7 @@ $empleados = obtenerEmpleados();
 <body>
     <header class="mb-4">
         <div class="container d-flex flex-column flex-md-row align-items-center justify-content-between py-3">
-            <h1 class="mb-0">Control de Empleados</h1>
+            <h1 class="mb-0">Gestión de Empleados</h1>
             <ul class="nav nav-pills gap-2 mb-0">
                 <li class="nav-item"><a href="../menu_empleados.php" class="nav-link">Regresar al Menú</a></li>
             </ul>
@@ -163,7 +159,6 @@ $empleados = obtenerEmpleados();
                 <input type="hidden" id="operacion" name="operacion" value="crear">
                 <input type="hidden" id="id_empleado" name="id_empleado" value="">
 
-                <!-- ===== SECCIÓN 1: DATOS GENERALES DE EMPLEADOS ===== -->
                 <div class="col-md-3">
                     <label class="form-label" for="id_empleado">ID:</label>
                     <input type="text" class="form-control" id="id_empleado" name="id_empleado" required placeholder="Ej. 123">
@@ -184,29 +179,6 @@ $empleados = obtenerEmpleados();
                     <input type="number" class="form-control" id="fk_id_departamento_empleado" name="fk_id_departamento_empleado" required>
                 </div>
 
-                <!-- ===== SECCIÓN 2: TELEFONO DE EMPLEADOS ===== -->
-                <h2 class="card__title text-primary mb-4">Teléfono de Empleados</h2>
-                <div class="col-md-2">
-                    
-                    <label class="form-label" for="fk_id_telefono_empleado">Teléfono:</label>
-                    <input type="text" class="form-control" id="fk_id_telefono_empleado" name="fk_id_telefono_empleadoo" placeholder="Ej. 5551234567">
-                </div>
-
-                <div class="col-md-2">
-                    <label class="form-label" for="correo">Correo:</label>
-                    <input type="email" class="form-control" id="correo" name="correo" placeholder="ejemplo@dominio.com">
-                </div>
-
-                <div class="col-md-3">
-                    <label class="form-label" for="estado">Estado:</label>
-                    <select class="form-control" id="estado" name="estado" required>
-                        <option value="ACTIVO">ACTIVO</option>
-                        <option value="INACTIVO">INACTIVO</option>
-                        <option value="SUSPENDIDO">SUSPENDIDO</option>
-                    </select>
-                </div>
-            </form>
-
             <div class="d-flex gap-2 mt-4">
                 <button id="btn-nuevo" type="button" class="btn btn-secondary">Nuevo</button>
                 <button id="btn-guardar" type="button" class="btn btn-success">Guardar</button>
@@ -223,9 +195,7 @@ $empleados = obtenerEmpleados();
                             <th>Nombre</th>
                             <th>Apellido</th>
                             <th>Departamento</th>
-                            <th>Teléfono</th>
-                            <th>Correo</th>
-                            <th>Estado</th>
+
                             <th>Acciones</th>
                         </tr>
                     </thead>
@@ -236,22 +206,13 @@ $empleados = obtenerEmpleados();
                             <td><?php echo htmlspecialchars($empleado['nombre']); ?></td>
                             <td><?php echo htmlspecialchars($empleado['apellido']); ?></td>
                             <td><?php echo htmlspecialchars($empleado['id_departamento']); ?></td>
-                            <td><?php echo htmlspecialchars($empleado['telefono']); ?></td>
-                            <td><?php echo htmlspecialchars($empleado['correo']); ?></td>
-                            <td>
-                                <span class="badge <?php echo $empleado['estado'] == 'ACTIVO' ? 'bg-success' : 'bg-secondary'; ?>">
-                                    <?php echo htmlspecialchars($empleado['estado']); ?>
-                                </span>
-                            </td>
-                            <td>
+
+                            <td class="text-center">
                                 <button class="btn btn-sm btn-primary btn-action editar-btn"
                                         data-id="<?php echo $empleado['id_empleado']; ?>"
                                         data-nombre="<?php echo htmlspecialchars($empleado['nombre']); ?>"
                                         data-apellido="<?php echo htmlspecialchars($empleado['apellido']); ?>"
-                                        data-departamento="<?php echo $empleado['id_departamento']; ?>"
-                                        data-telefono="<?php echo htmlspecialchars($empleado['telefono']); ?>"
-                                        data-correo="<?php echo htmlspecialchars($empleado['correo']); ?>"
-                                        data-estado="<?php echo $empleado['estado']; ?>">
+                                        data-departamento="<?php echo $empleado['id_departamento']; ?>">
                                     Editar
                                 </button>
                                 <form method="post" style="display:inline;" onsubmit="return confirm('¿Estás seguro de eliminar este empleado?')">

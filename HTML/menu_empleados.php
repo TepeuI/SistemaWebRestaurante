@@ -39,10 +39,23 @@
             <li>
                 <a href="#" class="submenu-toggle"><span>👥</span> Gestión de Empleados</a>
                 <ul class="submenu">
-                    <li><a href="gestion_empleados/control_empleados.php">Control de Empleados</a></li>
-                    <li><a href="Gestion_empleados.php">Planillas</a></li>
+                    <li><a href="gestion_empleados/Empleados.php">Empleados</a></li>
+                    <li><a href="gestion_empleados/Telefono_empleados.php">Teléfonos</a></li>
+                    <li><a href="gestion_empleados/Correo_empleados.php">Correos</a></li>
                 </ul>
             </li>
+
+
+            <li>
+                <a href="#" class="submenu-toggle"><span></span> Departamentos</a>
+                <ul class="submenu">
+                    <li><a href="Lugar_de_origen/Departamentos.php">Departamentos</a></li>
+                </ul>
+            </li>
+
+
+
+
 
             <li>
                 <a href="#" class="submenu-toggle"><span>🪑</span> Gestión de Mobiliario</a>
@@ -51,6 +64,7 @@
                     <li><a href="../HTML/gestion_de_mobiliario/compras_mobiliario.php">Gestion de Compras</a></li>
                 </ul>
             </li>
+
 
             <li>
                 <a href="#" class="submenu-toggle"><span>🚗</span> Gestión de Vehiculos</a>
