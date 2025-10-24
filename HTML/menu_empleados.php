@@ -35,7 +35,15 @@
                     <li><a href="Reservaciones.html">Nueva Reservación</a></li>
                 </ul>
             </li>
-            
+
+            <li>
+                <a href="#" class="submenu-toggle"><span>👥</span> Gestión de Empleados</a>
+                <ul class="submenu">
+                    <li><a href="gestion_empleados/control_empleados.php">Control de Empleados</a></li>
+                    <li><a href="Gestion_empleados.php">Planillas</a></li>
+                </ul>
+            </li>
+
             <li>
                 <a href="#" class="submenu-toggle"><span>🪑</span> Gestión de Mobiliario</a>
                 <ul class="submenu">
