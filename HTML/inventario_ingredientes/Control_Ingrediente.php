@@ -14,162 +14,167 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     
     switch($operacion) {
         case 'crear':
-            crearCompra();
+            crearControl();
             break;
         case 'actualizar':
-            actualizarCompra();
+            actualizarControl();
             break;
         case 'eliminar':
-            eliminarCompra();
+            eliminarControl();
             break;
     }
 }
 
-function crearCompra() {
+function crearControl() {
     global $conn;
     $conn = conectar();
     
-    $id_proveedor = intval($_POST['id_proveedor'] ?? '');
-    $fecha_de_compra = $_POST['fecha_de_compra'] ?? '';
-    $monto_total_compra_q = floatval($_POST['monto_total_compra_q'] ?? 0);
+    $id_ingrediente = intval($_POST['id_ingrediente'] ?? '');
+    $estado = $_POST['estado'] ?? 'OK';
+    $fecha_entrada = $_POST['fecha_entrada'] ?? '';
+    $fecha_caducidad = $_POST['fecha_caducidad'] ?? '';
     
-    $sql = "INSERT INTO compras_ingrediente (id_proveedor, fecha_de_compra, monto_total_compra_q) 
-            VALUES (?, ?, ?)";
+    // Si fecha_caducidad está vacía, establecer como NULL
+    if (empty($fecha_caducidad)) {
+        $fecha_caducidad = null;
+    }
+    
+    $sql = "INSERT INTO control_ingredientes (id_ingrediente, estado, fecha_entrada, fecha_caducidad) 
+            VALUES (?, ?, ?, ?)";
     
     $stmt = $conn->prepare($sql);
-    $stmt->bind_param("isd", $id_proveedor, $fecha_de_compra, $monto_total_compra_q);
+    
+    if ($fecha_caducidad === null) {
+        $stmt->bind_param("isss", $id_ingrediente, $estado, $fecha_entrada, $fecha_caducidad);
+    } else {
+        $stmt->bind_param("isss", $id_ingrediente, $estado, $fecha_entrada, $fecha_caducidad);
+    }
     
     if ($stmt->execute()) {
-        $_SESSION['mensaje'] = "Compra registrada exitosamente";
+        $_SESSION['mensaje'] = "Control de ingrediente creado exitosamente";
         $_SESSION['tipo_mensaje'] = "success";
     } else {
-        $_SESSION['mensaje'] = "Error al registrar compra: " . $conn->error;
+        $_SESSION['mensaje'] = "Error al crear control: " . $conn->error;
         $_SESSION['tipo_mensaje'] = "error";
     }
     
     $stmt->close();
     desconectar($conn);
-    header('Location: compras_ingredientes.php');
+    header('Location: Control_Ingrediente.php');
     exit();
 }
 
-function actualizarCompra() {
+function actualizarControl() {
     global $conn;
     $conn = conectar();
     
-    $id_compra_ingrediente = intval($_POST['id_compra_ingrediente'] ?? '');
-    $id_proveedor = intval($_POST['id_proveedor'] ?? '');
-    $fecha_de_compra = $_POST['fecha_de_compra'] ?? '';
-    $monto_total_compra_q = floatval($_POST['monto_total_compra_q'] ?? 0);
+    $id_control = intval($_POST['id_control'] ?? '');
+    $id_ingrediente = intval($_POST['id_ingrediente'] ?? '');
+    $estado = $_POST['estado'] ?? 'OK';
+    $fecha_entrada = $_POST['fecha_entrada'] ?? '';
+    $fecha_caducidad = $_POST['fecha_caducidad'] ?? '';
     
-    $sql = "UPDATE compras_ingrediente SET id_proveedor = ?, fecha_de_compra = ?, monto_total_compra_q = ? 
-            WHERE id_compra_ingrediente = ?";
+    // Si fecha_caducidad está vacía, establecer como NULL
+    if (empty($fecha_caducidad)) {
+        $fecha_caducidad = null;
+    }
+    
+    $sql = "UPDATE control_ingredientes SET id_ingrediente = ?, estado = ?, fecha_entrada = ?, fecha_caducidad = ? 
+            WHERE id_control = ?";
     
     $stmt = $conn->prepare($sql);
-    $stmt->bind_param("isdi", $id_proveedor, $fecha_de_compra, $monto_total_compra_q, $id_compra_ingrediente);
+    
+    if ($fecha_caducidad === null) {
+        $stmt->bind_param("isssi", $id_ingrediente, $estado, $fecha_entrada, $fecha_caducidad, $id_control);
+    } else {
+        $stmt->bind_param("isssi", $id_ingrediente, $estado, $fecha_entrada, $fecha_caducidad, $id_control);
+    }
     
     if ($stmt->execute()) {
-        $_SESSION['mensaje'] = "Compra actualizada exitosamente";
+        $_SESSION['mensaje'] = "Control de ingrediente actualizado exitosamente";
         $_SESSION['tipo_mensaje'] = "success";
     } else {
-        $_SESSION['mensaje'] = "Error al actualizar compra: " . $conn->error;
+        $_SESSION['mensaje'] = "Error al actualizar control: " . $conn->error;
         $_SESSION['tipo_mensaje'] = "error";
     }
     
     $stmt->close();
     desconectar($conn);
-    header('Location: compras_ingredientes.php');
+    header('Location: Control_Ingrediente.php');
     exit();
 }
 
-function eliminarCompra() {
+function eliminarControl() {
     global $conn;
     $conn = conectar();
     
-    $id_compra_ingrediente = intval($_POST['id_compra_ingrediente'] ?? '');
+    $id_control = intval($_POST['id_control'] ?? '');
     
-    // Verificar si la compra tiene detalles asociados
-    $sql_check = "SELECT id_detalle FROM detalle_compra_ingrediente WHERE id_compra_ingrediente = ? LIMIT 1";
-    $stmt_check = $conn->prepare($sql_check);
-    $stmt_check->bind_param("i", $id_compra_ingrediente);
-    $stmt_check->execute();
-    $stmt_check->store_result();
-    
-    if ($stmt_check->num_rows > 0) {
-        $_SESSION['mensaje'] = "No se puede eliminar la compra porque tiene detalles asociados";
-        $_SESSION['tipo_mensaje'] = "error";
-        $stmt_check->close();
-        desconectar($conn);
-        header('Location: compras_ingredientes.php');
-        exit();
-    }
-    $stmt_check->close();
-    
-    $sql = "DELETE FROM compras_ingrediente WHERE id_compra_ingrediente = ?";
+    $sql = "DELETE FROM control_ingredientes WHERE id_control = ?";
     
     $stmt = $conn->prepare($sql);
-    $stmt->bind_param("i", $id_compra_ingrediente);
+    $stmt->bind_param("i", $id_control);
     
     if ($stmt->execute()) {
-        $_SESSION['mensaje'] = "Compra eliminada exitosamente";
+        $_SESSION['mensaje'] = "Control de ingrediente eliminado exitosamente";
         $_SESSION['tipo_mensaje'] = "success";
     } else {
-        $_SESSION['mensaje'] = "Error al eliminar compra: " . $conn->error;
+        $_SESSION['mensaje'] = "Error al eliminar control: " . $conn->error;
         $_SESSION['tipo_mensaje'] = "error";
     }
     
     $stmt->close();
     desconectar($conn);
-    header('Location: compras_ingredientes.php');
+    header('Location: Control_Ingrediente.php');
     exit();
 }
 
-// Obtener todas las compras para mostrar en la tabla
-function obtenerCompras() {
+// Obtener todos los controles para mostrar en la tabla
+function obtenerControles() {
     $conn = conectar();
-    $sql = "SELECT ci.*, p.nombre_proveedor 
-            FROM compras_ingrediente ci 
-            LEFT JOIN proveedores p ON ci.id_proveedor = p.id_proveedor 
-            ORDER BY ci.fecha_de_compra DESC";
+    $sql = "SELECT ci.*, i.nombre_ingrediente 
+            FROM control_ingredientes ci 
+            LEFT JOIN ingredientes i ON ci.id_ingrediente = i.id_ingrediente 
+            ORDER BY ci.fecha_entrada DESC";
     $resultado = $conn->query($sql);
-    $compras = [];
+    $controles = [];
     
     if ($resultado && $resultado->num_rows > 0) {
         while($fila = $resultado->fetch_assoc()) {
-            $compras[] = $fila;
+            $controles[] = $fila;
         }
     }
     
     desconectar($conn);
-    return $compras;
+    return $controles;
 }
 
-// Obtener proveedores para el dropdown
-function obtenerProveedores() {
+// Obtener ingredientes para el dropdown
+function obtenerIngredientes() {
     $conn = conectar();
-    $sql = "SELECT id_proveedor, nombre_proveedor FROM proveedores ORDER BY nombre_proveedor";
+    $sql = "SELECT id_ingrediente, nombre_ingrediente FROM ingredientes ORDER BY nombre_ingrediente";
     $resultado = $conn->query($sql);
-    $proveedores = [];
+    $ingredientes = [];
     
     if ($resultado && $resultado->num_rows > 0) {
         while($fila = $resultado->fetch_assoc()) {
-            $proveedores[] = $fila;
+            $ingredientes[] = $fila;
         }
     }
     
     desconectar($conn);
-    return $proveedores;
+    return $ingredientes;
 }
 
-$compras = obtenerCompras();
-$proveedores = obtenerProveedores();
+$controles = obtenerControles();
+$ingredientes = obtenerIngredientes();
 ?>
 <!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Compras de Ingredientes - Marea Roja</title>
+    <title>Control de Ingredientes - Marea Roja</title>
 
     <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
@@ -229,9 +234,9 @@ $proveedores = obtenerProveedores();
             box-shadow: 0 0 0 0.2rem rgba(59, 130, 246, 0.25);
         }
         
-        .monto-alto {
-            color: #059669;
-            font-weight: bold;
+        .form-check-input:checked {
+            background-color: #1e40af;
+            border-color: #1e40af;
         }
     </style>
 
@@ -243,7 +248,7 @@ $proveedores = obtenerProveedores();
 <body>
 <header class="mb-4">
     <div class="container d-flex flex-column flex-md-row align-items-center justify-content-between py-3">
-        <h1 class="mb-0">COMPRAS DE INGREDIENTES - MAREA ROJA</h1>
+        <h1 class="mb-0">CONTROL DE INGREDIENTES - MAREA ROJA</h1>
         <ul class="nav nav-pills gap-2 mb-0">
             <li class="nav-item"><a href="../menu_empleados.php" class="nav-link">Regresar al Menú</a></li>
         </ul>
@@ -264,40 +269,50 @@ $proveedores = obtenerProveedores();
 
     <section class="card shadow p-4">
         <h2 class="card-title text-primary mb-4">
-            <i class="bi bi-cart-plus me-2"></i>GESTIÓN DE COMPRAS DE INGREDIENTES
+            <i class="bi bi-clipboard-check me-2"></i>CONTROL DE INGREDIENTES
         </h2>
 
-        <form id="form-compra" method="post" class="row g-3">
+        <form id="form-control" method="post" class="row g-3">
             <input type="hidden" id="operacion" name="operacion" value="crear">
-            <input type="hidden" id="id_compra_ingrediente" name="id_compra_ingrediente" value="">
+            <input type="hidden" id="id_control" name="id_control" value="">
             
-            <div class="col-md-4">
-                <label class="form-label fw-semibold" for="id_proveedor">
-                    <i class="bi bi-truck me-1"></i>Proveedor: *
+            <div class="col-md-3">
+                <label class="form-label fw-semibold" for="id_ingrediente">
+                    <i class="bi bi-box-seam me-1"></i>Ingrediente: *
                 </label>
-                <select class="form-control" id="id_proveedor" name="id_proveedor" required>
-                    <option value="">Seleccione un proveedor</option>
-                    <?php foreach($proveedores as $proveedor): ?>
-                        <option value="<?php echo $proveedor['id_proveedor']; ?>">
-                            <?php echo htmlspecialchars($proveedor['nombre_proveedor']); ?>
+                <select class="form-control" id="id_ingrediente" name="id_ingrediente" required>
+                    <option value="">Seleccione un ingrediente</option>
+                    <?php foreach($ingredientes as $ingrediente): ?>
+                        <option value="<?php echo $ingrediente['id_ingrediente']; ?>">
+                            <?php echo htmlspecialchars($ingrediente['nombre_ingrediente']); ?>
                         </option>
                     <?php endforeach; ?>
                 </select>
             </div>
             
-            <div class="col-md-4">
-                <label class="form-label fw-semibold" for="fecha_de_compra">
-                    <i class="bi bi-calendar-date me-1"></i>Fecha de Compra: *
+            <div class="col-md-3">
+                <label class="form-label fw-semibold" for="estado">
+                    <i class="bi bi-info-circle me-1"></i>Estado: *
                 </label>
-                <input type="date" class="form-control" id="fecha_de_compra" name="fecha_de_compra" required>
+                <select class="form-control" id="estado" name="estado" required>
+                    <option value="OK">OK</option>
+                    <option value="POR_VENCER">POR VENCER</option>
+                    <option value="VENCIDO">VENCIDO</option>
+                </select>
             </div>
             
-            <div class="col-md-4">
-                <label class="form-label fw-semibold" for="monto_total_compra_q">
-                    <i class="bi bi-currency-dollar me-1"></i>Monto Total (Q): *
+            <div class="col-md-3">
+                <label class="form-label fw-semibold" for="fecha_entrada">
+                    <i class="bi bi-calendar-plus me-1"></i>Fecha de Entrada: *
                 </label>
-                <input type="number" class="form-control" id="monto_total_compra_q" name="monto_total_compra_q" 
-                       required placeholder="0.00" step="0.01" min="0">
+                <input type="date" class="form-control" id="fecha_entrada" name="fecha_entrada" required>
+            </div>
+            
+            <div class="col-md-3">
+                <label class="form-label fw-semibold" for="fecha_caducidad">
+                    <i class="bi bi-calendar-x me-1"></i>Fecha de Caducidad:
+                </label>
+                <input type="date" class="form-control" id="fecha_caducidad" name="fecha_caducidad">
             </div>
         </form>
 
@@ -317,40 +332,52 @@ $proveedores = obtenerProveedores();
         </div>
 
         <h2 class="card-title mb-3 mt-5">
-            <i class="bi bi-list-ul me-2"></i>HISTORIAL DE COMPRAS
+            <i class="bi bi-list-ul me-2"></i>LISTA DE CONTROLES
         </h2>
         
         <div class="table-responsive mt-3">
-            <table class="table table-striped table-bordered" id="tabla-compras">
+            <table class="table table-striped table-bordered" id="tabla-controles">
                 <thead class="table-dark">
                     <tr>
                         <th>ID</th>
-                        <th>Proveedor</th>
-                        <th>Fecha</th>
-                        <th>Monto Total (Q)</th>
+                        <th>Ingrediente</th>
+                        <th>Estado</th>
+                        <th>Fecha Entrada</th>
+                        <th>Fecha Caducidad</th>
                         <th>Acciones</th>
                     </tr>
                 </thead>
                 <tbody>
-                    <?php foreach($compras as $compra): ?>
+                    <?php foreach($controles as $control): ?>
                     <tr>
-                        <td><?php echo htmlspecialchars($compra['id_compra_ingrediente']); ?></td>
-                        <td><?php echo htmlspecialchars($compra['nombre_proveedor']); ?></td>
-                        <td><?php echo htmlspecialchars($compra['fecha_de_compra']); ?></td>
-                        <td class="monto-alto">
-                            Q <?php echo number_format($compra['monto_total_compra_q'], 2); ?>
+                        <td><?php echo htmlspecialchars($control['id_control']); ?></td>
+                        <td><?php echo htmlspecialchars($control['nombre_ingrediente']); ?></td>
+                        <td>
+                            <?php 
+                            $badge_class = [
+                                'OK' => 'bg-success',
+                                'POR_VENCER' => 'bg-warning',
+                                'VENCIDO' => 'bg-danger'
+                            ][$control['estado']] ?? 'bg-secondary';
+                            ?>
+                            <span class="badge badge-estado <?php echo $badge_class; ?>">
+                                <?php echo htmlspecialchars($control['estado']); ?>
+                            </span>
                         </td>
+                        <td><?php echo htmlspecialchars($control['fecha_entrada']); ?></td>
+                        <td><?php echo htmlspecialchars($control['fecha_caducidad'] ?? 'N/A'); ?></td>
                         <td>
                             <button class="btn btn-sm btn-primary btn-action editar-btn" 
-                                    data-id="<?php echo $compra['id_compra_ingrediente']; ?>"
-                                    data-proveedor="<?php echo $compra['id_proveedor']; ?>"
-                                    data-fecha="<?php echo $compra['fecha_de_compra']; ?>"
-                                    data-monto="<?php echo $compra['monto_total_compra_q']; ?>">
+                                    data-id="<?php echo $control['id_control']; ?>"
+                                    data-ingrediente="<?php echo $control['id_ingrediente']; ?>"
+                                    data-estado="<?php echo $control['estado']; ?>"
+                                    data-entrada="<?php echo $control['fecha_entrada']; ?>"
+                                    data-caducidad="<?php echo $control['fecha_caducidad'] ?? ''; ?>">
                                 <i class="bi bi-pencil me-1"></i>Editar
                             </button>
-                            <form method="post" style="display:inline;" onsubmit="return confirm('¿Estás seguro de eliminar esta compra?')">
+                            <form method="post" style="display:inline;" onsubmit="return confirm('¿Estás seguro de eliminar este control?')">
                                 <input type="hidden" name="operacion" value="eliminar">
-                                <input type="hidden" name="id_compra_ingrediente" value="<?php echo $compra['id_compra_ingrediente']; ?>">
+                                <input type="hidden" name="id_control" value="<?php echo $control['id_control']; ?>">
                                 <button type="submit" class="btn btn-sm btn-danger btn-action">
                                     <i class="bi bi-trash me-1"></i>Eliminar
                                 </button>
@@ -358,9 +385,9 @@ $proveedores = obtenerProveedores();
                         </td>
                     </tr>
                     <?php endforeach; ?>
-                    <?php if (empty($compras)): ?>
+                    <?php if (empty($controles)): ?>
                     <tr>
-                        <td colspan="5" class="text-center">No hay compras registradas</td>
+                        <td colspan="6" class="text-center">No hay controles registrados</td>
                     </tr>
                     <?php endif; ?>
                 </tbody>
@@ -371,16 +398,16 @@ $proveedores = obtenerProveedores();
 
 <script>
     document.addEventListener('DOMContentLoaded', function() {
-        const form = document.getElementById('form-compra');
+        const form = document.getElementById('form-control');
         const btnNuevo = document.getElementById('btn-nuevo');
         const btnGuardar = document.getElementById('btn-guardar');
         const btnActualizar = document.getElementById('btn-actualizar');
         const btnCancelar = document.getElementById('btn-cancelar');
         const operacionInput = document.getElementById('operacion');
-        const idCompraInput = document.getElementById('id_compra_ingrediente');
+        const idControlInput = document.getElementById('id_control');
 
         // Establecer fecha actual por defecto
-        document.getElementById('fecha_de_compra').valueAsDate = new Date();
+        document.getElementById('fecha_entrada').valueAsDate = new Date();
 
         // Botón Nuevo
         btnNuevo.addEventListener('click', function() {
@@ -414,15 +441,17 @@ $proveedores = obtenerProveedores();
         document.querySelectorAll('.editar-btn').forEach(btn => {
             btn.addEventListener('click', function() {
                 const id = this.getAttribute('data-id');
-                const proveedor = this.getAttribute('data-proveedor');
-                const fecha = this.getAttribute('data-fecha');
-                const monto = this.getAttribute('data-monto');
+                const ingrediente = this.getAttribute('data-ingrediente');
+                const estado = this.getAttribute('data-estado');
+                const entrada = this.getAttribute('data-entrada');
+                const caducidad = this.getAttribute('data-caducidad');
 
                 // Llenar formulario
-                idCompraInput.value = id;
-                document.getElementById('id_proveedor').value = proveedor;
-                document.getElementById('fecha_de_compra').value = fecha;
-                document.getElementById('monto_total_compra_q').value = monto;
+                idControlInput.value = id;
+                document.getElementById('id_ingrediente').value = ingrediente;
+                document.getElementById('estado').value = estado;
+                document.getElementById('fecha_entrada').value = entrada;
+                document.getElementById('fecha_caducidad').value = caducidad;
 
                 mostrarBotonesActualizar();
             });
@@ -430,10 +459,10 @@ $proveedores = obtenerProveedores();
 
         function limpiarFormulario() {
             form.reset();
-            idCompraInput.value = '';
+            idControlInput.value = '';
             operacionInput.value = 'crear';
             // Restablecer fecha actual
-            document.getElementById('fecha_de_compra').valueAsDate = new Date();
+            document.getElementById('fecha_entrada').valueAsDate = new Date();
         }
 
         function mostrarBotonesGuardar() {
@@ -449,20 +478,20 @@ $proveedores = obtenerProveedores();
         }
 
         function validarFormulario() {
-            const proveedor = document.getElementById('id_proveedor').value;
-            const fecha = document.getElementById('fecha_de_compra').value;
-            const monto = document.getElementById('monto_total_compra_q').value;
+            const ingrediente = document.getElementById('id_ingrediente').value;
+            const estado = document.getElementById('estado').value;
+            const entrada = document.getElementById('fecha_entrada').value;
 
-            if (!proveedor) {
-                alert('El proveedor es requerido');
+            if (!ingrediente) {
+                alert('El ingrediente es requerido');
                 return false;
             }
-            if (!fecha) {
-                alert('La fecha de compra es requerida');
+            if (!estado) {
+                alert('El estado es requerido');
                 return false;
             }
-            if (!monto || monto <= 0) {
-                alert('El monto total debe ser un número positivo');
+            if (!entrada) {
+                alert('La fecha de entrada es requerida');
                 return false;
             }
 

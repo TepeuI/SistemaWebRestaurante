@@ -1,0 +1,571 @@
+<?php
+session_start();
+require_once '../conexion.php';
+
+// Verificar si el usuario está logueado
+if (!isset($_SESSION['id_usuario'])) {
+    header('Location: ../login.php');
+    exit();
+}
+
+// Procesar operaciones CRUD
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $operacion = $_POST['operacion'] ?? '';
+    
+    switch($operacion) {
+        case 'crear':
+            crearDetalleCompra();
+            break;
+        case 'actualizar':
+            actualizarDetalleCompra();
+            break;
+        case 'eliminar':
+            eliminarDetalleCompra();
+            break;
+    }
+}
+
+function crearDetalleCompra() {
+    global $conn;
+    $conn = conectar();
+    
+    $id_compra_ingrediente = intval($_POST['id_compra_ingrediente'] ?? '');
+    $id_ingrediente = intval($_POST['id_ingrediente'] ?? '');
+    $cantidad_compra = floatval($_POST['cantidad_compra'] ?? 0);
+    $costo_unitario_q = floatval($_POST['costo_unitario_q'] ?? 0);
+    
+    $sql = "INSERT INTO detalle_compra_ingrediente (id_compra_ingrediente, id_ingrediente, cantidad_compra, costo_unitario_q) 
+            VALUES (?, ?, ?, ?)";
+    
+    $stmt = $conn->prepare($sql);
+    $stmt->bind_param("iidd", $id_compra_ingrediente, $id_ingrediente, $cantidad_compra, $costo_unitario_q);
+    
+    if ($stmt->execute()) {
+        $_SESSION['mensaje'] = "Detalle de compra registrado exitosamente";
+        $_SESSION['tipo_mensaje'] = "success";
+    } else {
+        $_SESSION['mensaje'] = "Error al registrar detalle de compra: " . $conn->error;
+        $_SESSION['tipo_mensaje'] = "error";
+    }
+    
+    $stmt->close();
+    desconectar($conn);
+    header('Location: detalle_compras_ingredientes.php');
+    exit();
+}
+
+function actualizarDetalleCompra() {
+    global $conn;
+    $conn = conectar();
+    
+    $id_detalle = intval($_POST['id_detalle'] ?? '');
+    $id_compra_ingrediente = intval($_POST['id_compra_ingrediente'] ?? '');
+    $id_ingrediente = intval($_POST['id_ingrediente'] ?? '');
+    $cantidad_compra = floatval($_POST['cantidad_compra'] ?? 0);
+    $costo_unitario_q = floatval($_POST['costo_unitario_q'] ?? 0);
+    
+    $sql = "UPDATE detalle_compra_ingrediente SET id_compra_ingrediente = ?, id_ingrediente = ?, cantidad_compra = ?, costo_unitario_q = ? 
+            WHERE id_detalle = ?";
+    
+    $stmt = $conn->prepare($sql);
+    $stmt->bind_param("iiddi", $id_compra_ingrediente, $id_ingrediente, $cantidad_compra, $costo_unitario_q, $id_detalle);
+    
+    if ($stmt->execute()) {
+        $_SESSION['mensaje'] = "Detalle de compra actualizado exitosamente";
+        $_SESSION['tipo_mensaje'] = "success";
+    } else {
+        $_SESSION['mensaje'] = "Error al actualizar detalle de compra: " . $conn->error;
+        $_SESSION['tipo_mensaje'] = "error";
+    }
+    
+    $stmt->close();
+    desconectar($conn);
+    header('Location: detalle_compras_ingredientes.php');
+    exit();
+}
+
+function eliminarDetalleCompra() {
+    global $conn;
+    $conn = conectar();
+    
+    $id_detalle = intval($_POST['id_detalle'] ?? '');
+    
+    $sql = "DELETE FROM detalle_compra_ingrediente WHERE id_detalle = ?";
+    
+    $stmt = $conn->prepare($sql);
+    $stmt->bind_param("i", $id_detalle);
+    
+    if ($stmt->execute()) {
+        $_SESSION['mensaje'] = "Detalle de compra eliminado exitosamente";
+        $_SESSION['tipo_mensaje'] = "success";
+    } else {
+        $_SESSION['mensaje'] = "Error al eliminar detalle de compra: " . $conn->error;
+        $_SESSION['tipo_mensaje'] = "error";
+    }
+    
+    $stmt->close();
+    desconectar($conn);
+    header('Location: detalle_compras_ingredientes.php');
+    exit();
+}
+
+// Obtener todos los detalles de compra para mostrar en la tabla
+function obtenerDetallesCompra() {
+    $conn = conectar();
+    $sql = "SELECT dci.*, 
+                   ci.id_compra_ingrediente,
+                   i.nombre_ingrediente,
+                   um.unidad,
+                   um.abreviatura,
+                   (dci.cantidad_compra * dci.costo_unitario_q) as costo_total_q
+            FROM detalle_compra_ingrediente dci 
+            LEFT JOIN compras_ingrediente ci ON dci.id_compra_ingrediente = ci.id_compra_ingrediente 
+            LEFT JOIN ingredientes i ON dci.id_ingrediente = i.id_ingrediente 
+            LEFT JOIN unidades_medida um ON i.id_unidad = um.id_unidad 
+            ORDER BY dci.id_detalle DESC";
+    $resultado = $conn->query($sql);
+    $detalles = [];
+    
+    if ($resultado && $resultado->num_rows > 0) {
+        while($fila = $resultado->fetch_assoc()) {
+            $detalles[] = $fila;
+        }
+    }
+    
+    desconectar($conn);
+    return $detalles;
+}
+
+// Obtener compras para el dropdown
+function obtenerCompras() {
+    $conn = conectar();
+    $sql = "SELECT id_compra_ingrediente, fecha_de_compra 
+            FROM compras_ingrediente 
+            ORDER BY fecha_de_compra DESC";
+    $resultado = $conn->query($sql);
+    $compras = [];
+    
+    if ($resultado && $resultado->num_rows > 0) {
+        while($fila = $resultado->fetch_assoc()) {
+            $compras[] = $fila;
+        }
+    }
+    
+    desconectar($conn);
+    return $compras;
+}
+
+// Obtener ingredientes para el dropdown
+function obtenerIngredientes() {
+    $conn = conectar();
+    $sql = "SELECT i.id_ingrediente, i.nombre_ingrediente, um.unidad, um.abreviatura 
+            FROM ingredientes i 
+            LEFT JOIN unidades_medida um ON i.id_unidad = um.id_unidad 
+            ORDER BY i.nombre_ingrediente";
+    $resultado = $conn->query($sql);
+    $ingredientes = [];
+    
+    if ($resultado && $resultado->num_rows > 0) {
+        while($fila = $resultado->fetch_assoc()) {
+            $ingredientes[] = $fila;
+        }
+    }
+    
+    desconectar($conn);
+    return $ingredientes;
+}
+
+$detalles = obtenerDetallesCompra();
+$compras = obtenerCompras();
+$ingredientes = obtenerIngredientes();
+?>
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Detalle de Compras - Marea Roja</title>
+
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    
+    <style>
+        body, h1, h2, h3, h4, h5, h6, label, input, button, table, th, td {
+            font-family: 'Poppins', Arial, Helvetica, sans-serif !important;
+        }
+        
+        .mensaje {
+            padding: 12px;
+            margin: 10px 0;
+            border-radius: 8px;
+            font-weight: 500;
+        }
+        
+        .mensaje.success {
+            background-color: #d1fae5;
+            color: #065f46;
+            border: 1px solid #a7f3d0;
+        }
+        
+        .mensaje.error {
+            background-color: #fee2e2;
+            color: #991b1b;
+            border: 1px solid #fecaca;
+        }
+        
+        .btn-action {
+            margin: 1px;
+            font-size: 0.875rem;
+        }
+        
+        .card {
+            border: none;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+        
+        .table th {
+            background-color: #1e40af;
+            color: white;
+            font-weight: 600;
+        }
+        
+        .badge-estado {
+            font-size: 0.75rem;
+            padding: 4px 8px;
+            border-radius: 6px;
+        }
+        
+        .form-control:focus {
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 0.2rem rgba(59, 130, 246, 0.25);
+        }
+        
+        .monto-alto {
+            color: #059669;
+            font-weight: bold;
+        }
+        
+        .info-badge {
+            background-color: #dbeafe;
+            color: #1e40af;
+            font-size: 0.75rem;
+            padding: 2px 6px;
+            border-radius: 4px;
+        }
+    </style>
+
+    <!-- Bootstrap y librerías base -->
+    <link rel="stylesheet" href="../../css/bootstrap.min.css">
+    <link rel="stylesheet" href="../../css/diseñoModulos.css">
+</head>
+
+<body>
+<header class="mb-4">
+    <div class="container d-flex flex-column flex-md-row align-items-center justify-content-between py-3">
+        <h1 class="mb-0">DETALLE DE COMPRAS DE INGREDIENTES - MAREA ROJA</h1>
+        <ul class="nav nav-pills gap-2 mb-0">
+            <li class="nav-item"><a href="../menu_empleados.php" class="nav-link">Regresar al Menú</a></li>
+        </ul>
+    </div>
+</header>
+
+<main class="container my-4">
+    <!-- Mostrar mensajes -->
+    <?php if (isset($_SESSION['mensaje'])): ?>
+        <div class="mensaje <?php echo $_SESSION['tipo_mensaje']; ?>">
+            <?php 
+            echo htmlspecialchars($_SESSION['mensaje']); 
+            unset($_SESSION['mensaje']);
+            unset($_SESSION['tipo_mensaje']);
+            ?>
+        </div>
+    <?php endif; ?>
+
+    <section class="card shadow p-4">
+        <h2 class="card-title text-primary mb-4">
+            <i class="bi bi-card-checklist me-2"></i>DETALLE DE COMPRAS
+        </h2>
+
+        <form id="form-detalle-compra" method="post" class="row g-3">
+            <input type="hidden" id="operacion" name="operacion" value="crear">
+            <input type="hidden" id="id_detalle" name="id_detalle" value="">
+            
+            <div class="col-md-3">
+                <label class="form-label fw-semibold" for="id_compra_ingrediente">
+                    <i class="bi bi-receipt me-1"></i>Compra: *
+                </label>
+                <select class="form-control" id="id_compra_ingrediente" name="id_compra_ingrediente" required>
+                    <option value="">Seleccione una compra</option>
+                    <?php foreach($compras as $compra): ?>
+                        <option value="<?php echo $compra['id_compra_ingrediente']; ?>">
+                            Compra #<?php echo $compra['id_compra_ingrediente']; ?> - <?php echo $compra['fecha_de_compra']; ?>
+                        </option>
+                    <?php endforeach; ?>
+                </select>
+            </div>
+            
+            <div class="col-md-3">
+                <label class="form-label fw-semibold" for="id_ingrediente">
+                    <i class="bi bi-box-seam me-1"></i>Ingrediente: *
+                </label>
+                <select class="form-control" id="id_ingrediente" name="id_ingrediente" required>
+                    <option value="">Seleccione un ingrediente</option>
+                    <?php foreach($ingredientes as $ingrediente): ?>
+                        <option value="<?php echo $ingrediente['id_ingrediente']; ?>" 
+                                data-unidad="<?php echo $ingrediente['abreviatura']; ?>">
+                            <?php echo htmlspecialchars($ingrediente['nombre_ingrediente']); ?>
+                        </option>
+                    <?php endforeach; ?>
+                </select>
+            </div>
+            
+            <div class="col-md-2">
+                <label class="form-label fw-semibold" for="cantidad_compra">
+                    <i class="bi bi-box-arrow-in-down me-1"></i>Cantidad: *
+                </label>
+                <input type="number" class="form-control" id="cantidad_compra" name="cantidad_compra" 
+                       required placeholder="0.000" step="0.001" min="0">
+                <small class="text-muted" id="unidad-info"></small>
+            </div>
+            
+            <div class="col-md-2">
+                <label class="form-label fw-semibold" for="costo_unitario_q">
+                    <i class="bi bi-currency-dollar me-1"></i>Costo Unitario (Q): *
+                </label>
+                <input type="number" class="form-control" id="costo_unitario_q" name="costo_unitario_q" 
+                       required placeholder="0.00" step="0.01" min="0">
+            </div>
+            
+            <div class="col-md-2">
+                <label class="form-label fw-semibold">Total Calculado:</label>
+                <div class="form-control bg-light" id="total-calculado">
+                    Q 0.00
+                </div>
+            </div>
+        </form>
+
+        <div class="d-flex gap-2 mt-4">
+            <button id="btn-nuevo" type="button" class="btn btn-secondary">
+                <i class="bi bi-plus-circle me-1"></i>Nuevo
+            </button>
+            <button id="btn-guardar" type="button" class="btn btn-success">
+                <i class="bi bi-check-lg me-1"></i>Guardar
+            </button>
+            <button id="btn-actualizar" type="button" class="btn btn-warning" style="display:none;">
+                <i class="bi bi-arrow-clockwise me-1"></i>Actualizar
+            </button>
+            <button id="btn-cancelar" type="button" class="btn btn-danger" style="display:none;">
+                <i class="bi bi-x-circle me-1"></i>Cancelar
+            </button>
+        </div>
+
+        <h2 class="card-title mb-3 mt-5">
+            <i class="bi bi-list-ul me-2"></i>DETALLES REGISTRADOS
+        </h2>
+        
+        <div class="table-responsive mt-3">
+            <table class="table table-striped table-bordered" id="tabla-detalles">
+                <thead class="table-dark">
+                    <tr>
+                        <th>ID</th>
+                        <th>Compra</th>
+                        <th>Ingrediente</th>
+                        <th>Cantidad</th>
+                        <th>Costo Unitario</th>
+                        <th>Total</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php foreach($detalles as $detalle): ?>
+                    <tr>
+                        <td><?php echo htmlspecialchars($detalle['id_detalle']); ?></td>
+                        <td>
+                            <span class="info-badge">Compra #<?php echo $detalle['id_compra_ingrediente']; ?></span>
+                        </td>
+                        <td><?php echo htmlspecialchars($detalle['nombre_ingrediente']); ?></td>
+                        <td>
+                            <?php echo htmlspecialchars($detalle['cantidad_compra']); ?>
+                            <span class="info-badge"><?php echo $detalle['abreviatura']; ?></span>
+                        </td>
+                        <td>Q <?php echo number_format($detalle['costo_unitario_q'], 2); ?></td>
+                        <td class="monto-alto">
+                            Q <?php echo number_format($detalle['costo_total_q'], 2); ?>
+                        </td>
+                        <td>
+                            <button class="btn btn-sm btn-primary btn-action editar-btn" 
+                                    data-id="<?php echo $detalle['id_detalle']; ?>"
+                                    data-compra="<?php echo $detalle['id_compra_ingrediente']; ?>"
+                                    data-ingrediente="<?php echo $detalle['id_ingrediente']; ?>"
+                                    data-cantidad="<?php echo $detalle['cantidad_compra']; ?>"
+                                    data-costo="<?php echo $detalle['costo_unitario_q']; ?>">
+                                <i class="bi bi-pencil me-1"></i>Editar
+                            </button>
+                            <form method="post" style="display:inline;" onsubmit="return confirm('¿Estás seguro de eliminar este detalle de compra?')">
+                                <input type="hidden" name="operacion" value="eliminar">
+                                <input type="hidden" name="id_detalle" value="<?php echo $detalle['id_detalle']; ?>">
+                                <button type="submit" class="btn btn-sm btn-danger btn-action">
+                                    <i class="bi bi-trash me-1"></i>Eliminar
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+                    <?php endforeach; ?>
+                    <?php if (empty($detalles)): ?>
+                    <tr>
+                        <td colspan="7" class="text-center">No hay detalles de compra registrados</td>
+                    </tr>
+                    <?php endif; ?>
+                </tbody>
+            </table>
+        </div>
+    </section>
+</main>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const form = document.getElementById('form-detalle-compra');
+        const btnNuevo = document.getElementById('btn-nuevo');
+        const btnGuardar = document.getElementById('btn-guardar');
+        const btnActualizar = document.getElementById('btn-actualizar');
+        const btnCancelar = document.getElementById('btn-cancelar');
+        const operacionInput = document.getElementById('operacion');
+        const idDetalleInput = document.getElementById('id_detalle');
+        const ingredienteSelect = document.getElementById('id_ingrediente');
+        const cantidadInput = document.getElementById('cantidad_compra');
+        const costoInput = document.getElementById('costo_unitario_q');
+        const totalCalculado = document.getElementById('total-calculado');
+        const unidadInfo = document.getElementById('unidad-info');
+
+        // Mostrar unidad del ingrediente seleccionado
+        ingredienteSelect.addEventListener('change', function() {
+            const selectedOption = this.options[this.selectedIndex];
+            const unidad = selectedOption.getAttribute('data-unidad');
+            if (unidad) {
+                unidadInfo.textContent = `Unidad: ${unidad}`;
+            } else {
+                unidadInfo.textContent = '';
+            }
+            calcularTotal();
+        });
+
+        // Calcular total cuando cambian cantidad o costo
+        cantidadInput.addEventListener('input', calcularTotal);
+        costoInput.addEventListener('input', calcularTotal);
+
+        function calcularTotal() {
+            const cantidad = parseFloat(cantidadInput.value) || 0;
+            const costo = parseFloat(costoInput.value) || 0;
+            const total = cantidad * costo;
+            totalCalculado.textContent = `Q ${total.toFixed(2)}`;
+        }
+
+        // Botón Nuevo
+        btnNuevo.addEventListener('click', function() {
+            limpiarFormulario();
+            mostrarBotonesGuardar();
+        });
+
+        // Botón Guardar (Crear)
+        btnGuardar.addEventListener('click', function() {
+            if (validarFormulario()) {
+                operacionInput.value = 'crear';
+                form.submit();
+            }
+        });
+
+        // Botón Actualizar
+        btnActualizar.addEventListener('click', function() {
+            if (validarFormulario()) {
+                operacionInput.value = 'actualizar';
+                form.submit();
+            }
+        });
+
+        // Botón Cancelar
+        btnCancelar.addEventListener('click', function() {
+            limpiarFormulario();
+            mostrarBotonesGuardar();
+        });
+
+        // Eventos para botones Editar
+        document.querySelectorAll('.editar-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const id = this.getAttribute('data-id');
+                const compra = this.getAttribute('data-compra');
+                const ingrediente = this.getAttribute('data-ingrediente');
+                const cantidad = this.getAttribute('data-cantidad');
+                const costo = this.getAttribute('data-costo');
+
+                // Llenar formulario
+                idDetalleInput.value = id;
+                document.getElementById('id_compra_ingrediente').value = compra;
+                document.getElementById('id_ingrediente').value = ingrediente;
+                document.getElementById('cantidad_compra').value = cantidad;
+                document.getElementById('costo_unitario_q').value = costo;
+
+                // Actualizar información de unidad
+                const selectedOption = document.querySelector(`#id_ingrediente option[value="${ingrediente}"]`);
+                const unidad = selectedOption ? selectedOption.getAttribute('data-unidad') : '';
+                if (unidad) {
+                    unidadInfo.textContent = `Unidad: ${unidad}`;
+                }
+
+                calcularTotal();
+                mostrarBotonesActualizar();
+            });
+        });
+
+        function limpiarFormulario() {
+            form.reset();
+            idDetalleInput.value = '';
+            operacionInput.value = 'crear';
+            unidadInfo.textContent = '';
+            totalCalculado.textContent = 'Q 0.00';
+        }
+
+        function mostrarBotonesGuardar() {
+            btnGuardar.style.display = 'inline-block';
+            btnActualizar.style.display = 'none';
+            btnCancelar.style.display = 'none';
+        }
+
+        function mostrarBotonesActualizar() {
+            btnGuardar.style.display = 'none';
+            btnActualizar.style.display = 'inline-block';
+            btnCancelar.style.display = 'inline-block';
+        }
+
+        function validarFormulario() {
+            const compra = document.getElementById('id_compra_ingrediente').value;
+            const ingrediente = document.getElementById('id_ingrediente').value;
+            const cantidad = document.getElementById('cantidad_compra').value;
+            const costo = document.getElementById('costo_unitario_q').value;
+
+            if (!compra) {
+                alert('La compra es requerida');
+                return false;
+            }
+            if (!ingrediente) {
+                alert('El ingrediente es requerido');
+                return false;
+            }
+            if (!cantidad || cantidad <= 0) {
+                alert('La cantidad debe ser un número positivo');
+                return false;
+            }
+            if (!costo || costo <= 0) {
+                alert('El costo unitario debe ser un número positivo');
+                return false;
+            }
+
+            return true;
+        }
+    });
+</script>
+</body>
+</html>

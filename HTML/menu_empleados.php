@@ -64,11 +64,20 @@
             <li>
                 <a href="#" class="submenu-toggle"><span>🥘</span> Inventario Ingredientes</a>
                 <ul class="submenu">
-                    <li><a href="Gestion_Inventario_Ingredientes.html">Gestion de Ingrediente</a></li>
-                    <li><a href="Gestion_Compras_Inventarios_Ingredientes.html">Compra de Ingredientes</a></li>
+                    <li><a href="../HTML/inventario_ingredientes/Gestion_Inventario_Ingredientes.php">Gestion de Ingredientes</a></li>
+                    <li><a href="../HTML/inventario_ingredientes/Control_Ingrediente.php">Control de Ingredientes</a></li>
+                    <li><a href="../HTML/inventario_ingredientes/Perdida_Ingrediente.php">Perdida de Ingredientes</a></li>
                 </ul>
             </li>
             
+             <li>
+                <a href="#" class="submenu-toggle"><span>🛒</span> Compra de Ingredientes</a>
+                <ul class="submenu">
+                    <li><a href="../HTML/inventario_ingredientes/Gestion_Compras_Inventarios_Ingredientes.php">Gestion de Compra</a></li>
+                    <li><a href="../HTML/inventario_ingredientes/Detalle_Compras_Ingredientes.php">Detalle de Compras</a></li>
+                </ul>
+            </li>
+
             <li>
                 <a href="#" class="submenu-toggle"><span>💰</span> Facturaciones</a>
                 <ul class="submenu">
