@@ -14,162 +14,149 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     
     switch($operacion) {
         case 'crear':
-            crearCompra();
+            crearPerdida();
             break;
         case 'actualizar':
-            actualizarCompra();
+            actualizarPerdida();
             break;
         case 'eliminar':
-            eliminarCompra();
+            eliminarPerdida();
             break;
     }
 }
 
-function crearCompra() {
+function crearPerdida() {
     global $conn;
     $conn = conectar();
     
-    $id_proveedor = intval($_POST['id_proveedor'] ?? '');
-    $fecha_de_compra = $_POST['fecha_de_compra'] ?? '';
-    $monto_total_compra_q = floatval($_POST['monto_total_compra_q'] ?? 0);
+    $id_ingrediente = intval($_POST['id_ingrediente'] ?? '');
+    $descripcion = trim($_POST['descripcion'] ?? '');
+    $cantidad_unidades = floatval($_POST['cantidad_unidades'] ?? 0);
+    $costo_perdida_q = floatval($_POST['costo_perdida_q'] ?? 0);
+    $fecha_perdida = $_POST['fecha_perdida'] ?? '';
     
-    $sql = "INSERT INTO compras_ingrediente (id_proveedor, fecha_de_compra, monto_total_compra_q) 
-            VALUES (?, ?, ?)";
+    $sql = "INSERT INTO perdidas_inventario (id_ingrediente, descripcion, cantidad_unidades, costo_perdida_q, fecha_perdida) 
+            VALUES (?, ?, ?, ?, ?)";
     
     $stmt = $conn->prepare($sql);
-    $stmt->bind_param("isd", $id_proveedor, $fecha_de_compra, $monto_total_compra_q);
+    $stmt->bind_param("isddss", $id_ingrediente, $descripcion, $cantidad_unidades, $costo_perdida_q, $fecha_perdida);
     
     if ($stmt->execute()) {
-        $_SESSION['mensaje'] = "Compra registrada exitosamente";
+        $_SESSION['mensaje'] = "Pérdida registrada exitosamente";
         $_SESSION['tipo_mensaje'] = "success";
     } else {
-        $_SESSION['mensaje'] = "Error al registrar compra: " . $conn->error;
+        $_SESSION['mensaje'] = "Error al registrar pérdida: " . $conn->error;
         $_SESSION['tipo_mensaje'] = "error";
     }
     
     $stmt->close();
     desconectar($conn);
-    header('Location: compras_ingredientes.php');
+    header('Location: perdidas_inventario.php');
     exit();
 }
 
-function actualizarCompra() {
+function actualizarPerdida() {
     global $conn;
     $conn = conectar();
     
-    $id_compra_ingrediente = intval($_POST['id_compra_ingrediente'] ?? '');
-    $id_proveedor = intval($_POST['id_proveedor'] ?? '');
-    $fecha_de_compra = $_POST['fecha_de_compra'] ?? '';
-    $monto_total_compra_q = floatval($_POST['monto_total_compra_q'] ?? 0);
+    $id_perdida = intval($_POST['id_perdida'] ?? '');
+    $id_ingrediente = intval($_POST['id_ingrediente'] ?? '');
+    $descripcion = trim($_POST['descripcion'] ?? '');
+    $cantidad_unidades = floatval($_POST['cantidad_unidades'] ?? 0);
+    $costo_perdida_q = floatval($_POST['costo_perdida_q'] ?? 0);
+    $fecha_perdida = $_POST['fecha_perdida'] ?? '';
     
-    $sql = "UPDATE compras_ingrediente SET id_proveedor = ?, fecha_de_compra = ?, monto_total_compra_q = ? 
-            WHERE id_compra_ingrediente = ?";
+    $sql = "UPDATE perdidas_inventario SET id_ingrediente = ?, descripcion = ?, cantidad_unidades = ?, costo_perdida_q = ?, fecha_perdida = ? 
+            WHERE id_perdida = ?";
     
     $stmt = $conn->prepare($sql);
-    $stmt->bind_param("isdi", $id_proveedor, $fecha_de_compra, $monto_total_compra_q, $id_compra_ingrediente);
+    $stmt->bind_param("isddssi", $id_ingrediente, $descripcion, $cantidad_unidades, $costo_perdida_q, $fecha_perdida, $id_perdida);
     
     if ($stmt->execute()) {
-        $_SESSION['mensaje'] = "Compra actualizada exitosamente";
+        $_SESSION['mensaje'] = "Pérdida actualizada exitosamente";
         $_SESSION['tipo_mensaje'] = "success";
     } else {
-        $_SESSION['mensaje'] = "Error al actualizar compra: " . $conn->error;
+        $_SESSION['mensaje'] = "Error al actualizar pérdida: " . $conn->error;
         $_SESSION['tipo_mensaje'] = "error";
     }
     
     $stmt->close();
     desconectar($conn);
-    header('Location: compras_ingredientes.php');
+    header('Location: perdidas_inventario.php');
     exit();
 }
 
-function eliminarCompra() {
+function eliminarPerdida() {
     global $conn;
     $conn = conectar();
     
-    $id_compra_ingrediente = intval($_POST['id_compra_ingrediente'] ?? '');
+    $id_perdida = intval($_POST['id_perdida'] ?? '');
     
-    // Verificar si la compra tiene detalles asociados
-    $sql_check = "SELECT id_detalle FROM detalle_compra_ingrediente WHERE id_compra_ingrediente = ? LIMIT 1";
-    $stmt_check = $conn->prepare($sql_check);
-    $stmt_check->bind_param("i", $id_compra_ingrediente);
-    $stmt_check->execute();
-    $stmt_check->store_result();
-    
-    if ($stmt_check->num_rows > 0) {
-        $_SESSION['mensaje'] = "No se puede eliminar la compra porque tiene detalles asociados";
-        $_SESSION['tipo_mensaje'] = "error";
-        $stmt_check->close();
-        desconectar($conn);
-        header('Location: compras_ingredientes.php');
-        exit();
-    }
-    $stmt_check->close();
-    
-    $sql = "DELETE FROM compras_ingrediente WHERE id_compra_ingrediente = ?";
+    $sql = "DELETE FROM perdidas_inventario WHERE id_perdida = ?";
     
     $stmt = $conn->prepare($sql);
-    $stmt->bind_param("i", $id_compra_ingrediente);
+    $stmt->bind_param("i", $id_perdida);
     
     if ($stmt->execute()) {
-        $_SESSION['mensaje'] = "Compra eliminada exitosamente";
+        $_SESSION['mensaje'] = "Pérdida eliminada exitosamente";
         $_SESSION['tipo_mensaje'] = "success";
     } else {
-        $_SESSION['mensaje'] = "Error al eliminar compra: " . $conn->error;
+        $_SESSION['mensaje'] = "Error al eliminar pérdida: " . $conn->error;
         $_SESSION['tipo_mensaje'] = "error";
     }
     
     $stmt->close();
     desconectar($conn);
-    header('Location: compras_ingredientes.php');
+    header('Location: perdidas_inventario.php');
     exit();
 }
 
-// Obtener todas las compras para mostrar en la tabla
-function obtenerCompras() {
+// Obtener todas las pérdidas para mostrar en la tabla
+function obtenerPerdidas() {
     $conn = conectar();
-    $sql = "SELECT ci.*, p.nombre_proveedor 
-            FROM compras_ingrediente ci 
-            LEFT JOIN proveedores p ON ci.id_proveedor = p.id_proveedor 
-            ORDER BY ci.fecha_de_compra DESC";
+    $sql = "SELECT p.*, i.nombre_ingrediente 
+            FROM perdidas_inventario p 
+            LEFT JOIN ingredientes i ON p.id_ingrediente = i.id_ingrediente 
+            ORDER BY p.fecha_perdida DESC";
     $resultado = $conn->query($sql);
-    $compras = [];
+    $perdidas = [];
     
     if ($resultado && $resultado->num_rows > 0) {
         while($fila = $resultado->fetch_assoc()) {
-            $compras[] = $fila;
+            $perdidas[] = $fila;
         }
     }
     
     desconectar($conn);
-    return $compras;
+    return $perdidas;
 }
 
-// Obtener proveedores para el dropdown
-function obtenerProveedores() {
+// Obtener ingredientes para el dropdown
+function obtenerIngredientes() {
     $conn = conectar();
-    $sql = "SELECT id_proveedor, nombre_proveedor FROM proveedores ORDER BY nombre_proveedor";
+    $sql = "SELECT id_ingrediente, nombre_ingrediente FROM ingredientes ORDER BY nombre_ingrediente";
     $resultado = $conn->query($sql);
-    $proveedores = [];
+    $ingredientes = [];
     
     if ($resultado && $resultado->num_rows > 0) {
         while($fila = $resultado->fetch_assoc()) {
-            $proveedores[] = $fila;
+            $ingredientes[] = $fila;
         }
     }
     
     desconectar($conn);
-    return $proveedores;
+    return $ingredientes;
 }
 
-$compras = obtenerCompras();
-$proveedores = obtenerProveedores();
+$perdidas = obtenerPerdidas();
+$ingredientes = obtenerIngredientes();
 ?>
 <!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Compras de Ingredientes - Marea Roja</title>
+    <title>Pérdidas de Inventario - Marea Roja</title>
 
     <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
@@ -229,8 +216,8 @@ $proveedores = obtenerProveedores();
             box-shadow: 0 0 0 0.2rem rgba(59, 130, 246, 0.25);
         }
         
-        .monto-alto {
-            color: #059669;
+        .costo-alto {
+            color: #dc3545;
             font-weight: bold;
         }
     </style>
@@ -243,7 +230,7 @@ $proveedores = obtenerProveedores();
 <body>
 <header class="mb-4">
     <div class="container d-flex flex-column flex-md-row align-items-center justify-content-between py-3">
-        <h1 class="mb-0">COMPRAS DE INGREDIENTES - MAREA ROJA</h1>
+        <h1 class="mb-0">PÉRDIDAS DE INVENTARIO - MAREA ROJA</h1>
         <ul class="nav nav-pills gap-2 mb-0">
             <li class="nav-item"><a href="../menu_empleados.php" class="nav-link">Regresar al Menú</a></li>
         </ul>
@@ -264,40 +251,56 @@ $proveedores = obtenerProveedores();
 
     <section class="card shadow p-4">
         <h2 class="card-title text-primary mb-4">
-            <i class="bi bi-cart-plus me-2"></i>GESTIÓN DE COMPRAS DE INGREDIENTES
+            <i class="bi bi-exclamation-triangle me-2"></i>REGISTRO DE PÉRDIDAS
         </h2>
 
-        <form id="form-compra" method="post" class="row g-3">
+        <form id="form-perdida" method="post" class="row g-3">
             <input type="hidden" id="operacion" name="operacion" value="crear">
-            <input type="hidden" id="id_compra_ingrediente" name="id_compra_ingrediente" value="">
+            <input type="hidden" id="id_perdida" name="id_perdida" value="">
             
-            <div class="col-md-4">
-                <label class="form-label fw-semibold" for="id_proveedor">
-                    <i class="bi bi-truck me-1"></i>Proveedor: *
+            <div class="col-md-3">
+                <label class="form-label fw-semibold" for="id_ingrediente">
+                    <i class="bi bi-box-seam me-1"></i>Ingrediente: *
                 </label>
-                <select class="form-control" id="id_proveedor" name="id_proveedor" required>
-                    <option value="">Seleccione un proveedor</option>
-                    <?php foreach($proveedores as $proveedor): ?>
-                        <option value="<?php echo $proveedor['id_proveedor']; ?>">
-                            <?php echo htmlspecialchars($proveedor['nombre_proveedor']); ?>
+                <select class="form-control" id="id_ingrediente" name="id_ingrediente" required>
+                    <option value="">Seleccione un ingrediente</option>
+                    <?php foreach($ingredientes as $ingrediente): ?>
+                        <option value="<?php echo $ingrediente['id_ingrediente']; ?>">
+                            <?php echo htmlspecialchars($ingrediente['nombre_ingrediente']); ?>
                         </option>
                     <?php endforeach; ?>
                 </select>
             </div>
             
-            <div class="col-md-4">
-                <label class="form-label fw-semibold" for="fecha_de_compra">
-                    <i class="bi bi-calendar-date me-1"></i>Fecha de Compra: *
+            <div class="col-md-3">
+                <label class="form-label fw-semibold" for="descripcion">
+                    <i class="bi bi-card-text me-1"></i>Descripción: *
                 </label>
-                <input type="date" class="form-control" id="fecha_de_compra" name="fecha_de_compra" required>
+                <input type="text" class="form-control" id="descripcion" name="descripcion" 
+                       required placeholder="Ej: Pérdida por caducidad" maxlength="200">
             </div>
             
-            <div class="col-md-4">
-                <label class="form-label fw-semibold" for="monto_total_compra_q">
-                    <i class="bi bi-currency-dollar me-1"></i>Monto Total (Q): *
+            <div class="col-md-2">
+                <label class="form-label fw-semibold" for="cantidad_unidades">
+                    <i class="bi bi-box-arrow-down me-1"></i>Cantidad: *
                 </label>
-                <input type="number" class="form-control" id="monto_total_compra_q" name="monto_total_compra_q" 
+                <input type="number" class="form-control" id="cantidad_unidades" name="cantidad_unidades" 
+                       required placeholder="0.000" step="0.001" min="0">
+            </div>
+            
+            <div class="col-md-2">
+                <label class="form-label fw-semibold" for="costo_perdida_q">
+                    <i class="bi bi-currency-dollar me-1"></i>Costo (Q): *
+                </label>
+                <input type="number" class="form-control" id="costo_perdida_q" name="costo_perdida_q" 
                        required placeholder="0.00" step="0.01" min="0">
+            </div>
+            
+            <div class="col-md-2">
+                <label class="form-label fw-semibold" for="fecha_perdida">
+                    <i class="bi bi-calendar-date me-1"></i>Fecha: *
+                </label>
+                <input type="date" class="form-control" id="fecha_perdida" name="fecha_perdida" required>
             </div>
         </form>
 
@@ -317,40 +320,46 @@ $proveedores = obtenerProveedores();
         </div>
 
         <h2 class="card-title mb-3 mt-5">
-            <i class="bi bi-list-ul me-2"></i>HISTORIAL DE COMPRAS
+            <i class="bi bi-list-ul me-2"></i>HISTORIAL DE PÉRDIDAS
         </h2>
         
         <div class="table-responsive mt-3">
-            <table class="table table-striped table-bordered" id="tabla-compras">
+            <table class="table table-striped table-bordered" id="tabla-perdidas">
                 <thead class="table-dark">
                     <tr>
                         <th>ID</th>
-                        <th>Proveedor</th>
+                        <th>Ingrediente</th>
+                        <th>Descripción</th>
+                        <th>Cantidad</th>
+                        <th>Costo (Q)</th>
                         <th>Fecha</th>
-                        <th>Monto Total (Q)</th>
                         <th>Acciones</th>
                     </tr>
                 </thead>
                 <tbody>
-                    <?php foreach($compras as $compra): ?>
+                    <?php foreach($perdidas as $perdida): ?>
                     <tr>
-                        <td><?php echo htmlspecialchars($compra['id_compra_ingrediente']); ?></td>
-                        <td><?php echo htmlspecialchars($compra['nombre_proveedor']); ?></td>
-                        <td><?php echo htmlspecialchars($compra['fecha_de_compra']); ?></td>
-                        <td class="monto-alto">
-                            Q <?php echo number_format($compra['monto_total_compra_q'], 2); ?>
+                        <td><?php echo htmlspecialchars($perdida['id_perdida']); ?></td>
+                        <td><?php echo htmlspecialchars($perdida['nombre_ingrediente']); ?></td>
+                        <td><?php echo htmlspecialchars($perdida['descripcion']); ?></td>
+                        <td><?php echo htmlspecialchars($perdida['cantidad_unidades']); ?></td>
+                        <td class="<?php echo $perdida['costo_perdida_q'] > 100 ? 'costo-alto' : ''; ?>">
+                            Q <?php echo number_format($perdida['costo_perdida_q'], 2); ?>
                         </td>
+                        <td><?php echo htmlspecialchars($perdida['fecha_perdida']); ?></td>
                         <td>
                             <button class="btn btn-sm btn-primary btn-action editar-btn" 
-                                    data-id="<?php echo $compra['id_compra_ingrediente']; ?>"
-                                    data-proveedor="<?php echo $compra['id_proveedor']; ?>"
-                                    data-fecha="<?php echo $compra['fecha_de_compra']; ?>"
-                                    data-monto="<?php echo $compra['monto_total_compra_q']; ?>">
+                                    data-id="<?php echo $perdida['id_perdida']; ?>"
+                                    data-ingrediente="<?php echo $perdida['id_ingrediente']; ?>"
+                                    data-descripcion="<?php echo htmlspecialchars($perdida['descripcion']); ?>"
+                                    data-cantidad="<?php echo $perdida['cantidad_unidades']; ?>"
+                                    data-costo="<?php echo $perdida['costo_perdida_q']; ?>"
+                                    data-fecha="<?php echo $perdida['fecha_perdida']; ?>">
                                 <i class="bi bi-pencil me-1"></i>Editar
                             </button>
-                            <form method="post" style="display:inline;" onsubmit="return confirm('¿Estás seguro de eliminar esta compra?')">
+                            <form method="post" style="display:inline;" onsubmit="return confirm('¿Estás seguro de eliminar este registro de pérdida?')">
                                 <input type="hidden" name="operacion" value="eliminar">
-                                <input type="hidden" name="id_compra_ingrediente" value="<?php echo $compra['id_compra_ingrediente']; ?>">
+                                <input type="hidden" name="id_perdida" value="<?php echo $perdida['id_perdida']; ?>">
                                 <button type="submit" class="btn btn-sm btn-danger btn-action">
                                     <i class="bi bi-trash me-1"></i>Eliminar
                                 </button>
@@ -358,9 +367,9 @@ $proveedores = obtenerProveedores();
                         </td>
                     </tr>
                     <?php endforeach; ?>
-                    <?php if (empty($compras)): ?>
+                    <?php if (empty($perdidas)): ?>
                     <tr>
-                        <td colspan="5" class="text-center">No hay compras registradas</td>
+                        <td colspan="7" class="text-center">No hay pérdidas registradas</td>
                     </tr>
                     <?php endif; ?>
                 </tbody>
@@ -371,16 +380,16 @@ $proveedores = obtenerProveedores();
 
 <script>
     document.addEventListener('DOMContentLoaded', function() {
-        const form = document.getElementById('form-compra');
+        const form = document.getElementById('form-perdida');
         const btnNuevo = document.getElementById('btn-nuevo');
         const btnGuardar = document.getElementById('btn-guardar');
         const btnActualizar = document.getElementById('btn-actualizar');
         const btnCancelar = document.getElementById('btn-cancelar');
         const operacionInput = document.getElementById('operacion');
-        const idCompraInput = document.getElementById('id_compra_ingrediente');
+        const idPerdidaInput = document.getElementById('id_perdida');
 
         // Establecer fecha actual por defecto
-        document.getElementById('fecha_de_compra').valueAsDate = new Date();
+        document.getElementById('fecha_perdida').valueAsDate = new Date();
 
         // Botón Nuevo
         btnNuevo.addEventListener('click', function() {
@@ -414,15 +423,19 @@ $proveedores = obtenerProveedores();
         document.querySelectorAll('.editar-btn').forEach(btn => {
             btn.addEventListener('click', function() {
                 const id = this.getAttribute('data-id');
-                const proveedor = this.getAttribute('data-proveedor');
+                const ingrediente = this.getAttribute('data-ingrediente');
+                const descripcion = this.getAttribute('data-descripcion');
+                const cantidad = this.getAttribute('data-cantidad');
+                const costo = this.getAttribute('data-costo');
                 const fecha = this.getAttribute('data-fecha');
-                const monto = this.getAttribute('data-monto');
 
                 // Llenar formulario
-                idCompraInput.value = id;
-                document.getElementById('id_proveedor').value = proveedor;
-                document.getElementById('fecha_de_compra').value = fecha;
-                document.getElementById('monto_total_compra_q').value = monto;
+                idPerdidaInput.value = id;
+                document.getElementById('id_ingrediente').value = ingrediente;
+                document.getElementById('descripcion').value = descripcion;
+                document.getElementById('cantidad_unidades').value = cantidad;
+                document.getElementById('costo_perdida_q').value = costo;
+                document.getElementById('fecha_perdida').value = fecha;
 
                 mostrarBotonesActualizar();
             });
@@ -430,10 +443,10 @@ $proveedores = obtenerProveedores();
 
         function limpiarFormulario() {
             form.reset();
-            idCompraInput.value = '';
+            idPerdidaInput.value = '';
             operacionInput.value = 'crear';
             // Restablecer fecha actual
-            document.getElementById('fecha_de_compra').valueAsDate = new Date();
+            document.getElementById('fecha_perdida').valueAsDate = new Date();
         }
 
         function mostrarBotonesGuardar() {
@@ -449,20 +462,30 @@ $proveedores = obtenerProveedores();
         }
 
         function validarFormulario() {
-            const proveedor = document.getElementById('id_proveedor').value;
-            const fecha = document.getElementById('fecha_de_compra').value;
-            const monto = document.getElementById('monto_total_compra_q').value;
+            const ingrediente = document.getElementById('id_ingrediente').value;
+            const descripcion = document.getElementById('descripcion').value.trim();
+            const cantidad = document.getElementById('cantidad_unidades').value;
+            const costo = document.getElementById('costo_perdida_q').value;
+            const fecha = document.getElementById('fecha_perdida').value;
 
-            if (!proveedor) {
-                alert('El proveedor es requerido');
+            if (!ingrediente) {
+                alert('El ingrediente es requerido');
+                return false;
+            }
+            if (!descripcion) {
+                alert('La descripción es requerida');
+                return false;
+            }
+            if (!cantidad || cantidad <= 0) {
+                alert('La cantidad debe ser un número positivo');
+                return false;
+            }
+            if (!costo || costo < 0) {
+                alert('El costo debe ser un número positivo');
                 return false;
             }
             if (!fecha) {
-                alert('La fecha de compra es requerida');
-                return false;
-            }
-            if (!monto || monto <= 0) {
-                alert('El monto total debe ser un número positivo');
+                alert('La fecha es requerida');
                 return false;
             }
 
