@@ -47,9 +47,10 @@
 
 
             <li>
-                <a href="#" class="submenu-toggle"><span></span> Departamentos</a>
+                <a href="#" class="submenu-toggle"><span>📍</span> Departamentos</a>
                 <ul class="submenu">
-                    <li><a href="Lugar_de_origen/Departamentos.php">Departamentos</a></li>
+                    <li><a href="Departamental/Lugar_origen.php">Lugar de Origen</a></li>
+                    <li><a href="Departamental/Sucursales.php">Sucursales</a></li>
                 </ul>
             </li>
 
