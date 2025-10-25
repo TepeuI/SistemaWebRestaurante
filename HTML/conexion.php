@@ -5,11 +5,11 @@
  * - Aplica charset utf8mb4 para soportar emojis y caracteres multi-byte.
  */
 function conectar() {
-    $host = "127.0.0.1";      // servidor MySQL
+    $host = "tramway.proxy.rlwy.net";      // servidor MySQL
     $user = "root";           // usuario
-    $pass = "";               // contraseña
+    $pass = "xEacCakMEUUpxIBwEbtNFkDwbmAEJxcJ";               // contraseña
     $bd   = "marea_roja_db";  // base de datos
-    $port = 3307;             // puerto MySQL
+    $port = 49431;             // puerto MySQL
 
     // Crea objeto de conexión
     $conexion = new mysqli($host, $user, $pass, $bd, $port);
