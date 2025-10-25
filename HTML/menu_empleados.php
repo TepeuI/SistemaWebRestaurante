@@ -12,7 +12,7 @@
     session_start();
     // Verificar si el usuario está logueado
     if (!isset($_SESSION['id_usuario'])) {
-        header('Location: login_empleado.php');
+        header('Location: login.php');
         exit();
     }
     ?>
@@ -23,7 +23,7 @@
             Marea Roja
         </h1>
         <div class="user-info">
-            Bienvenido, <?php echo htmlspecialchars($_SESSION['nombre']); ?>
+            Bienvenido, <?php echo htmlspecialchars($_SESSION['nombre'] ?? 'No disponible'); ?>
         </div>
     </header>
     
@@ -45,7 +45,6 @@
                 </ul>
             </li>
 
-
             <li>
                 <a href="#" class="submenu-toggle"><span>📍</span> Departamentos</a>
                 <ul class="submenu">
@@ -53,10 +52,6 @@
                     <li><a href="Departamental/Sucursales.php">Sucursales</a></li>
                 </ul>
             </li>
-
-
-
-
 
             <li>
                 <a href="#" class="submenu-toggle"><span>🪑</span> Gestión de Mobiliario</a>
@@ -66,13 +61,12 @@
                 </ul>
             </li>
 
-
             <li>
                 <a href="#" class="submenu-toggle"><span>🚗</span> Gestión de Vehiculos</a>
                 <ul class="submenu">
                     <li><a href="../HTML/gestion_de_vehiculos/gestion_vehiculos.php">Gestion de Vehiculos</a></li>
-                    <li><a href="gestion_de_vehiculos/mantenimiento_vehiculos.php">mantenimiento</a></li>
-                    <li><a href="gestion_de_vehiculos/viajes_vehiculos.php">Viajes</a></li>
+                    <li><a href="../HTML/gestion_de_vehiculos/mantenimiento_vehiculos.php">mantenimiento</a></li>
+                    <li><a href="../HTML/gestion_de_vehiculos/viajes_vehiculos.php">Viajes</a></li>
                     <li><a href="rutas_vehiculos.html">Rutas</a></li>
                 </ul>
             </li>
@@ -117,7 +111,7 @@
         <div id="tabla-reservaciones">
             <h3>¡Bienvenido al Sistema de Gestión Marea Roja!</h3>
             <p>Selecciona una opción del menú lateral para comenzar a gestionar el restaurante</p>
-            <p><strong>Usuario:</strong> <?php echo htmlspecialchars($_SESSION['usuario']); ?></p>
+            <p><strong>Usuario:</strong> <?php echo htmlspecialchars($_SESSION['usuario'] ?? 'No disponible'); ?></p>
         </div>
     </div>
 
