@@ -8,7 +8,7 @@ function conectar() {
     $host = "tramway.proxy.rlwy.net";      // servidor MySQL
     $user = "root";           // usuario
     $pass = "xEacCakMEUUpxIBwEbtNFkDwbmAEJxcJ";               // contraseña
-    $bd   = "marea_roja_db";  // base de datos
+    $bd   = "Marea_Roja";  // base de datos
     $port = 49431;             // puerto MySQL
 
     // Crea objeto de conexión
