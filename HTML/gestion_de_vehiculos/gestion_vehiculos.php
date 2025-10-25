@@ -33,13 +33,14 @@ function crearVehiculo() {
     $marca = $_POST['marca'] ?? '';
     $modelo = $_POST['modelo'] ?? '';
     $anio_vehiculo = $_POST['anio_vehiculo'] ?? '';
+    $id_mobiliario = $_POST['id_mobiliario'] ?? NULL;
     $estado = $_POST['estado'] ?? 'ACTIVO';
     
-    $sql = "INSERT INTO vehiculos (no_placas, marca, modelo, anio_vehiculo, estado) 
-            VALUES (?, ?, ?, ?, ?)";
+    $sql = "INSERT INTO vehiculos (no_placas, marca, modelo, anio_vehiculo, id_mobiliario, estado) 
+            VALUES (?, ?, ?, ?, ?, ?)";
     
     $stmt = $conn->prepare($sql);
-    $stmt->bind_param("sssis", $no_placas, $marca, $modelo, $anio_vehiculo, $estado);
+    $stmt->bind_param("sssiis", $no_placas, $marca, $modelo, $anio_vehiculo, $id_mobiliario, $estado);
     
     if ($stmt->execute()) {
         $_SESSION['mensaje'] = "Vehículo creado exitosamente";
@@ -64,13 +65,14 @@ function actualizarVehiculo() {
     $marca = $_POST['marca'] ?? '';
     $modelo = $_POST['modelo'] ?? '';
     $anio_vehiculo = $_POST['anio_vehiculo'] ?? '';
+    $id_mobiliario = $_POST['id_mobiliario'] ?? NULL;
     $estado = $_POST['estado'] ?? '';
     
-    $sql = "UPDATE vehiculos SET no_placas = ?, marca = ?, modelo = ?, anio_vehiculo = ?, estado = ? 
+    $sql = "UPDATE vehiculos SET no_placas = ?, marca = ?, modelo = ?, anio_vehiculo = ?, id_mobiliario = ?, estado = ? 
             WHERE id_placa = ?";
     
     $stmt = $conn->prepare($sql);
-    $stmt->bind_param("sssisi", $no_placas, $marca, $modelo, $anio_vehiculo, $estado, $id_placa);
+    $stmt->bind_param("sssiisi", $no_placas, $marca, $modelo, $anio_vehiculo, $id_mobiliario, $estado, $id_placa);
     
     if ($stmt->execute()) {
         $_SESSION['mensaje'] = "Vehículo actualizado exitosamente";
@@ -114,7 +116,37 @@ function eliminarVehiculo() {
 // Obtener todos los vehículos para mostrar en la tabla
 function obtenerVehiculos() {
     $conn = conectar();
-    $sql = "SELECT * FROM vehiculos ORDER BY id_placa";
+    
+    // Primero, verifiquemos la estructura de la tabla
+    $sql_check = "SHOW COLUMNS FROM vehiculos";
+    $result_check = $conn->query($sql_check);
+    $columns = [];
+    while($row = $result_check->fetch_assoc()) {
+        $columns[] = $row['Field'];
+    }
+    
+    // Debug: mostrar columnas disponibles
+    error_log("Columnas de vehiculos: " . implode(', ', $columns));
+    
+    // Construir la consulta según las columnas disponibles
+    if (in_array('id_placa', $columns)) {
+        $sql = "SELECT v.*, m.nombre_mobiliario 
+                FROM vehiculos v 
+                LEFT JOIN mobiliario m ON v.id_mobiliario = m.id_mobiliario 
+                ORDER BY v.id_placa";
+    } elseif (in_array('id_vehiculo', $columns)) {
+        $sql = "SELECT v.*, m.nombre_mobiliario 
+                FROM vehiculos v 
+                LEFT JOIN mobiliario m ON v.id_mobiliario = m.id_mobiliario 
+                ORDER BY v.id_vehiculo";
+    } else {
+        // Si no hay ninguna de las dos, usar la primera columna disponible
+        $sql = "SELECT v.*, m.nombre_mobiliario 
+                FROM vehiculos v 
+                LEFT JOIN mobiliario m ON v.id_mobiliario = m.id_mobiliario 
+                ORDER BY 1";
+    }
+    
     $resultado = $conn->query($sql);
     $vehiculos = [];
     
@@ -128,14 +160,37 @@ function obtenerVehiculos() {
     return $vehiculos;
 }
 
+// Obtener mobiliario para el select
+function obtenerMobiliario() {
+    $conn = conectar();
+    $sql = "SELECT id_mobiliario, nombre_mobiliario FROM mobiliario ORDER BY nombre_mobiliario";
+    $resultado = $conn->query($sql);
+    $mobiliario = [];
+    
+    if ($resultado && $resultado->num_rows > 0) {
+        while($fila = $resultado->fetch_assoc()) {
+            $mobiliario[] = $fila;
+        }
+    }
+    
+    desconectar($conn);
+    return $mobiliario;
+}
+
 $vehiculos = obtenerVehiculos();
+$mobiliarios = obtenerMobiliario();
+
+// Debug: verificar estructura de los vehículos obtenidos
+if (!empty($vehiculos)) {
+    error_log("Primer vehículo: " . print_r($vehiculos[0], true));
+}
 ?>
 <!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gestión de Vehículos - Marea Roja</title>
+    <title>Gestión de Vehículos - Marina Roja</title>
     <!-- Google Fonts: Poppins -->
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
     <style>
@@ -210,7 +265,18 @@ $vehiculos = obtenerVehiculos();
                     <label class="form-label" for="anio_vehiculo">Año:</label>
                     <input type="number" class="form-control" id="anio_vehiculo" name="anio_vehiculo" required placeholder="Ej. 2014" min="1900" max="2030">
                 </div>
-                <div class="col-md-6">
+                <div class="col-md-4">
+                    <label class="form-label" for="id_mobiliario">Mobiliario Asociado:</label>
+                    <select class="form-control" id="id_mobiliario" name="id_mobiliario">
+                        <option value="">-- Sin mobiliario --</option>
+                        <?php foreach($mobiliarios as $mob): ?>
+                            <option value="<?php echo $mob['id_mobiliario']; ?>">
+                                <?php echo htmlspecialchars($mob['nombre_mobiliario']); ?>
+                            </option>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
+                <div class="col-md-4">
                     <label class="form-label" for="estado">Estado:</label>
                     <select class="form-control" id="estado" name="estado" required>
                         <option value="ACTIVO">ACTIVO</option>
@@ -237,6 +303,7 @@ $vehiculos = obtenerVehiculos();
                             <th>Marca</th>
                             <th>Modelo</th>
                             <th>Año</th>
+                            <th>Mobiliario</th>
                             <th>Estado</th>
                             <th>Acciones</th>
                         </tr>
@@ -244,31 +311,36 @@ $vehiculos = obtenerVehiculos();
                     <tbody>
                         <?php foreach($vehiculos as $vehiculo): ?>
                         <tr>
-                            <td><?php echo htmlspecialchars($vehiculo['id_placa']); ?></td>
-                            <td><?php echo htmlspecialchars($vehiculo['no_placas']); ?></td>
-                            <td><?php echo htmlspecialchars($vehiculo['marca']); ?></td>
-                            <td><?php echo htmlspecialchars($vehiculo['modelo']); ?></td>
-                            <td><?php echo htmlspecialchars($vehiculo['anio_vehiculo']); ?></td>
+                            <td><?php echo htmlspecialchars($vehiculo['id_placa'] ?? $vehiculo['id_vehiculo'] ?? 'N/A'); ?></td>
+                            <td><?php echo htmlspecialchars($vehiculo['no_placas'] ?? 'N/A'); ?></td>
+                            <td><?php echo htmlspecialchars($vehiculo['marca'] ?? 'N/A'); ?></td>
+                            <td><?php echo htmlspecialchars($vehiculo['modelo'] ?? 'N/A'); ?></td>
+                            <td><?php echo htmlspecialchars($vehiculo['anio_vehiculo'] ?? 'N/A'); ?></td>
+                            <td><?php echo htmlspecialchars($vehiculo['nombre_mobiliario'] ?? 'Ninguno'); ?></td>
                             <td>
                                 <span class="badge 
-                                    <?php echo $vehiculo['estado'] == 'ACTIVO' ? 'bg-success' : 
-                                           ($vehiculo['estado'] == 'EN_TALLER' ? 'bg-warning' : 'bg-danger'); ?>">
-                                    <?php echo htmlspecialchars($vehiculo['estado']); ?>
+                                    <?php 
+                                    $estado = $vehiculo['estado'] ?? 'ACTIVO';
+                                    echo $estado == 'ACTIVO' ? 'bg-success' : 
+                                           ($estado == 'EN_TALLER' ? 'bg-warning' : 'bg-danger'); 
+                                    ?>">
+                                    <?php echo htmlspecialchars($estado); ?>
                                 </span>
                             </td>
                             <td>
                                 <button class="btn btn-sm btn-primary btn-action editar-btn" 
-                                        data-id="<?php echo $vehiculo['id_placa']; ?>"
-                                        data-placa="<?php echo htmlspecialchars($vehiculo['no_placas']); ?>"
-                                        data-marca="<?php echo htmlspecialchars($vehiculo['marca']); ?>"
-                                        data-modelo="<?php echo htmlspecialchars($vehiculo['modelo']); ?>"
-                                        data-anio="<?php echo $vehiculo['anio_vehiculo']; ?>"
-                                        data-estado="<?php echo $vehiculo['estado']; ?>">
+                                        data-id="<?php echo $vehiculo['id_placa'] ?? $vehiculo['id_vehiculo'] ?? ''; ?>"
+                                        data-placas="<?php echo htmlspecialchars($vehiculo['no_placas'] ?? ''); ?>"
+                                        data-marca="<?php echo htmlspecialchars($vehiculo['marca'] ?? ''); ?>"
+                                        data-modelo="<?php echo htmlspecialchars($vehiculo['modelo'] ?? ''); ?>"
+                                        data-anio="<?php echo $vehiculo['anio_vehiculo'] ?? ''; ?>"
+                                        data-mobiliario="<?php echo $vehiculo['id_mobiliario'] ?? ''; ?>"
+                                        data-estado="<?php echo $vehiculo['estado'] ?? 'ACTIVO'; ?>">
                                     Editar
                                 </button>
                                 <form method="post" style="display:inline;" onsubmit="return confirm('¿Estás seguro de eliminar este vehículo?')">
                                     <input type="hidden" name="operacion" value="eliminar">
-                                    <input type="hidden" name="id_placa" value="<?php echo $vehiculo['id_placa']; ?>">
+                                    <input type="hidden" name="id_placa" value="<?php echo $vehiculo['id_placa'] ?? $vehiculo['id_vehiculo'] ?? ''; ?>">
                                     <button type="submit" class="btn btn-sm btn-danger btn-action">Eliminar</button>
                                 </form>
                             </td>
@@ -276,7 +348,7 @@ $vehiculos = obtenerVehiculos();
                         <?php endforeach; ?>
                         <?php if (empty($vehiculos)): ?>
                         <tr>
-                            <td colspan="7" class="text-center">No hay vehículos registrados</td>
+                            <td colspan="8" class="text-center">No hay vehículos registrados</td>
                         </tr>
                         <?php endif; ?>
                     </tbody>
@@ -327,18 +399,20 @@ $vehiculos = obtenerVehiculos();
             document.querySelectorAll('.editar-btn').forEach(btn => {
                 btn.addEventListener('click', function() {
                     const id = this.getAttribute('data-id');
-                    const placa = this.getAttribute('data-placa');
+                    const placas = this.getAttribute('data-placas');
                     const marca = this.getAttribute('data-marca');
                     const modelo = this.getAttribute('data-modelo');
                     const anio = this.getAttribute('data-anio');
+                    const mobiliario = this.getAttribute('data-mobiliario');
                     const estado = this.getAttribute('data-estado');
 
                     // Llenar formulario
                     idPlacaInput.value = id;
-                    document.getElementById('no_placas').value = placa;
+                    document.getElementById('no_placas').value = placas;
                     document.getElementById('marca').value = marca;
                     document.getElementById('modelo').value = modelo;
                     document.getElementById('anio_vehiculo').value = anio;
+                    document.getElementById('id_mobiliario').value = mobiliario;
                     document.getElementById('estado').value = estado;
 
                     mostrarBotonesActualizar();
@@ -349,6 +423,8 @@ $vehiculos = obtenerVehiculos();
                 form.reset();
                 idPlacaInput.value = '';
                 operacionInput.value = 'crear';
+                document.getElementById('id_mobiliario').value = '';
+                document.getElementById('estado').value = 'ACTIVO';
             }
 
             function mostrarBotonesGuardar() {
@@ -364,12 +440,12 @@ $vehiculos = obtenerVehiculos();
             }
 
             function validarFormulario() {
-                const placa = document.getElementById('no_placas').value.trim();
+                const placas = document.getElementById('no_placas').value.trim();
                 const marca = document.getElementById('marca').value.trim();
                 const modelo = document.getElementById('modelo').value.trim();
                 const anio = document.getElementById('anio_vehiculo').value;
 
-                if (!placa) {
+                if (!placas) {
                     alert('La placa es requerida');
                     return false;
                 }

@@ -29,6 +29,10 @@
                     <input type="password" id="clave" name="clave" placeholder="Ingresa tu contraseña" required>
                 </div>
                 <button type="submit" class="btn">Ingresar</button>
+                <div class="create-user-section">
+                    <p>¿No tienes cuenta?</p>
+                    <a href="crear_usuario.php" class="btn-create">Crear Usuario</a>
+                </div>
                 <p class="link">¿Olvidaste tu contraseña? <a href="#">Recupérala aquí</a></p>
             </form>
         </div>
