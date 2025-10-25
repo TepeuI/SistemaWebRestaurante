@@ -31,16 +31,17 @@ function crearViaje() {
     
     $id_ruta = $_POST['id_ruta'] ?? '';
     $id_vehiculo = $_POST['id_vehiculo'] ?? '';
-    $id_empleado = $_POST['id_empleado'] ?? '';
+    $id_empleado_piloto = $_POST['id_empleado_piloto'] ?? '';
+    $id_empleado_acompanante = $_POST['id_empleado_acompanante'] ?? null;
     $fecha_hora_salida = $_POST['fecha_hora_salida'] ?? '';
     $tiempo_aproximado_min = $_POST['tiempo_aproximado_min'] ?? null;
     $descripcion_viaje = $_POST['descripcion_viaje'] ?? '';
     
-    $sql = "INSERT INTO viajes (id_ruta, id_vehiculo, id_empleado, fecha_hora_salida, tiempo_aproximado_min, descripcion_viaje) 
-            VALUES (?, ?, ?, ?, ?, ?)";
+    $sql = "INSERT INTO viajes (id_ruta, id_vehiculo, id_empleado_piloto, id_empleado_acompanante, fecha_hora_salida, tiempo_aproximado_min, descripcion_viaje) 
+            VALUES (?, ?, ?, ?, ?, ?, ?)";
     
     $stmt = $conn->prepare($sql);
-    $stmt->bind_param("iiisis", $id_ruta, $id_vehiculo, $id_empleado, $fecha_hora_salida, $tiempo_aproximado_min, $descripcion_viaje);
+    $stmt->bind_param("iiisiss", $id_ruta, $id_vehiculo, $id_empleado_piloto, $id_empleado_acompanante, $fecha_hora_salida, $tiempo_aproximado_min, $descripcion_viaje);
     
     if ($stmt->execute()) {
         $_SESSION['mensaje'] = "Viaje creado exitosamente";
@@ -63,18 +64,19 @@ function actualizarViaje() {
     $id_viaje = $_POST['id_viaje'] ?? '';
     $id_ruta = $_POST['id_ruta'] ?? '';
     $id_vehiculo = $_POST['id_vehiculo'] ?? '';
-    $id_empleado = $_POST['id_empleado'] ?? '';
+    $id_empleado_piloto = $_POST['id_empleado_piloto'] ?? '';
+    $id_empleado_acompanante = $_POST['id_empleado_acompanante'] ?? null;
     $fecha_hora_salida = $_POST['fecha_hora_salida'] ?? '';
     $tiempo_aproximado_min = $_POST['tiempo_aproximado_min'] ?? null;
     $descripcion_viaje = $_POST['descripcion_viaje'] ?? '';
     
     $sql = "UPDATE viajes 
-            SET id_ruta = ?, id_vehiculo = ?, id_empleado = ?, fecha_hora_salida = ?, 
-                tiempo_aproximado_min = ?, descripcion_viaje = ? 
+            SET id_ruta = ?, id_vehiculo = ?, id_empleado_piloto = ?, id_empleado_acompanante = ?, 
+                fecha_hora_salida = ?, tiempo_aproximado_min = ?, descripcion_viaje = ? 
             WHERE id_viaje = ?";
     
     $stmt = $conn->prepare($sql);
-    $stmt->bind_param("iiisisi", $id_ruta, $id_vehiculo, $id_empleado, $fecha_hora_salida, $tiempo_aproximado_min, $descripcion_viaje, $id_viaje);
+    $stmt->bind_param("iiisissi", $id_ruta, $id_vehiculo, $id_empleado_piloto, $id_empleado_acompanante, $fecha_hora_salida, $tiempo_aproximado_min, $descripcion_viaje, $id_viaje);
     
     if ($stmt->execute()) {
         $_SESSION['mensaje'] = "Viaje actualizado exitosamente";
@@ -134,7 +136,8 @@ function obtenerRutas() {
 
 function obtenerVehiculos() {
     $conn = conectar();
-    $sql = "SELECT id_placa, no_placas, marca, modelo FROM vehiculos WHERE estado = 'ACTIVO' ORDER BY no_placas";
+    // CORREGIDO: Removido WHERE estado = 'ACTIVO' ya que no existe la columna estado
+    $sql = "SELECT id_vehiculo, no_placa, marca_vehiculo, modelo_vehiculo FROM vehiculos ORDER BY no_placa";
     $resultado = $conn->query($sql);
     $vehiculos = [];
     
@@ -150,7 +153,8 @@ function obtenerVehiculos() {
 
 function obtenerEmpleados() {
     $conn = conectar();
-    $sql = "SELECT id_empleado, nombre, apellido FROM empleados WHERE estado = 'ACTIVO' ORDER BY nombre, apellido";
+    // CORREGIDO: Removido WHERE estado = 'ACTIVO' ya que no existe la columna estado
+    $sql = "SELECT id_empleado, nombre_empleado, apellido_empleado FROM empleados ORDER BY nombre_empleado, apellido_empleado";
     $resultado = $conn->query($sql);
     $empleados = [];
     
@@ -167,12 +171,14 @@ function obtenerEmpleados() {
 // Obtener todos los viajes para mostrar en la tabla
 function obtenerViajes() {
     $conn = conectar();
-    $sql = "SELECT v.*, r.descripcion_ruta, ve.no_placas, ve.marca, ve.modelo, 
-                   e.nombre as empleado_nombre, e.apellido as empleado_apellido
+    $sql = "SELECT v.*, r.descripcion_ruta, ve.no_placa, ve.marca_vehiculo, ve.modelo_vehiculo, 
+                   ep.nombre_empleado as piloto_nombre, ep.apellido_empleado as piloto_apellido,
+                   ea.nombre_empleado as acompanante_nombre, ea.apellido_empleado as acompanante_apellido
             FROM viajes v
             LEFT JOIN rutas r ON v.id_ruta = r.id_ruta
-            LEFT JOIN vehiculos ve ON v.id_vehiculo = ve.id_placa
-            LEFT JOIN empleados e ON v.id_empleado = e.id_empleado
+            LEFT JOIN vehiculos ve ON v.id_vehiculo = ve.id_vehiculo
+            LEFT JOIN empleados ep ON v.id_empleado_piloto = ep.id_empleado
+            LEFT JOIN empleados ea ON v.id_empleado_acompanante = ea.id_empleado
             ORDER BY v.fecha_hora_salida DESC";
     $resultado = $conn->query($sql);
     $viajes = [];
@@ -197,7 +203,7 @@ $viajes = obtenerViajes();
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gestión de Viajes - Marea Roja</title>
+    <title>Gestión de Viajes - Marina Roja</title>
     <!-- Google Fonts: Poppins -->
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
     <style>
@@ -273,20 +279,32 @@ $viajes = obtenerViajes();
                     <select class="form-control" id="id_vehiculo" name="id_vehiculo" required>
                         <option value="">Seleccione un vehículo</option>
                         <?php foreach($vehiculos as $vehiculo): ?>
-                            <option value="<?php echo $vehiculo['id_placa']; ?>">
-                                <?php echo htmlspecialchars($vehiculo['no_placas'] . ' - ' . $vehiculo['marca'] . ' ' . $vehiculo['modelo']); ?>
+                            <option value="<?php echo $vehiculo['id_vehiculo']; ?>">
+                                <?php echo htmlspecialchars($vehiculo['no_placa'] . ' - ' . $vehiculo['marca_vehiculo'] . ' ' . $vehiculo['modelo_vehiculo']); ?>
                             </option>
                         <?php endforeach; ?>
                     </select>
                 </div>
                 
                 <div class="col-md-6">
-                    <label class="form-label" for="id_empleado">Empleado Conductor:</label>
-                    <select class="form-control" id="id_empleado" name="id_empleado" required>
-                        <option value="">Seleccione un empleado</option>
+                    <label class="form-label" for="id_empleado_piloto">Empleado Piloto:</label>
+                    <select class="form-control" id="id_empleado_piloto" name="id_empleado_piloto" required>
+                        <option value="">Seleccione un piloto</option>
                         <?php foreach($empleados as $empleado): ?>
                             <option value="<?php echo $empleado['id_empleado']; ?>">
-                                <?php echo htmlspecialchars($empleado['nombre'] . ' ' . $empleado['apellido']); ?>
+                                <?php echo htmlspecialchars($empleado['nombre_empleado'] . ' ' . $empleado['apellido_empleado']); ?>
+                            </option>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
+                
+                <div class="col-md-6">
+                    <label class="form-label" for="id_empleado_acompanante">Empleado Acompañante:</label>
+                    <select class="form-control" id="id_empleado_acompanante" name="id_empleado_acompanante">
+                        <option value="">Sin acompañante</option>
+                        <?php foreach($empleados as $empleado): ?>
+                            <option value="<?php echo $empleado['id_empleado']; ?>">
+                                <?php echo htmlspecialchars($empleado['nombre_empleado'] . ' ' . $empleado['apellido_empleado']); ?>
                             </option>
                         <?php endforeach; ?>
                     </select>
@@ -325,7 +343,8 @@ $viajes = obtenerViajes();
                             <th>ID Viaje</th>
                             <th>Ruta</th>
                             <th>Vehículo</th>
-                            <th>Conductor</th>
+                            <th>Piloto</th>
+                            <th>Acompañante</th>
                             <th>Fecha/Hora Salida</th>
                             <th>Tiempo (min)</th>
                             <th>Descripción</th>
@@ -337,8 +356,9 @@ $viajes = obtenerViajes();
                         <tr>
                             <td><?php echo htmlspecialchars($viaje['id_viaje']); ?></td>
                             <td><?php echo htmlspecialchars($viaje['descripcion_ruta'] ?? 'N/A'); ?></td>
-                            <td><?php echo htmlspecialchars($viaje['no_placas'] . ' - ' . $viaje['marca']); ?></td>
-                            <td><?php echo htmlspecialchars($viaje['empleado_nombre'] . ' ' . $viaje['empleado_apellido']); ?></td>
+                            <td><?php echo htmlspecialchars($viaje['no_placa'] . ' - ' . $viaje['marca_vehiculo']); ?></td>
+                            <td><?php echo htmlspecialchars($viaje['piloto_nombre'] . ' ' . $viaje['piloto_apellido']); ?></td>
+                            <td><?php echo htmlspecialchars(($viaje['acompanante_nombre'] ?? '') . ' ' . ($viaje['acompanante_apellido'] ?? '') ?: 'Ninguno'); ?></td>
                             <td><?php echo htmlspecialchars($viaje['fecha_hora_salida']); ?></td>
                             <td><?php echo htmlspecialchars($viaje['tiempo_aproximado_min'] ?? 'N/A'); ?></td>
                             <td><?php echo htmlspecialchars($viaje['descripcion_viaje'] ?? 'N/A'); ?></td>
@@ -347,7 +367,8 @@ $viajes = obtenerViajes();
                                         data-id="<?php echo $viaje['id_viaje']; ?>"
                                         data-ruta="<?php echo $viaje['id_ruta']; ?>"
                                         data-vehiculo="<?php echo $viaje['id_vehiculo']; ?>"
-                                        data-empleado="<?php echo $viaje['id_empleado']; ?>"
+                                        data-piloto="<?php echo $viaje['id_empleado_piloto']; ?>"
+                                        data-acompanante="<?php echo $viaje['id_empleado_acompanante']; ?>"
                                         data-fecha="<?php echo str_replace(' ', 'T', substr($viaje['fecha_hora_salida'], 0, 16)); ?>"
                                         data-tiempo="<?php echo $viaje['tiempo_aproximado_min']; ?>"
                                         data-descripcion="<?php echo htmlspecialchars($viaje['descripcion_viaje']); ?>">
@@ -363,7 +384,7 @@ $viajes = obtenerViajes();
                         <?php endforeach; ?>
                         <?php if (empty($viajes)): ?>
                         <tr>
-                            <td colspan="8" class="text-center">No hay viajes registrados</td>
+                            <td colspan="9" class="text-center">No hay viajes registrados</td>
                         </tr>
                         <?php endif; ?>
                     </tbody>
@@ -416,7 +437,8 @@ $viajes = obtenerViajes();
                     const id = this.getAttribute('data-id');
                     const ruta = this.getAttribute('data-ruta');
                     const vehiculo = this.getAttribute('data-vehiculo');
-                    const empleado = this.getAttribute('data-empleado');
+                    const piloto = this.getAttribute('data-piloto');
+                    const acompanante = this.getAttribute('data-acompanante');
                     const fecha = this.getAttribute('data-fecha');
                     const tiempo = this.getAttribute('data-tiempo');
                     const descripcion = this.getAttribute('data-descripcion');
@@ -425,7 +447,8 @@ $viajes = obtenerViajes();
                     idViajeInput.value = id;
                     document.getElementById('id_ruta').value = ruta;
                     document.getElementById('id_vehiculo').value = vehiculo;
-                    document.getElementById('id_empleado').value = empleado;
+                    document.getElementById('id_empleado_piloto').value = piloto;
+                    document.getElementById('id_empleado_acompanante').value = acompanante;
                     document.getElementById('fecha_hora_salida').value = fecha;
                     document.getElementById('tiempo_aproximado_min').value = tiempo;
                     document.getElementById('descripcion_viaje').value = descripcion;
@@ -457,7 +480,7 @@ $viajes = obtenerViajes();
             function validarFormulario() {
                 const ruta = document.getElementById('id_ruta').value;
                 const vehiculo = document.getElementById('id_vehiculo').value;
-                const empleado = document.getElementById('id_empleado').value;
+                const piloto = document.getElementById('id_empleado_piloto').value;
                 const fecha = document.getElementById('fecha_hora_salida').value;
 
                 if (!ruta) {
@@ -468,8 +491,8 @@ $viajes = obtenerViajes();
                     alert('Seleccione un vehículo');
                     return false;
                 }
-                if (!empleado) {
-                    alert('Seleccione un empleado conductor');
+                if (!piloto) {
+                    alert('Seleccione un empleado piloto');
                     return false;
                 }
                 if (!fecha) {

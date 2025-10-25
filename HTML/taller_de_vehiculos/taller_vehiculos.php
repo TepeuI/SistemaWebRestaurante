@@ -33,13 +33,12 @@ function crearTaller() {
     $correo = $_POST['correo'] ?? '';
     $telefono = $_POST['telefono'] ?? '';
     $id_especialidad = $_POST['id_especialidad'] ?? null;
-    $id_sucursal = $_POST['id_sucursal'] ?? null;
     
-    $sql = "INSERT INTO talleres (nombre_taller, correo, telefono, id_especialidad, id_sucursal) 
-            VALUES (?, ?, ?, ?, ?)";
+    $sql = "INSERT INTO talleres (nombre_taller, correo, telefono, id_especialidad) 
+            VALUES (?, ?, ?, ?)";
     
     $stmt = $conn->prepare($sql);
-    $stmt->bind_param("sssii", $nombre_taller, $correo, $telefono, $id_especialidad, $id_sucursal);
+    $stmt->bind_param("sssi", $nombre_taller, $correo, $telefono, $id_especialidad);
     
     if ($stmt->execute()) {
         $_SESSION['mensaje'] = "Taller creado exitosamente";
@@ -64,14 +63,13 @@ function actualizarTaller() {
     $correo = $_POST['correo'] ?? '';
     $telefono = $_POST['telefono'] ?? '';
     $id_especialidad = $_POST['id_especialidad'] ?? null;
-    $id_sucursal = $_POST['id_sucursal'] ?? null;
     
     $sql = "UPDATE talleres 
-            SET nombre_taller = ?, correo = ?, telefono = ?, id_especialidad = ?, id_sucursal = ? 
+            SET nombre_taller = ?, correo = ?, telefono = ?, id_especialidad = ? 
             WHERE id_taller = ?";
     
     $stmt = $conn->prepare($sql);
-    $stmt->bind_param("sssiii", $nombre_taller, $correo, $telefono, $id_especialidad, $id_sucursal, $id_taller);
+    $stmt->bind_param("sssii", $nombre_taller, $correo, $telefono, $id_especialidad, $id_taller);
     
     if ($stmt->execute()) {
         $_SESSION['mensaje'] = "Taller actualizado exitosamente";
@@ -129,30 +127,13 @@ function obtenerEspecialidades() {
     return $especialidades;
 }
 
-// Obtener sucursales para el selector
-function obtenerSucursales() {
-    $conn = conectar();
-    $sql = "SELECT id_sucursal, direccion FROM sucursales ORDER BY direccion";
-    $resultado = $conn->query($sql);
-    $sucursales = [];
-    
-    if ($resultado && $resultado->num_rows > 0) {
-        while($fila = $resultado->fetch_assoc()) {
-            $sucursales[] = $fila;
-        }
-    }
-    
-    desconectar($conn);
-    return $sucursales;
-}
-
 // Obtener todos los talleres para mostrar en la tabla
 function obtenerTalleres() {
     $conn = conectar();
-    $sql = "SELECT t.*, e.descripcion as especialidad, s.direccion as sucursal
+    // CORREGIDO: Removido el JOIN con sucursales ya que no existe id_sucursal en talleres
+    $sql = "SELECT t.*, e.descripcion as especialidad
             FROM talleres t
             LEFT JOIN especialidades_reparacion e ON t.id_especialidad = e.id_especialidad
-            LEFT JOIN sucursales s ON t.id_sucursal = s.id_sucursal
             ORDER BY t.nombre_taller";
     $resultado = $conn->query($sql);
     $talleres = [];
@@ -168,7 +149,6 @@ function obtenerTalleres() {
 }
 
 $especialidades = obtenerEspecialidades();
-$sucursales = obtenerSucursales();
 $talleres = obtenerTalleres();
 ?>
 <!DOCTYPE html>
@@ -176,7 +156,7 @@ $talleres = obtenerTalleres();
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gestión de Talleres - Marea Roja</title>
+    <title>Gestión de Talleres - Marina Roja</title>
     <!-- Google Fonts: Poppins -->
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
     <style>
@@ -254,18 +234,6 @@ $talleres = obtenerTalleres();
                 </div>
                 
                 <div class="col-md-6">
-                    <label class="form-label" for="id_sucursal">Sucursal:</label>
-                    <select class="form-control" id="id_sucursal" name="id_sucursal">
-                        <option value="">Seleccione una sucursal</option>
-                        <?php foreach($sucursales as $sucursal): ?>
-                            <option value="<?php echo $sucursal['id_sucursal']; ?>">
-                                <?php echo htmlspecialchars($sucursal['direccion']); ?>
-                            </option>
-                        <?php endforeach; ?>
-                    </select>
-                </div>
-                
-                <div class="col-md-6">
                     <label class="form-label" for="telefono">Teléfono:</label>
                     <input type="text" class="form-control" id="telefono" name="telefono" 
                            placeholder="Ej. 1234-5678">
@@ -295,7 +263,6 @@ $talleres = obtenerTalleres();
                             <th>Teléfono</th>
                             <th>Correo</th>
                             <th>Especialidad</th>
-                            <th>Sucursal</th>
                             <th>Acciones</th>
                         </tr>
                     </thead>
@@ -307,15 +274,13 @@ $talleres = obtenerTalleres();
                             <td><?php echo htmlspecialchars($taller['telefono'] ?? 'N/A'); ?></td>
                             <td><?php echo htmlspecialchars($taller['correo'] ?? 'N/A'); ?></td>
                             <td><?php echo htmlspecialchars($taller['especialidad'] ?? 'N/A'); ?></td>
-                            <td><?php echo htmlspecialchars($taller['sucursal'] ?? 'N/A'); ?></td>
                             <td>
                                 <button class="btn btn-sm btn-primary btn-action editar-btn" 
                                         data-id="<?php echo $taller['id_taller']; ?>"
                                         data-nombre="<?php echo htmlspecialchars($taller['nombre_taller']); ?>"
                                         data-telefono="<?php echo htmlspecialchars($taller['telefono']); ?>"
                                         data-correo="<?php echo htmlspecialchars($taller['correo']); ?>"
-                                        data-especialidad="<?php echo $taller['id_especialidad']; ?>"
-                                        data-sucursal="<?php echo $taller['id_sucursal']; ?>">
+                                        data-especialidad="<?php echo $taller['id_especialidad']; ?>">
                                     Editar
                                 </button>
                                 <form method="post" style="display:inline;" onsubmit="return confirm('¿Estás seguro de eliminar este taller?')">
@@ -328,7 +293,7 @@ $talleres = obtenerTalleres();
                         <?php endforeach; ?>
                         <?php if (empty($talleres)): ?>
                         <tr>
-                            <td colspan="7" class="text-center">No hay talleres registrados</td>
+                            <td colspan="6" class="text-center">No hay talleres registrados</td>
                         </tr>
                         <?php endif; ?>
                     </tbody>
@@ -383,7 +348,6 @@ $talleres = obtenerTalleres();
                     const telefono = this.getAttribute('data-telefono');
                     const correo = this.getAttribute('data-correo');
                     const especialidad = this.getAttribute('data-especialidad');
-                    const sucursal = this.getAttribute('data-sucursal');
 
                     // Llenar formulario
                     idTallerInput.value = id;
@@ -391,7 +355,6 @@ $talleres = obtenerTalleres();
                     document.getElementById('telefono').value = telefono;
                     document.getElementById('correo').value = correo;
                     document.getElementById('id_especialidad').value = especialidad;
-                    document.getElementById('id_sucursal').value = sucursal;
 
                     mostrarBotonesActualizar();
                 });

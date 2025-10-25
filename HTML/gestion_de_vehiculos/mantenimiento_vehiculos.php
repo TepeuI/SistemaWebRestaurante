@@ -29,18 +29,17 @@ function crearMantenimiento() {
     global $conn;
     $conn = conectar();
     
-    $id_placa = $_POST['id_placa'] ?? '';
+    $id_vehiculo = $_POST['id_vehiculo'] ?? '';
     $id_taller = $_POST['id_taller'] ?? '';
     $descripcion_mantenimiento = $_POST['descripcion_mantenimiento'] ?? '';
     $fecha_mantenimiento = $_POST['fecha_mantenimiento'] ?? '';
-    $costo_mantenimiento_q = $_POST['costo_mantenimiento_q'] ?? '';
-    $estado = $_POST['estado'] ?? 'PROGRAMADO';
+    $costo_mantenimiento = $_POST['costo_mantenimiento'] ?? '';
     
-    $sql = "INSERT INTO mantenimiento_vehiculo (id_placa, id_taller, descripcion_mantenimiento, fecha_mantenimiento, costo_mantenimiento_q, estado) 
-            VALUES (?, ?, ?, ?, ?, ?)";
+    $sql = "INSERT INTO mantenimiento_vehiculo (id_vehiculo, id_taller, descripcion_mantenimiento, fecha_mantenimiento, costo_mantenimiento) 
+            VALUES (?, ?, ?, ?, ?)";
     
     $stmt = $conn->prepare($sql);
-    $stmt->bind_param("iissds", $id_placa, $id_taller, $descripcion_mantenimiento, $fecha_mantenimiento, $costo_mantenimiento_q, $estado);
+    $stmt->bind_param("iissd", $id_vehiculo, $id_taller, $descripcion_mantenimiento, $fecha_mantenimiento, $costo_mantenimiento);
     
     if ($stmt->execute()) {
         $_SESSION['mensaje'] = "Mantenimiento creado exitosamente";
@@ -61,20 +60,19 @@ function actualizarMantenimiento() {
     $conn = conectar();
     
     $id_mantenimiento = $_POST['id_mantenimiento'] ?? '';
-    $id_placa = $_POST['id_placa'] ?? '';
+    $id_vehiculo = $_POST['id_vehiculo'] ?? '';
     $id_taller = $_POST['id_taller'] ?? '';
     $descripcion_mantenimiento = $_POST['descripcion_mantenimiento'] ?? '';
     $fecha_mantenimiento = $_POST['fecha_mantenimiento'] ?? '';
-    $costo_mantenimiento_q = $_POST['costo_mantenimiento_q'] ?? '';
-    $estado = $_POST['estado'] ?? '';
+    $costo_mantenimiento = $_POST['costo_mantenimiento'] ?? '';
     
     $sql = "UPDATE mantenimiento_vehiculo 
-            SET id_placa = ?, id_taller = ?, descripcion_mantenimiento = ?, 
-                fecha_mantenimiento = ?, costo_mantenimiento_q = ?, estado = ? 
+            SET id_vehiculo = ?, id_taller = ?, descripcion_mantenimiento = ?, 
+                fecha_mantenimiento = ?, costo_mantenimiento = ? 
             WHERE id_mantenimiento = ?";
     
     $stmt = $conn->prepare($sql);
-    $stmt->bind_param("iissdsi", $id_placa, $id_taller, $descripcion_mantenimiento, $fecha_mantenimiento, $costo_mantenimiento_q, $estado, $id_mantenimiento);
+    $stmt->bind_param("iissdi", $id_vehiculo, $id_taller, $descripcion_mantenimiento, $fecha_mantenimiento, $costo_mantenimiento, $id_mantenimiento);
     
     if ($stmt->execute()) {
         $_SESSION['mensaje'] = "Mantenimiento actualizado exitosamente";
@@ -118,7 +116,7 @@ function eliminarMantenimiento() {
 // Obtener datos para los selectores
 function obtenerVehiculos() {
     $conn = conectar();
-    $sql = "SELECT id_placa, no_placas, marca, modelo FROM vehiculos ORDER BY no_placas";
+    $sql = "SELECT id_vehiculo, no_placa, marca_vehiculo, modelo_vehiculo FROM vehiculos ORDER BY no_placa";
     $resultado = $conn->query($sql);
     $vehiculos = [];
     
@@ -151,9 +149,9 @@ function obtenerTalleres() {
 // Obtener todos los mantenimientos para mostrar en la tabla
 function obtenerMantenimientos() {
     $conn = conectar();
-    $sql = "SELECT mv.*, v.no_placas, v.marca, v.modelo, t.nombre_taller 
+    $sql = "SELECT mv.*, v.no_placa, v.marca_vehiculo, v.modelo_vehiculo, t.nombre_taller 
             FROM mantenimiento_vehiculo mv
-            LEFT JOIN vehiculos v ON mv.id_placa = v.id_placa
+            LEFT JOIN vehiculos v ON mv.id_vehiculo = v.id_vehiculo
             LEFT JOIN talleres t ON mv.id_taller = t.id_taller
             ORDER BY mv.fecha_mantenimiento DESC";
     $resultado = $conn->query($sql);
@@ -178,7 +176,7 @@ $mantenimientos = obtenerMantenimientos();
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mantenimiento de Vehículos - Marea Roja</title>
+    <title>Mantenimiento de Vehículos - Marina Roja</title>
     <!-- Google Fonts: Poppins -->
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
     <style>
@@ -203,9 +201,6 @@ $mantenimientos = obtenerMantenimientos();
         .btn-action {
             margin: 2px;
         }
-        .badge-programado { background-color: #6c757d; }
-        .badge-proceso { background-color: #ffc107; color: #000; }
-        .badge-finalizado { background-color: #198754; }
     </style>
     <!-- Frameworks y librerías base -->
     <link rel="stylesheet" href="../../css/bootstrap.min.css">
@@ -241,12 +236,12 @@ $mantenimientos = obtenerMantenimientos();
                 <input type="hidden" id="id_mantenimiento" name="id_mantenimiento" value="">
                 
                 <div class="col-md-4">
-                    <label class="form-label" for="id_placa">Vehículo:</label>
-                    <select class="form-control" id="id_placa" name="id_placa" required>
+                    <label class="form-label" for="id_vehiculo">Vehículo:</label>
+                    <select class="form-control" id="id_vehiculo" name="id_vehiculo" required>
                         <option value="">Seleccione un vehículo</option>
                         <?php foreach($vehiculos as $vehiculo): ?>
-                            <option value="<?php echo $vehiculo['id_placa']; ?>">
-                                <?php echo htmlspecialchars($vehiculo['no_placas'] . ' - ' . $vehiculo['marca'] . ' ' . $vehiculo['modelo']); ?>
+                            <option value="<?php echo $vehiculo['id_vehiculo']; ?>">
+                                <?php echo htmlspecialchars($vehiculo['no_placa'] . ' - ' . $vehiculo['marca_vehiculo'] . ' ' . $vehiculo['modelo_vehiculo']); ?>
                             </option>
                         <?php endforeach; ?>
                     </select>
@@ -270,18 +265,9 @@ $mantenimientos = obtenerMantenimientos();
                 </div>
                 
                 <div class="col-md-6">
-                    <label class="form-label" for="costo_mantenimiento_q">Costo (Q):</label>
-                    <input type="number" class="form-control" id="costo_mantenimiento_q" name="costo_mantenimiento_q" 
+                    <label class="form-label" for="costo_mantenimiento">Costo (Q):</label>
+                    <input type="number" class="form-control" id="costo_mantenimiento" name="costo_mantenimiento" 
                            step="0.01" min="0" required placeholder="Ej. 1250.00">
-                </div>
-                
-                <div class="col-md-6">
-                    <label class="form-label" for="estado">Estado:</label>
-                    <select class="form-control" id="estado" name="estado" required>
-                        <option value="PROGRAMADO">PROGRAMADO</option>
-                        <option value="EN_PROCESO">EN PROCESO</option>
-                        <option value="FINALIZADO">FINALIZADO</option>
-                    </select>
                 </div>
                 
                 <div class="col-12">
@@ -308,7 +294,6 @@ $mantenimientos = obtenerMantenimientos();
                             <th>Taller</th>
                             <th>Fecha</th>
                             <th>Costo (Q)</th>
-                            <th>Estado</th>
                             <th>Descripción</th>
                             <th>Acciones</th>
                         </tr>
@@ -317,26 +302,18 @@ $mantenimientos = obtenerMantenimientos();
                         <?php foreach($mantenimientos as $mantenimiento): ?>
                         <tr>
                             <td><?php echo htmlspecialchars($mantenimiento['id_mantenimiento']); ?></td>
-                            <td><?php echo htmlspecialchars($mantenimiento['no_placas'] . ' - ' . $mantenimiento['marca']); ?></td>
+                            <td><?php echo htmlspecialchars($mantenimiento['no_placa'] . ' - ' . $mantenimiento['marca_vehiculo']); ?></td>
                             <td><?php echo htmlspecialchars($mantenimiento['nombre_taller'] ?? 'N/A'); ?></td>
                             <td><?php echo htmlspecialchars($mantenimiento['fecha_mantenimiento']); ?></td>
-                            <td>Q<?php echo number_format($mantenimiento['costo_mantenimiento_q'], 2); ?></td>
-                            <td>
-                                <span class="badge 
-                                    <?php echo $mantenimiento['estado'] == 'PROGRAMADO' ? 'badge-programado' : 
-                                           ($mantenimiento['estado'] == 'EN_PROCESO' ? 'badge-proceso' : 'badge-finalizado'); ?>">
-                                    <?php echo htmlspecialchars($mantenimiento['estado']); ?>
-                                </span>
-                            </td>
+                            <td>Q<?php echo number_format($mantenimiento['costo_mantenimiento'], 2); ?></td>
                             <td><?php echo htmlspecialchars($mantenimiento['descripcion_mantenimiento']); ?></td>
                             <td>
                                 <button class="btn btn-sm btn-primary btn-action editar-btn" 
                                         data-id="<?php echo $mantenimiento['id_mantenimiento']; ?>"
-                                        data-placa="<?php echo $mantenimiento['id_placa']; ?>"
+                                        data-vehiculo="<?php echo $mantenimiento['id_vehiculo']; ?>"
                                         data-taller="<?php echo $mantenimiento['id_taller']; ?>"
                                         data-fecha="<?php echo $mantenimiento['fecha_mantenimiento']; ?>"
-                                        data-costo="<?php echo $mantenimiento['costo_mantenimiento_q']; ?>"
-                                        data-estado="<?php echo $mantenimiento['estado']; ?>"
+                                        data-costo="<?php echo $mantenimiento['costo_mantenimiento']; ?>"
                                         data-descripcion="<?php echo htmlspecialchars($mantenimiento['descripcion_mantenimiento']); ?>">
                                     Editar
                                 </button>
@@ -350,7 +327,7 @@ $mantenimientos = obtenerMantenimientos();
                         <?php endforeach; ?>
                         <?php if (empty($mantenimientos)): ?>
                         <tr>
-                            <td colspan="8" class="text-center">No hay mantenimientos registrados</td>
+                            <td colspan="7" class="text-center">No hay mantenimientos registrados</td>
                         </tr>
                         <?php endif; ?>
                     </tbody>
@@ -401,20 +378,18 @@ $mantenimientos = obtenerMantenimientos();
             document.querySelectorAll('.editar-btn').forEach(btn => {
                 btn.addEventListener('click', function() {
                     const id = this.getAttribute('data-id');
-                    const placa = this.getAttribute('data-placa');
+                    const vehiculo = this.getAttribute('data-vehiculo');
                     const taller = this.getAttribute('data-taller');
                     const fecha = this.getAttribute('data-fecha');
                     const costo = this.getAttribute('data-costo');
-                    const estado = this.getAttribute('data-estado');
                     const descripcion = this.getAttribute('data-descripcion');
 
                     // Llenar formulario
                     idMantenimientoInput.value = id;
-                    document.getElementById('id_placa').value = placa;
+                    document.getElementById('id_vehiculo').value = vehiculo;
                     document.getElementById('id_taller').value = taller;
                     document.getElementById('fecha_mantenimiento').value = fecha;
-                    document.getElementById('costo_mantenimiento_q').value = costo;
-                    document.getElementById('estado').value = estado;
+                    document.getElementById('costo_mantenimiento').value = costo;
                     document.getElementById('descripcion_mantenimiento').value = descripcion;
 
                     mostrarBotonesActualizar();
@@ -440,13 +415,13 @@ $mantenimientos = obtenerMantenimientos();
             }
 
             function validarFormulario() {
-                const placa = document.getElementById('id_placa').value;
+                const vehiculo = document.getElementById('id_vehiculo').value;
                 const taller = document.getElementById('id_taller').value;
                 const fecha = document.getElementById('fecha_mantenimiento').value;
-                const costo = document.getElementById('costo_mantenimiento_q').value;
+                const costo = document.getElementById('costo_mantenimiento').value;
                 const descripcion = document.getElementById('descripcion_mantenimiento').value.trim();
 
-                if (!placa) {
+                if (!vehiculo) {
                     alert('Seleccione un vehículo');
                     return false;
                 }
