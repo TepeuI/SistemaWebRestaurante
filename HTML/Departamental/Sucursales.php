@@ -197,38 +197,38 @@ desconectar($conn);
 
             <div class="col-md-4">
                 <label class="form-label">Dirección</label>
-                <input type="text" class="form-control" name="direccion_sucursal" id="direccion_sucursal" required>
+                <input type="text" class="form-control" name="direccion_sucursal" id="direccion_sucursal" required disabled>
             </div>
 
             <div class="col-md-2">
                 <label class="form-label">Horario Apertura</label>
-                <input type="time" class="form-control" name="horario_apertura" id="horario_apertura" required>
+                <input type="time" class="form-control" name="horario_apertura" id="horario_apertura" required disabled>
             </div>
 
             <div class="col-md-2">
                 <label class="form-label">Hora Cierre</label>
-                <input type="time" class="form-control" name="hora_cierre" id="hora_cierre" required>
+                <input type="time" class="form-control" name="hora_cierre" id="hora_cierre" required disabled>
             </div>
 
             <div class="col-md-2">
                 <label class="form-label">Capacidad Empleados</label>
-                <input type="number" class="form-control" name="capacidad_empleados" id="capacidad_empleados" min="0" required>
+                <input type="number" class="form-control" name="capacidad_empleados" id="capacidad_empleados" min="0" required disabled>
             </div>
 
             <div class="col-md-2">
                 <label class="form-label">Teléfono</label>
-                <input type="text" class="form-control" name="telefono_sucursal" id="telefono_sucursal">
+                <input type="text" class="form-control" name="telefono_sucursal" id="telefono_sucursal" disabled>
             </div>
 
             <div class="col-md-4">
                 <label class="form-label">Correo</label>
-                <input type="email" class="form-control" name="correo_sucursal" id="correo_sucursal">
+                <input type="email" class="form-control" name="correo_sucursal" id="correo_sucursal" disabled>
             </div>
 
             <div class="col-md-3">
                 <label class="form-label">ID Departamento</label>
                 <!-- Usamos input text + datalist para que dentro del textbox aparezcan las IDs existentes (1,2,34,...) -->
-                <input type="text" class="form-control" name="id_departamento" id="id_departamento" list="departamentos-list" inputmode="numeric">
+                <input type="text" class="form-control" name="id_departamento" id="id_departamento" list="departamentos-list" inputmode="numeric" disabled>
                 <datalist id="departamentos-list">
                     <?php foreach ($departamentos_map as $dep_id => $dep_name): ?>
                         <!-- Valor mostrado en el textbox: 'id - Nombre' -->
@@ -277,7 +277,7 @@ desconectar($conn);
                         <td><?php echo htmlspecialchars($sucursal['correo_sucursal']); ?></td>
                         <td><?php echo $sucursal['id_departamento']; ?></td>
                         <td class="text-center">
-                            <button type="button" class="btn btn-primary btn-sm editar-btn"
+                <button type="button" class="btn btn-primary btn-sm editar-btn" disabled
                                     data-id="<?php echo $sucursal['id_sucursal']; ?>"
                                     data-direccion="<?php echo htmlspecialchars($sucursal['direccion_sucursal']); ?>"
                                     data-apertura="<?php echo $sucursal['horario_apertura']; ?>"
@@ -291,7 +291,7 @@ desconectar($conn);
                             <form method="post" style="display:inline;margin-left:6px;" data-eliminar="true">
                                 <input type="hidden" name="operacion" value="eliminar">
                                 <input type="hidden" name="id_sucursal" value="<?php echo $sucursal['id_sucursal']; ?>">
-                                <button type="submit" class="btn btn-danger btn-sm">Eliminar</button>
+                                <button type="submit" class="btn btn-danger btn-sm" disabled>Eliminar</button>
                             </form>
                         </td>
                     </tr>

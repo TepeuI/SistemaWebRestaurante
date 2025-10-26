@@ -220,22 +220,22 @@ desconectar($conn);
 
             <div class="col-md-3">
                 <label class="form-label">DPI</label>
-                <input type="text" class="form-control" name="dpi" id="dpi" required>
+                <input type="text" class="form-control" name="dpi" id="dpi" required disabled>
             </div>
 
             <div class="col-md-3">
                 <label class="form-label">Nombre</label>
-                <input type="text" class="form-control" name="nombre_empleado" id="nombre_empleado" required>
+                <input type="text" class="form-control" name="nombre_empleado" id="nombre_empleado" required disabled>
             </div>
 
             <div class="col-md-3">
                 <label class="form-label">Apellido</label>
-                <input type="text" class="form-control" name="apellido_empleado" id="apellido_empleado" required>
+                <input type="text" class="form-control" name="apellido_empleado" id="apellido_empleado" required disabled>
             </div>
 
             <div class="col-md-3">
-                <label class="form-label">Departamento</label>
-                <input type="text" class="form-control" name="id_departamento" id="id_departamento" list="departamentos-list" inputmode="numeric">
+                <label class="form-label">ID Departamento</label>
+                <input type="text" class="form-control" name="id_departamento" id="id_departamento" list="departamentos-list" inputmode="numeric" disabled>
                 <datalist id="departamentos-list">
                     <?php foreach ($departamentos_map as $dep_id => $dep_name): ?>
                         <option value="<?php echo htmlspecialchars($dep_id . ' - ' . $dep_name, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'); ?>"></option>
@@ -244,8 +244,8 @@ desconectar($conn);
             </div>
 
             <div class="col-md-3">
-                <label class="form-label">Puesto</label>
-                <input type="text" class="form-control" name="id_puesto" id="id_puesto" list="puestos-list" inputmode="numeric">
+                <label class="form-label">ID Puesto</label>
+                <input type="text" class="form-control" name="id_puesto" id="id_puesto" list="puestos-list" inputmode="numeric" disabled>
                 <datalist id="puestos-list">
                     <?php foreach ($puestos_map as $puesto_id => $puesto_nombre): ?>
                         <option value="<?php echo htmlspecialchars($puesto_id . ' - ' . $puesto_nombre, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'); ?>"></option>
@@ -289,7 +289,7 @@ desconectar($conn);
                         <td><?= htmlspecialchars($empleado['id_departamento']); ?></td>
                         <td><?= htmlspecialchars($empleado['id_puesto']); ?></td>
                         <td class="text-center">
-                            <button type="button" class="btn btn-primary btn-sm editar-btn"
+                            <button type="button" class="btn btn-primary btn-sm editar-btn" disabled
                                 data-id="<?= $empleado['id_empleado']; ?>"
                                 data-dpi="<?= htmlspecialchars($empleado['dpi']); ?>"
                                 data-nombre="<?= htmlspecialchars($empleado['nombre_empleado']); ?>"
@@ -299,7 +299,7 @@ desconectar($conn);
                             <form method="post" style="display:inline;margin-left:6px;" data-eliminar="true">
                                 <input type="hidden" name="operacion" value="eliminar">
                                 <input type="hidden" name="id_empleado" value="<?= $empleado['id_empleado']; ?>">
-                                <button type="submit" class="btn btn-danger btn-sm">Eliminar</button>
+                                <button type="submit" class="btn btn-danger btn-sm" disabled>Eliminar</button>
                             </form>
                         </td>
                     </tr>

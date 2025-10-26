@@ -11,6 +11,45 @@ document.addEventListener('DOMContentLoaded', function() {
 
     if (!form) return;
 
+    const inputs = form.querySelectorAll('input, select, textarea');
+
+    // 🔒 Bloquear campos al inicio
+    function bloquearCampos() {
+        inputs.forEach(input => {
+            if (input.type !== 'hidden') input.disabled = true;
+        });
+        if (btnGuardar) btnGuardar.disabled = true;
+        if (btnActualizar) btnActualizar.disabled = true;
+        if (btnCancelar) btnCancelar.style.display = 'none';
+        if (btnNuevo) btnNuevo.disabled = false;
+        // Deshabilitar acciones de la tabla (editar/eliminar)
+        setTableActionsDisabled(true);
+    }
+
+    // 🔓 Habilitar campos al presionar "Nuevo"
+    function habilitarCampos() {
+        inputs.forEach(input => {
+            if (input.type !== 'hidden') input.disabled = false;
+        });
+        if (btnGuardar) btnGuardar.disabled = false;
+        if (btnActualizar) btnActualizar.disabled = false;
+        if (btnCancelar) btnCancelar.style.display = 'inline-block';
+        if (btnNuevo) btnNuevo.disabled = true;
+        // enfocar primer campo
+        const first = document.querySelector('input:not([type=hidden])');
+        if (first) first.focus();
+        // Habilitar acciones de la tabla
+        setTableActionsDisabled(false);
+    }
+
+    // Habilita/deshabilita botones de editar y eliminar en la tabla
+    function setTableActionsDisabled(disabled) {
+        const editBtns = document.querySelectorAll('.editar-btn');
+        editBtns.forEach(b => b.disabled = !!disabled);
+        const deleteBtns = document.querySelectorAll('form[data-eliminar="true"] button[type="submit"], form[data-eliminar="true"] button');
+        deleteBtns.forEach(b => b.disabled = !!disabled);
+    }
+
     // Asegurar que la lista esté oculta al cargar
     if (listaSucursales) listaSucursales.style.display = 'none';
 
@@ -32,6 +71,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // (display of department name under input removed per user request)
 
     btnNuevo.addEventListener('click', function() {
+        habilitarCampos();
         limpiarFormulario();
         mostrarBotonesGuardar();
     });
@@ -51,8 +91,10 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     btnCancelar.addEventListener('click', function() {
+        // Restaurar bloqueo con "Cancelar"
+        bloquearCampos();
+        if (btnNuevo) btnNuevo.disabled = false;
         limpiarFormulario();
-        mostrarBotonesGuardar();
     });
 
     // Interceptar formularios de eliminación y mostrar SweetAlert confirm
@@ -141,10 +183,13 @@ document.addEventListener('DOMContentLoaded', function() {
         mostrarBotonesGuardar();
     }
 
+    // Bloquear campos al cargar la página
+    bloquearCampos();
+
     function mostrarBotonesGuardar() {
         if (btnGuardar) btnGuardar.style.display = 'inline-block';
         if (btnActualizar) btnActualizar.style.display = 'none';
-        if (btnCancelar) btnCancelar.style.display = 'none';
+        if (btnCancelar) btnCancelar.style.display = 'inline-block';
     }
 
     function mostrarBotonesActualizar() {

@@ -12,16 +12,83 @@ document.addEventListener('DOMContentLoaded', function() {
     const btnMostrarLista = document.getElementById('btn-mostrar-lista');
     const contenedorLista = document.getElementById('lista-empleados');
 
+    const inputs = form ? form.querySelectorAll('input, select, textarea') : [];
+
+    // 🔒 Bloquear campos al inicio
+    function bloquearCampos() {
+        inputs.forEach(input => {
+            if (input.type !== 'hidden') input.disabled = true;
+        });
+        if (btnGuardar) btnGuardar.disabled = true;
+        if (btnActualizar) btnActualizar.disabled = true;
+        if (btnCancelar) btnCancelar.style.display = 'none';
+        if (btnNuevo) btnNuevo.disabled = false;
+        // Deshabilitar acciones de la tabla (editar/eliminar)
+        setTableActionsDisabled(true);
+    }
+
+    // 🔓 Habilitar campos al presionar "Nuevo"
+    function habilitarCampos() {
+        inputs.forEach(input => {
+            if (input.type !== 'hidden') input.disabled = false;
+        });
+        if (btnGuardar) btnGuardar.disabled = false;
+        if (btnActualizar) btnActualizar.disabled = false;
+        if (btnCancelar) btnCancelar.style.display = 'inline-block';
+        if (btnNuevo) btnNuevo.disabled = true;
+        // enfocar el primer campo utilizable
+        const first = document.getElementById('dpi') || document.getElementById('nombre_empleado');
+        if (first) first.focus();
+        // Habilitar acciones de la tabla (editar/eliminar)
+        setTableActionsDisabled(false);
+    }
+
+    // Habilita/deshabilita botones de editar y eliminar en la tabla
+    function setTableActionsDisabled(disabled) {
+        const editBtns = document.querySelectorAll('.editar-btn');
+        editBtns.forEach(b => b.disabled = !!disabled);
+        const deleteBtns = document.querySelectorAll('form[data-eliminar="true"] button[type="submit"], form[data-eliminar="true"] button');
+        deleteBtns.forEach(b => b.disabled = !!disabled);
+    }
+
     if (btnNuevo) btnNuevo.addEventListener('click', function() {
+        habilitarCampos();
         limpiarFormulario();
         mostrarBotonesGuardar();
     });
 
+    // Helper para escapar HTML en el contenido de SweetAlert
+    function escapeHtml(unsafe) {
+        return String(unsafe)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#039;');
+    }
+
     if (btnGuardar) btnGuardar.addEventListener('click', function() {
         if (!form) return console.warn('Formulario no encontrado');
-        if (validarFormulario()) {
-            if (operacionInput) operacionInput.value = 'crear';
-            form.submit();
+        if (!validarFormulario()) return;
+        if (operacionInput) operacionInput.value = 'crear';
+
+        const nombre = document.getElementById('nombre_empleado') ? document.getElementById('nombre_empleado').value.trim() : '';
+        const dpi = document.getElementById('dpi') ? document.getElementById('dpi').value.trim() : '';
+
+        if (typeof Swal !== 'undefined') {
+            Swal.fire({
+                title: '¿Guardar empleado?',
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonText: 'Si',
+                cancelButtonText: 'Cancelar'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    form.submit();
+                }
+            });
+        } else {
+            if (confirm('¿Guardar empleado?')) form.submit();
         }
     });
 
@@ -34,8 +101,10 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     if (btnCancelar) btnCancelar.addEventListener('click', function() {
+        // Restaurar bloqueo con "Cancelar"
+        bloquearCampos();
+        if (btnNuevo) btnNuevo.disabled = false;
         limpiarFormulario();
-        mostrarBotonesGuardar();
     });
     // Editar: conectar botones de la tabla al formulario con confirmación SweetAlert
     // Conectar botones de edición si existen en la tabla
@@ -65,6 +134,8 @@ document.addEventListener('DOMContentLoaded', function() {
                     idPuestoInput.value = puesto || '';
                 }
 
+                // Desbloquear campos para edición y mostrar botones de actualizar
+                habilitarCampos();
                 mostrarBotonesActualizar();
             };
 
@@ -93,10 +164,13 @@ document.addEventListener('DOMContentLoaded', function() {
         mostrarBotonesGuardar();
     }
 
+    // Bloquear campos al cargar la página
+    bloquearCampos();
+
     function mostrarBotonesGuardar() {
         if (btnGuardar) btnGuardar.style.display = 'inline-block';
         if (btnActualizar) btnActualizar.style.display = 'none';
-        if (btnCancelar) btnCancelar.style.display = 'none';
+        if (btnCancelar) btnCancelar.style.display = 'inline-block';
     }
 
     function mostrarBotonesActualizar() {

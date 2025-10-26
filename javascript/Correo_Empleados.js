@@ -20,6 +20,8 @@ document.addEventListener('DOMContentLoaded', function() {
         btnGuardar.disabled = true;
         btnActualizar.disabled = true;
         btnCancelar.style.display = 'none';
+        // Deshabilitar acciones de la tabla (editar/eliminar)
+        setTableActionsDisabled(true);
     }
 
     // Habilitar campos al presionar "Nuevo"
@@ -28,9 +30,12 @@ document.addEventListener('DOMContentLoaded', function() {
             if (input.type !== 'hidden') input.disabled = false;
         });
         btnGuardar.disabled = false;
+        btnActualizar.disabled = false;
         btnCancelar.style.display = 'inline-block';
         btnNuevo.disabled = true;
         inputs[0].focus(); // coloca el cursor en el primer campo
+        // Habilitar acciones de la tabla (editar/eliminar)
+        setTableActionsDisabled(false);
     }
 
     // Restaurar bloqueo con "Cancelar"
@@ -128,6 +133,14 @@ document.addEventListener('DOMContentLoaded', function() {
             mostrarBotonesActualizar();
         });
     });
+
+    // Habilita/deshabilita botones de editar y eliminar en la tabla
+    function setTableActionsDisabled(disabled) {
+        const editBtns = document.querySelectorAll('.editar-btn');
+        editBtns.forEach(b => b.disabled = !!disabled);
+        const deleteBtns = document.querySelectorAll('form[data-eliminar="true"] button[type="submit"], form[data-eliminar="true"] button');
+        deleteBtns.forEach(b => b.disabled = !!disabled);
+    }
 
     // Confirmar eliminación
     document.querySelectorAll('form[data-eliminar="true"]').forEach(f => {
