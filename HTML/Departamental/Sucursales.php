@@ -1,4 +1,4 @@
-<!-- Ernesto David Samayoa Jocol 0901-22-3415 -->
+<!-- Ernesto David Samayoa Jocol 0901-22-3415 nuevo -->
 <?php
 session_start();
 require_once '../conexion.php';
