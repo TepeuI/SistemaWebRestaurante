@@ -31,14 +31,16 @@ function crearDetalleCompra() {
     
     $id_compra_ingrediente = intval($_POST['id_compra_ingrediente'] ?? '');
     $id_ingrediente = intval($_POST['id_ingrediente'] ?? '');
+    $id_unidad = intval($_POST['id_unidad'] ?? '');
     $cantidad_compra = floatval($_POST['cantidad_compra'] ?? 0);
-    $costo_unitario_q = floatval($_POST['costo_unitario_q'] ?? 0);
+    $costo_unitario = floatval($_POST['costo_unitario'] ?? 0);
+    $costo_total = $cantidad_compra * $costo_unitario;
     
-    $sql = "INSERT INTO detalle_compra_ingrediente (id_compra_ingrediente, id_ingrediente, cantidad_compra, costo_unitario_q) 
-            VALUES (?, ?, ?, ?)";
+    $sql = "INSERT INTO detalle_compra_ingrediente (id_compra_ingrediente, id_ingrediente, id_unidad, cantidad_compra, costo_unitario, costo_total) 
+            VALUES (?, ?, ?, ?, ?, ?)";
     
     $stmt = $conn->prepare($sql);
-    $stmt->bind_param("iidd", $id_compra_ingrediente, $id_ingrediente, $cantidad_compra, $costo_unitario_q);
+    $stmt->bind_param("iiiddd", $id_compra_ingrediente, $id_ingrediente, $id_unidad, $cantidad_compra, $costo_unitario, $costo_total);
     
     if ($stmt->execute()) {
         $_SESSION['mensaje'] = "Detalle de compra registrado exitosamente";
@@ -58,17 +60,18 @@ function actualizarDetalleCompra() {
     global $conn;
     $conn = conectar();
     
-    $id_detalle = intval($_POST['id_detalle'] ?? '');
     $id_compra_ingrediente = intval($_POST['id_compra_ingrediente'] ?? '');
     $id_ingrediente = intval($_POST['id_ingrediente'] ?? '');
+    $id_unidad = intval($_POST['id_unidad'] ?? '');
     $cantidad_compra = floatval($_POST['cantidad_compra'] ?? 0);
-    $costo_unitario_q = floatval($_POST['costo_unitario_q'] ?? 0);
+    $costo_unitario = floatval($_POST['costo_unitario'] ?? 0);
+    $costo_total = $cantidad_compra * $costo_unitario;
     
-    $sql = "UPDATE detalle_compra_ingrediente SET id_compra_ingrediente = ?, id_ingrediente = ?, cantidad_compra = ?, costo_unitario_q = ? 
-            WHERE id_detalle = ?";
+    $sql = "UPDATE detalle_compra_ingrediente SET id_unidad = ?, cantidad_compra = ?, costo_unitario = ?, costo_total = ? 
+            WHERE id_compra_ingrediente = ? AND id_ingrediente = ?";
     
     $stmt = $conn->prepare($sql);
-    $stmt->bind_param("iiddi", $id_compra_ingrediente, $id_ingrediente, $cantidad_compra, $costo_unitario_q, $id_detalle);
+    $stmt->bind_param("idddii", $id_unidad, $cantidad_compra, $costo_unitario, $costo_total, $id_compra_ingrediente, $id_ingrediente);
     
     if ($stmt->execute()) {
         $_SESSION['mensaje'] = "Detalle de compra actualizado exitosamente";
@@ -88,12 +91,14 @@ function eliminarDetalleCompra() {
     global $conn;
     $conn = conectar();
     
-    $id_detalle = intval($_POST['id_detalle'] ?? '');
+    $id_compra_ingrediente = intval($_POST['id_compra_ingrediente'] ?? '');
+    $id_ingrediente = intval($_POST['id_ingrediente'] ?? '');
     
-    $sql = "DELETE FROM detalle_compra_ingrediente WHERE id_detalle = ?";
+    $sql = "DELETE FROM detalle_compra_ingrediente 
+            WHERE id_compra_ingrediente = ? AND id_ingrediente = ?";
     
     $stmt = $conn->prepare($sql);
-    $stmt->bind_param("i", $id_detalle);
+    $stmt->bind_param("ii", $id_compra_ingrediente, $id_ingrediente);
     
     if ($stmt->execute()) {
         $_SESSION['mensaje'] = "Detalle de compra eliminado exitosamente";
@@ -113,16 +118,15 @@ function eliminarDetalleCompra() {
 function obtenerDetallesCompra() {
     $conn = conectar();
     $sql = "SELECT dci.*, 
-                   ci.id_compra_ingrediente,
+                   ci.fecha_de_compra,
                    i.nombre_ingrediente,
                    um.unidad,
-                   um.abreviatura,
-                   (dci.cantidad_compra * dci.costo_unitario_q) as costo_total_q
+                   um.abreviatura
             FROM detalle_compra_ingrediente dci 
             LEFT JOIN compras_ingrediente ci ON dci.id_compra_ingrediente = ci.id_compra_ingrediente 
             LEFT JOIN ingredientes i ON dci.id_ingrediente = i.id_ingrediente 
-            LEFT JOIN unidades_medida um ON i.id_unidad = um.id_unidad 
-            ORDER BY dci.id_detalle DESC";
+            LEFT JOIN unidades_medida um ON dci.id_unidad = um.id_unidad 
+            ORDER BY ci.fecha_de_compra DESC, dci.id_compra_ingrediente DESC";
     $resultado = $conn->query($sql);
     $detalles = [];
     
@@ -158,7 +162,7 @@ function obtenerCompras() {
 // Obtener ingredientes para el dropdown
 function obtenerIngredientes() {
     $conn = conectar();
-    $sql = "SELECT i.id_ingrediente, i.nombre_ingrediente, um.unidad, um.abreviatura 
+    $sql = "SELECT i.id_ingrediente, i.nombre_ingrediente, i.id_unidad, um.unidad, um.abreviatura 
             FROM ingredientes i 
             LEFT JOIN unidades_medida um ON i.id_unidad = um.id_unidad 
             ORDER BY i.nombre_ingrediente";
@@ -175,9 +179,27 @@ function obtenerIngredientes() {
     return $ingredientes;
 }
 
+// Obtener unidades de medida para el dropdown
+function obtenerUnidadesMedida() {
+    $conn = conectar();
+    $sql = "SELECT * FROM unidades_medida ORDER BY unidad";
+    $resultado = $conn->query($sql);
+    $unidades = [];
+    
+    if ($resultado && $resultado->num_rows > 0) {
+        while($fila = $resultado->fetch_assoc()) {
+            $unidades[] = $fila;
+        }
+    }
+    
+    desconectar($conn);
+    return $unidades;
+}
+
 $detalles = obtenerDetallesCompra();
 $compras = obtenerCompras();
 $ingredientes = obtenerIngredientes();
+$unidades = obtenerUnidadesMedida();
 ?>
 <!DOCTYPE html>
 <html lang="es">
@@ -292,7 +314,8 @@ $ingredientes = obtenerIngredientes();
 
         <form id="form-detalle-compra" method="post" class="row g-3">
             <input type="hidden" id="operacion" name="operacion" value="crear">
-            <input type="hidden" id="id_detalle" name="id_detalle" value="">
+            <input type="hidden" id="id_compra_ingrediente_original" name="id_compra_ingrediente_original" value="">
+            <input type="hidden" id="id_ingrediente_original" name="id_ingrediente_original" value="">
             
             <div class="col-md-3">
                 <label class="form-label fw-semibold" for="id_compra_ingrediente">
@@ -316,8 +339,22 @@ $ingredientes = obtenerIngredientes();
                     <option value="">Seleccione un ingrediente</option>
                     <?php foreach($ingredientes as $ingrediente): ?>
                         <option value="<?php echo $ingrediente['id_ingrediente']; ?>" 
-                                data-unidad="<?php echo $ingrediente['abreviatura']; ?>">
+                                data-unidad="<?php echo $ingrediente['id_unidad']; ?>">
                             <?php echo htmlspecialchars($ingrediente['nombre_ingrediente']); ?>
+                        </option>
+                    <?php endforeach; ?>
+                </select>
+            </div>
+            
+            <div class="col-md-2">
+                <label class="form-label fw-semibold" for="id_unidad">
+                    <i class="bi bi-rulers me-1"></i>Unidad: *
+                </label>
+                <select class="form-control" id="id_unidad" name="id_unidad" required>
+                    <option value="">Seleccione unidad</option>
+                    <?php foreach($unidades as $unidad): ?>
+                        <option value="<?php echo $unidad['id_unidad']; ?>">
+                            <?php echo htmlspecialchars($unidad['unidad'] . ' (' . $unidad['abreviatura'] . ')'); ?>
                         </option>
                     <?php endforeach; ?>
                 </select>
@@ -329,14 +366,13 @@ $ingredientes = obtenerIngredientes();
                 </label>
                 <input type="number" class="form-control" id="cantidad_compra" name="cantidad_compra" 
                        required placeholder="0.000" step="0.001" min="0">
-                <small class="text-muted" id="unidad-info"></small>
             </div>
             
             <div class="col-md-2">
-                <label class="form-label fw-semibold" for="costo_unitario_q">
+                <label class="form-label fw-semibold" for="costo_unitario">
                     <i class="bi bi-currency-dollar me-1"></i>Costo Unitario (Q): *
                 </label>
-                <input type="number" class="form-control" id="costo_unitario_q" name="costo_unitario_q" 
+                <input type="number" class="form-control" id="costo_unitario" name="costo_unitario" 
                        required placeholder="0.00" step="0.01" min="0">
             </div>
             
@@ -371,10 +407,10 @@ $ingredientes = obtenerIngredientes();
             <table class="table table-striped table-bordered" id="tabla-detalles">
                 <thead class="table-dark">
                     <tr>
-                        <th>ID</th>
                         <th>Compra</th>
                         <th>Ingrediente</th>
                         <th>Cantidad</th>
+                        <th>Unidad</th>
                         <th>Costo Unitario</th>
                         <th>Total</th>
                         <th>Acciones</th>
@@ -383,31 +419,32 @@ $ingredientes = obtenerIngredientes();
                 <tbody>
                     <?php foreach($detalles as $detalle): ?>
                     <tr>
-                        <td><?php echo htmlspecialchars($detalle['id_detalle']); ?></td>
                         <td>
                             <span class="info-badge">Compra #<?php echo $detalle['id_compra_ingrediente']; ?></span>
+                            <br><small><?php echo $detalle['fecha_de_compra']; ?></small>
                         </td>
                         <td><?php echo htmlspecialchars($detalle['nombre_ingrediente']); ?></td>
+                        <td><?php echo htmlspecialchars($detalle['cantidad_compra']); ?></td>
                         <td>
-                            <?php echo htmlspecialchars($detalle['cantidad_compra']); ?>
                             <span class="info-badge"><?php echo $detalle['abreviatura']; ?></span>
                         </td>
-                        <td>Q <?php echo number_format($detalle['costo_unitario_q'], 2); ?></td>
+                        <td>Q <?php echo number_format($detalle['costo_unitario'], 2); ?></td>
                         <td class="monto-alto">
-                            Q <?php echo number_format($detalle['costo_total_q'], 2); ?>
+                            Q <?php echo number_format($detalle['costo_total'], 2); ?>
                         </td>
                         <td>
                             <button class="btn btn-sm btn-primary btn-action editar-btn" 
-                                    data-id="<?php echo $detalle['id_detalle']; ?>"
                                     data-compra="<?php echo $detalle['id_compra_ingrediente']; ?>"
                                     data-ingrediente="<?php echo $detalle['id_ingrediente']; ?>"
+                                    data-unidad="<?php echo $detalle['id_unidad']; ?>"
                                     data-cantidad="<?php echo $detalle['cantidad_compra']; ?>"
-                                    data-costo="<?php echo $detalle['costo_unitario_q']; ?>">
+                                    data-costo="<?php echo $detalle['costo_unitario']; ?>">
                                 <i class="bi bi-pencil me-1"></i>Editar
                             </button>
                             <form method="post" style="display:inline;" onsubmit="return confirm('¿Estás seguro de eliminar este detalle de compra?')">
                                 <input type="hidden" name="operacion" value="eliminar">
-                                <input type="hidden" name="id_detalle" value="<?php echo $detalle['id_detalle']; ?>">
+                                <input type="hidden" name="id_compra_ingrediente" value="<?php echo $detalle['id_compra_ingrediente']; ?>">
+                                <input type="hidden" name="id_ingrediente" value="<?php echo $detalle['id_ingrediente']; ?>">
                                 <button type="submit" class="btn btn-sm btn-danger btn-action">
                                     <i class="bi bi-trash me-1"></i>Eliminar
                                 </button>
@@ -434,21 +471,19 @@ $ingredientes = obtenerIngredientes();
         const btnActualizar = document.getElementById('btn-actualizar');
         const btnCancelar = document.getElementById('btn-cancelar');
         const operacionInput = document.getElementById('operacion');
-        const idDetalleInput = document.getElementById('id_detalle');
+        const idCompraOriginalInput = document.getElementById('id_compra_ingrediente_original');
+        const idIngredienteOriginalInput = document.getElementById('id_ingrediente_original');
         const ingredienteSelect = document.getElementById('id_ingrediente');
         const cantidadInput = document.getElementById('cantidad_compra');
-        const costoInput = document.getElementById('costo_unitario_q');
+        const costoInput = document.getElementById('costo_unitario');
         const totalCalculado = document.getElementById('total-calculado');
-        const unidadInfo = document.getElementById('unidad-info');
 
-        // Mostrar unidad del ingrediente seleccionado
+        // Auto-seleccionar unidad cuando se selecciona un ingrediente
         ingredienteSelect.addEventListener('change', function() {
             const selectedOption = this.options[this.selectedIndex];
-            const unidad = selectedOption.getAttribute('data-unidad');
-            if (unidad) {
-                unidadInfo.textContent = `Unidad: ${unidad}`;
-            } else {
-                unidadInfo.textContent = '';
+            const unidadId = selectedOption.getAttribute('data-unidad');
+            if (unidadId) {
+                document.getElementById('id_unidad').value = unidadId;
             }
             calcularTotal();
         });
@@ -495,25 +530,20 @@ $ingredientes = obtenerIngredientes();
         // Eventos para botones Editar
         document.querySelectorAll('.editar-btn').forEach(btn => {
             btn.addEventListener('click', function() {
-                const id = this.getAttribute('data-id');
                 const compra = this.getAttribute('data-compra');
                 const ingrediente = this.getAttribute('data-ingrediente');
+                const unidad = this.getAttribute('data-unidad');
                 const cantidad = this.getAttribute('data-cantidad');
                 const costo = this.getAttribute('data-costo');
 
                 // Llenar formulario
-                idDetalleInput.value = id;
+                idCompraOriginalInput.value = compra;
+                idIngredienteOriginalInput.value = ingrediente;
                 document.getElementById('id_compra_ingrediente').value = compra;
                 document.getElementById('id_ingrediente').value = ingrediente;
+                document.getElementById('id_unidad').value = unidad;
                 document.getElementById('cantidad_compra').value = cantidad;
-                document.getElementById('costo_unitario_q').value = costo;
-
-                // Actualizar información de unidad
-                const selectedOption = document.querySelector(`#id_ingrediente option[value="${ingrediente}"]`);
-                const unidad = selectedOption ? selectedOption.getAttribute('data-unidad') : '';
-                if (unidad) {
-                    unidadInfo.textContent = `Unidad: ${unidad}`;
-                }
+                document.getElementById('costo_unitario').value = costo;
 
                 calcularTotal();
                 mostrarBotonesActualizar();
@@ -522,9 +552,9 @@ $ingredientes = obtenerIngredientes();
 
         function limpiarFormulario() {
             form.reset();
-            idDetalleInput.value = '';
+            idCompraOriginalInput.value = '';
+            idIngredienteOriginalInput.value = '';
             operacionInput.value = 'crear';
-            unidadInfo.textContent = '';
             totalCalculado.textContent = 'Q 0.00';
         }
 
@@ -543,8 +573,9 @@ $ingredientes = obtenerIngredientes();
         function validarFormulario() {
             const compra = document.getElementById('id_compra_ingrediente').value;
             const ingrediente = document.getElementById('id_ingrediente').value;
+            const unidad = document.getElementById('id_unidad').value;
             const cantidad = document.getElementById('cantidad_compra').value;
-            const costo = document.getElementById('costo_unitario_q').value;
+            const costo = document.getElementById('costo_unitario').value;
 
             if (!compra) {
                 alert('La compra es requerida');
@@ -552,6 +583,10 @@ $ingredientes = obtenerIngredientes();
             }
             if (!ingrediente) {
                 alert('El ingrediente es requerido');
+                return false;
+            }
+            if (!unidad) {
+                alert('La unidad es requerida');
                 return false;
             }
             if (!cantidad || cantidad <= 0) {

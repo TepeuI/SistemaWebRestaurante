@@ -42,13 +42,13 @@
                     <li><a href="gestion_empleados/Empleados.php">Empleados</a></li>
                     <li><a href="gestion_empleados/Telefono_empleados.php">Teléfonos</a></li>
                     <li><a href="gestion_empleados/Correo_empleados.php">Correos</a></li>
+
                 </ul>
             </li>
 
             <li>
-                <a href="#" class="submenu-toggle"><span>📍</span> Departamentos</a>
+                <a href="#" class="submenu-toggle"><span>📍</span> Gestión Departamental</a>
                 <ul class="submenu">
-                    <li><a href="Departamental/Lugar_origen.php">Lugar de Origen</a></li>
                     <li><a href="Departamental/Sucursales.php">Sucursales</a></li>
                 </ul>
             </li>
@@ -79,8 +79,17 @@
                 </ul>
             </li>
             
+             <li>
+                <a href="#" class="submenu-toggle"><span>🍺🍽️</span> Platos Y Bebidas</a>
+                <ul class="submenu">
+                    <li><a href="../HTML/Recetas_platos_Bebida_Orden/platos.php">Platos</a></li>
+                    <li><a href="../HTML/Recetas_platos_Bebida_Orden/bebidas.php">Bebidas</a></li>
+                    <li><a href="../HTML/Recetas_platos_Bebida_Orden/recetas.php">Recetas</a></li>
+                </ul>
+            </li>
+
             <li>
-                <a href="#" class="submenu-toggle"><span>🥘</span> Inventario Ingredientes</a>
+                <a href="#" class="submenu-toggle"><span>🦞</span> Inventario Ingredientes</a>
                 <ul class="submenu">
                     <li><a href="../HTML/inventario_ingredientes/Gestion_Inventario_Ingredientes.php">Gestion de Ingredientes</a></li>
                     <li><a href="../HTML/inventario_ingredientes/Control_Ingrediente.php">Control de Ingredientes</a></li>
@@ -89,7 +98,7 @@
             </li>
             
              <li>
-                <a href="#" class="submenu-toggle"><span>🛒</span> Compra de Ingredientes</a>
+                <a href="#" class="submenu-toggle"><span>🦀🛒</span> Compra de Ingredientes</a>
                 <ul class="submenu">
                     <li><a href="../HTML/inventario_ingredientes/Gestion_Compras_Inventarios_Ingredientes.php">Gestion de Compra</a></li>
                     <li><a href="../HTML/inventario_ingredientes/Detalle_Compras_Ingredientes.php">Detalle de Compras</a></li>

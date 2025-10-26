@@ -14,162 +14,141 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     
     switch($operacion) {
         case 'crear':
-            crearCompra();
+            crearPlato();
             break;
         case 'actualizar':
-            actualizarCompra();
+            actualizarPlato();
             break;
         case 'eliminar':
-            eliminarCompra();
+            eliminarPlato();
             break;
     }
 }
 
-function crearCompra() {
+function crearPlato() {
     global $conn;
     $conn = conectar();
     
-    $id_proveedor = intval($_POST['id_proveedor'] ?? '');
-    $fecha_de_compra = $_POST['fecha_de_compra'] ?? '';
-    $monto_total_compra_q = floatval($_POST['monto_total_compra_q'] ?? 0);
+    $nombre_plato = trim($_POST['nombre_plato'] ?? '');
+    $descripcion = trim($_POST['descripcion'] ?? '');
+    $precio_unitario = floatval($_POST['precio_unitario'] ?? 0);
     
-    $sql = "INSERT INTO compras_ingrediente (id_proveedor, fecha_de_compra, monto_total_compra_q) 
+    $sql = "INSERT INTO platos (nombre_plato, descripcion, precio_unitario) 
             VALUES (?, ?, ?)";
     
     $stmt = $conn->prepare($sql);
-    $stmt->bind_param("isd", $id_proveedor, $fecha_de_compra, $monto_total_compra_q);
+    $stmt->bind_param("ssd", $nombre_plato, $descripcion, $precio_unitario);
     
     if ($stmt->execute()) {
-        $_SESSION['mensaje'] = "Compra registrada exitosamente";
+        $_SESSION['mensaje'] = "Plato creado exitosamente";
         $_SESSION['tipo_mensaje'] = "success";
     } else {
-        $_SESSION['mensaje'] = "Error al registrar compra: " . $conn->error;
+        $_SESSION['mensaje'] = "Error al crear plato: " . $conn->error;
         $_SESSION['tipo_mensaje'] = "error";
     }
     
     $stmt->close();
     desconectar($conn);
-    header('Location: compras_ingredientes.php');
+    header('Location: platos.php');
     exit();
 }
 
-function actualizarCompra() {
+function actualizarPlato() {
     global $conn;
     $conn = conectar();
     
-    $id_compra_ingrediente = intval($_POST['id_compra_ingrediente'] ?? '');
-    $id_proveedor = intval($_POST['id_proveedor'] ?? '');
-    $fecha_de_compra = $_POST['fecha_de_compra'] ?? '';
-    $monto_total_compra_q = floatval($_POST['monto_total_compra_q'] ?? 0);
+    $id_plato = intval($_POST['id_plato'] ?? '');
+    $nombre_plato = trim($_POST['nombre_plato'] ?? '');
+    $descripcion = trim($_POST['descripcion'] ?? '');
+    $precio_unitario = floatval($_POST['precio_unitario'] ?? 0);
     
-    $sql = "UPDATE compras_ingrediente SET id_proveedor = ?, fecha_de_compra = ?, monto_total_compra_q = ? 
-            WHERE id_compra_ingrediente = ?";
+    $sql = "UPDATE platos SET nombre_plato = ?, descripcion = ?, precio_unitario = ? 
+            WHERE id_plato = ?";
     
     $stmt = $conn->prepare($sql);
-    $stmt->bind_param("isdi", $id_proveedor, $fecha_de_compra, $monto_total_compra_q, $id_compra_ingrediente);
+    $stmt->bind_param("ssdi", $nombre_plato, $descripcion, $precio_unitario, $id_plato);
     
     if ($stmt->execute()) {
-        $_SESSION['mensaje'] = "Compra actualizada exitosamente";
+        $_SESSION['mensaje'] = "Plato actualizado exitosamente";
         $_SESSION['tipo_mensaje'] = "success";
     } else {
-        $_SESSION['mensaje'] = "Error al actualizar compra: " . $conn->error;
+        $_SESSION['mensaje'] = "Error al actualizar plato: " . $conn->error;
         $_SESSION['tipo_mensaje'] = "error";
     }
     
     $stmt->close();
     desconectar($conn);
-    header('Location: compras_ingredientes.php');
+    header('Location: platos.php');
     exit();
 }
 
-function eliminarCompra() {
+function eliminarPlato() {
     global $conn;
     $conn = conectar();
     
-    $id_compra_ingrediente = intval($_POST['id_compra_ingrediente'] ?? '');
+    $id_plato = intval($_POST['id_plato'] ?? '');
     
-    // Verificar si la compra tiene detalles asociados
-    $sql_check = "SELECT id_detalle FROM detalle_compra_ingrediente WHERE id_compra_ingrediente = ? LIMIT 1";
+    // Verificar si el plato está en uso en recetas
+    $sql_check = "SELECT id_registro_receta FROM receta WHERE id_plato = ? LIMIT 1";
     $stmt_check = $conn->prepare($sql_check);
-    $stmt_check->bind_param("i", $id_compra_ingrediente);
+    $stmt_check->bind_param("i", $id_plato);
     $stmt_check->execute();
     $stmt_check->store_result();
     
     if ($stmt_check->num_rows > 0) {
-        $_SESSION['mensaje'] = "No se puede eliminar la compra porque tiene detalles asociados";
+        $_SESSION['mensaje'] = "No se puede eliminar el plato porque está siendo usado en recetas";
         $_SESSION['tipo_mensaje'] = "error";
         $stmt_check->close();
         desconectar($conn);
-        header('Location: compras_ingredientes.php');
+        header('Location: platos.php');
         exit();
     }
     $stmt_check->close();
     
-    $sql = "DELETE FROM compras_ingrediente WHERE id_compra_ingrediente = ?";
+    $sql = "DELETE FROM platos WHERE id_plato = ?";
     
     $stmt = $conn->prepare($sql);
-    $stmt->bind_param("i", $id_compra_ingrediente);
+    $stmt->bind_param("i", $id_plato);
     
     if ($stmt->execute()) {
-        $_SESSION['mensaje'] = "Compra eliminada exitosamente";
+        $_SESSION['mensaje'] = "Plato eliminado exitosamente";
         $_SESSION['tipo_mensaje'] = "success";
     } else {
-        $_SESSION['mensaje'] = "Error al eliminar compra: " . $conn->error;
+        $_SESSION['mensaje'] = "Error al eliminar plato: " . $conn->error;
         $_SESSION['tipo_mensaje'] = "error";
     }
     
     $stmt->close();
     desconectar($conn);
-    header('Location: compras_ingredientes.php');
+    header('Location: platos.php');
     exit();
 }
 
-// Obtener todas las compras para mostrar en la tabla
-function obtenerCompras() {
+// Obtener todos los platos para mostrar en la tabla
+function obtenerPlatos() {
     $conn = conectar();
-    $sql = "SELECT ci.*, p.nombre_proveedor 
-            FROM compras_ingrediente ci 
-            LEFT JOIN proveedores p ON ci.id_proveedor = p.id_proveedor 
-            ORDER BY ci.fecha_de_compra DESC";
+    $sql = "SELECT * FROM platos ORDER BY nombre_plato";
     $resultado = $conn->query($sql);
-    $compras = [];
+    $platos = [];
     
     if ($resultado && $resultado->num_rows > 0) {
         while($fila = $resultado->fetch_assoc()) {
-            $compras[] = $fila;
+            $platos[] = $fila;
         }
     }
     
     desconectar($conn);
-    return $compras;
+    return $platos;
 }
 
-// Obtener proveedores para el dropdown
-function obtenerProveedores() {
-    $conn = conectar();
-    $sql = "SELECT id_proveedor, nombre_proveedor FROM proveedores ORDER BY nombre_proveedor";
-    $resultado = $conn->query($sql);
-    $proveedores = [];
-    
-    if ($resultado && $resultado->num_rows > 0) {
-        while($fila = $resultado->fetch_assoc()) {
-            $proveedores[] = $fila;
-        }
-    }
-    
-    desconectar($conn);
-    return $proveedores;
-}
-
-$compras = obtenerCompras();
-$proveedores = obtenerProveedores();
+$platos = obtenerPlatos();
 ?>
 <!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Compras de Ingredientes - Marea Roja</title>
+    <title>Gestión de Platos - Marea Roja</title>
 
     <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
@@ -229,9 +208,16 @@ $proveedores = obtenerProveedores();
             box-shadow: 0 0 0 0.2rem rgba(59, 130, 246, 0.25);
         }
         
-        .monto-alto {
+        .precio-alto {
             color: #059669;
             font-weight: bold;
+        }
+        
+        .descripcion-cell {
+            max-width: 200px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
         }
     </style>
 
@@ -243,7 +229,7 @@ $proveedores = obtenerProveedores();
 <body>
 <header class="mb-4">
     <div class="container d-flex flex-column flex-md-row align-items-center justify-content-between py-3">
-        <h1 class="mb-0">COMPRAS DE INGREDIENTES - MAREA ROJA</h1>
+        <h1 class="mb-0">GESTIÓN DE PLATOS - MAREA ROJA</h1>
         <ul class="nav nav-pills gap-2 mb-0">
             <li class="nav-item"><a href="../menu_empleados.php" class="nav-link">Regresar al Menú</a></li>
         </ul>
@@ -264,40 +250,35 @@ $proveedores = obtenerProveedores();
 
     <section class="card shadow p-4">
         <h2 class="card-title text-primary mb-4">
-            <i class="bi bi-cart-plus me-2"></i>GESTIÓN DE COMPRAS DE INGREDIENTES
+            <i class="bi bi-egg-fried me-2"></i>FORMULARIO DE PLATOS
         </h2>
 
-        <form id="form-compra" method="post" class="row g-3">
+        <form id="form-plato" method="post" class="row g-3">
             <input type="hidden" id="operacion" name="operacion" value="crear">
-            <input type="hidden" id="id_compra_ingrediente" name="id_compra_ingrediente" value="">
+            <input type="hidden" id="id_plato" name="id_plato" value="">
             
             <div class="col-md-4">
-                <label class="form-label fw-semibold" for="id_proveedor">
-                    <i class="bi bi-truck me-1"></i>Proveedor: *
+                <label class="form-label fw-semibold" for="nombre_plato">
+                    <i class="bi bi-tag me-1"></i>Nombre del Plato: *
                 </label>
-                <select class="form-control" id="id_proveedor" name="id_proveedor" required>
-                    <option value="">Seleccione un proveedor</option>
-                    <?php foreach($proveedores as $proveedor): ?>
-                        <option value="<?php echo $proveedor['id_proveedor']; ?>">
-                            <?php echo htmlspecialchars($proveedor['nombre_proveedor']); ?>
-                        </option>
-                    <?php endforeach; ?>
-                </select>
+                <input type="text" class="form-control" id="nombre_plato" name="nombre_plato" 
+                       required placeholder="Ej. Churrasco a la Parrilla" maxlength="120">
             </div>
             
             <div class="col-md-4">
-                <label class="form-label fw-semibold" for="fecha_de_compra">
-                    <i class="bi bi-calendar-date me-1"></i>Fecha de Compra: *
+                <label class="form-label fw-semibold" for="precio_unitario">
+                    <i class="bi bi-currency-dollar me-1"></i>Precio Unitario (Q): *
                 </label>
-                <input type="date" class="form-control" id="fecha_de_compra" name="fecha_de_compra" required>
-            </div>
-            
-            <div class="col-md-4">
-                <label class="form-label fw-semibold" for="monto_total_compra_q">
-                    <i class="bi bi-currency-dollar me-1"></i>Monto Total (Q): *
-                </label>
-                <input type="number" class="form-control" id="monto_total_compra_q" name="monto_total_compra_q" 
+                <input type="number" class="form-control" id="precio_unitario" name="precio_unitario" 
                        required placeholder="0.00" step="0.01" min="0">
+            </div>
+            
+            <div class="col-md-12">
+                <label class="form-label fw-semibold" for="descripcion">
+                    <i class="bi bi-card-text me-1"></i>Descripción:
+                </label>
+                <textarea class="form-control" id="descripcion" name="descripcion" 
+                          rows="3" placeholder="Descripción del plato, ingredientes principales, etc." maxlength="200"></textarea>
             </div>
         </form>
 
@@ -317,40 +298,42 @@ $proveedores = obtenerProveedores();
         </div>
 
         <h2 class="card-title mb-3 mt-5">
-            <i class="bi bi-list-ul me-2"></i>HISTORIAL DE COMPRAS
+            <i class="bi bi-list-ul me-2"></i>LISTA DE PLATOS
         </h2>
         
         <div class="table-responsive mt-3">
-            <table class="table table-striped table-bordered" id="tabla-compras">
+            <table class="table table-striped table-bordered" id="tabla-platos">
                 <thead class="table-dark">
                     <tr>
                         <th>ID</th>
-                        <th>Proveedor</th>
-                        <th>Fecha</th>
-                        <th>Monto Total (Q)</th>
+                        <th>Nombre</th>
+                        <th>Descripción</th>
+                        <th>Precio (Q)</th>
                         <th>Acciones</th>
                     </tr>
                 </thead>
                 <tbody>
-                    <?php foreach($compras as $compra): ?>
+                    <?php foreach($platos as $plato): ?>
                     <tr>
-                        <td><?php echo htmlspecialchars($compra['id_compra_ingrediente']); ?></td>
-                        <td><?php echo htmlspecialchars($compra['nombre_proveedor']); ?></td>
-                        <td><?php echo htmlspecialchars($compra['fecha_de_compra']); ?></td>
-                        <td class="monto-alto">
-                        <?php echo number_format($compra['monto_total_compra'], 2); ?>
+                        <td><?php echo htmlspecialchars($plato['id_plato']); ?></td>
+                        <td><?php echo htmlspecialchars($plato['nombre_plato']); ?></td>
+                        <td class="descripcion-cell" title="<?php echo htmlspecialchars($plato['descripcion']); ?>">
+                            <?php echo htmlspecialchars($plato['descripcion']); ?>
+                        </td>
+                        <td class="precio-alto">
+                            Q <?php echo number_format($plato['precio_unitario'], 2); ?>
                         </td>
                         <td>
                             <button class="btn btn-sm btn-primary btn-action editar-btn" 
-                                    data-id="<?php echo $compra['id_compra_ingrediente']; ?>"
-                                    data-proveedor="<?php echo $compra['id_proveedor']; ?>"
-                                    data-fecha="<?php echo $compra['fecha_de_compra']; ?>"
-                                    data-monto="<?php echo $compra['monto_total_compra']; ?>">
+                                    data-id="<?php echo $plato['id_plato']; ?>"
+                                    data-nombre="<?php echo htmlspecialchars($plato['nombre_plato']); ?>"
+                                    data-descripcion="<?php echo htmlspecialchars($plato['descripcion']); ?>"
+                                    data-precio="<?php echo $plato['precio_unitario']; ?>">
                                 <i class="bi bi-pencil me-1"></i>Editar
                             </button>
-                            <form method="post" style="display:inline;" onsubmit="return confirm('¿Estás seguro de eliminar esta compra?')">
+                            <form method="post" style="display:inline;" onsubmit="return confirm('¿Estás seguro de eliminar este plato?')">
                                 <input type="hidden" name="operacion" value="eliminar">
-                                <input type="hidden" name="id_compra_ingrediente" value="<?php echo $compra['id_compra_ingrediente']; ?>">
+                                <input type="hidden" name="id_plato" value="<?php echo $plato['id_plato']; ?>">
                                 <button type="submit" class="btn btn-sm btn-danger btn-action">
                                     <i class="bi bi-trash me-1"></i>Eliminar
                                 </button>
@@ -358,9 +341,9 @@ $proveedores = obtenerProveedores();
                         </td>
                     </tr>
                     <?php endforeach; ?>
-                    <?php if (empty($compras)): ?>
+                    <?php if (empty($platos)): ?>
                     <tr>
-                        <td colspan="5" class="text-center">No hay compras registradas</td>
+                        <td colspan="5" class="text-center">No hay platos registrados</td>
                     </tr>
                     <?php endif; ?>
                 </tbody>
@@ -371,16 +354,13 @@ $proveedores = obtenerProveedores();
 
 <script>
     document.addEventListener('DOMContentLoaded', function() {
-        const form = document.getElementById('form-compra');
+        const form = document.getElementById('form-plato');
         const btnNuevo = document.getElementById('btn-nuevo');
         const btnGuardar = document.getElementById('btn-guardar');
         const btnActualizar = document.getElementById('btn-actualizar');
         const btnCancelar = document.getElementById('btn-cancelar');
         const operacionInput = document.getElementById('operacion');
-        const idCompraInput = document.getElementById('id_compra_ingrediente');
-
-        // Establecer fecha actual por defecto
-        document.getElementById('fecha_de_compra').valueAsDate = new Date();
+        const idPlatoInput = document.getElementById('id_plato');
 
         // Botón Nuevo
         btnNuevo.addEventListener('click', function() {
@@ -414,15 +394,15 @@ $proveedores = obtenerProveedores();
         document.querySelectorAll('.editar-btn').forEach(btn => {
             btn.addEventListener('click', function() {
                 const id = this.getAttribute('data-id');
-                const proveedor = this.getAttribute('data-proveedor');
-                const fecha = this.getAttribute('data-fecha');
-                const monto = this.getAttribute('data-monto');
+                const nombre = this.getAttribute('data-nombre');
+                const descripcion = this.getAttribute('data-descripcion');
+                const precio = this.getAttribute('data-precio');
 
                 // Llenar formulario
-                idCompraInput.value = id;
-                document.getElementById('id_proveedor').value = proveedor;
-                document.getElementById('fecha_de_compra').value = fecha;
-                document.getElementById('monto_total_compra').value = monto;
+                idPlatoInput.value = id;
+                document.getElementById('nombre_plato').value = nombre;
+                document.getElementById('descripcion').value = descripcion;
+                document.getElementById('precio_unitario').value = precio;
 
                 mostrarBotonesActualizar();
             });
@@ -430,10 +410,8 @@ $proveedores = obtenerProveedores();
 
         function limpiarFormulario() {
             form.reset();
-            idCompraInput.value = '';
+            idPlatoInput.value = '';
             operacionInput.value = 'crear';
-            // Restablecer fecha actual
-            document.getElementById('fecha_de_compra').valueAsDate = new Date();
         }
 
         function mostrarBotonesGuardar() {
@@ -449,20 +427,15 @@ $proveedores = obtenerProveedores();
         }
 
         function validarFormulario() {
-            const proveedor = document.getElementById('id_proveedor').value;
-            const fecha = document.getElementById('fecha_de_compra').value;
-            const monto = document.getElementById('monto_total_compra').value;
+            const nombre = document.getElementById('nombre_plato').value.trim();
+            const precio = document.getElementById('precio_unitario').value;
 
-            if (!proveedor) {
-                alert('El proveedor es requerido');
+            if (!nombre) {
+                alert('El nombre del plato es requerido');
                 return false;
             }
-            if (!fecha) {
-                alert('La fecha de compra es requerida');
-                return false;
-            }
-            if (!monto || monto <= 0) {
-                alert('El monto total debe ser un número positivo');
+            if (!precio || precio <= 0) {
+                alert('El precio unitario debe ser un número positivo');
                 return false;
             }
 
