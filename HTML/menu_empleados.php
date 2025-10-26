@@ -42,6 +42,7 @@
                     <li><a href="gestion_empleados/Empleados.php">Empleados</a></li>
                     <li><a href="gestion_empleados/Telefono_empleados.php">Teléfonos</a></li>
                     <li><a href="gestion_empleados/Correo_empleados.php">Correos</a></li>
+
                 </ul>
             </li>
 
@@ -81,7 +82,20 @@
              <li>
                 <a href="#" class="submenu-toggle"><span>🍺🍽️</span> Platos Y Bebidas</a>
                 <ul class="submenu">
-                    <li><a href="../HTML/Recetas_platos_Bebida_Orden/platos.php">Platos</a></li>
+                    <li>
+                        <a href="#" class="submenu-toggle">Platos</a>
+                        <ul class="submenu">
+                            <li><a href="../HTML/Recetas_platos_Bebida_Orden/platos.php">Ver Platos</a></li>
+                            <li>
+                                <a href="#" class="submenu-toggle">Categorías</a>
+                                <ul class="submenu">
+                                    <li><a href="#">Entradas</a></li>
+                                    <li><a href="#">Principales</a></li>
+                                    <li><a href="#">Postres</a></li>
+                                </ul>
+                            </li>
+                        </ul>
+                    </li>
                     <li><a href="../HTML/Recetas_platos_Bebida_Orden/bebidas.php">Bebidas</a></li>
                     <li><a href="../HTML/Recetas_platos_Bebida_Orden/recetas.php">Recetas</a></li>
                 </ul>
