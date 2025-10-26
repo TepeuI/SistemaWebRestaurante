@@ -2,6 +2,18 @@ use marea_roja_db;
 ALTER TABLE ingredientes 
 ADD COLUMN descripcion VARCHAR(200) NULL AFTER nombre_ingrediente;
 
+DELIMITER //
+
+CREATE TRIGGER after_insert_detalle_compra
+AFTER INSERT ON detalle_compra_ingrediente
+FOR EACH ROW
+BEGIN
+    UPDATE ingredientes 
+    SET cantidad_stock = cantidad_stock + NEW.cantidad_compra
+    WHERE id_ingrediente = NEW.id_ingrediente;
+END//
+
+DELIMITER 
 
 INSERT INTO unidades_medida (unidad, abreviatura) VALUES
 -- Unidades de peso
