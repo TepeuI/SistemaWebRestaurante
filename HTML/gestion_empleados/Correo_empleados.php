@@ -1,55 +1,143 @@
+<!-- Ernesto David Samayoa Jocol 0901-22-3415 -->   
 <?php
 session_start();
 require_once '../conexion.php';
 
-// Verificar sesión
+// Verificar si el usuario está logueado
 if (!isset($_SESSION['id_usuario'])) {
     header('Location: ../login.php');
     exit();
 }
 
-// Manejo de formulario: insertar nuevo correo (POST)
-$mensaje = '';
+// Manejo de operaciones CRUD
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $id_correo = isset($_POST['id_correo']) ? intval($_POST['id_correo']) : 0; // opcional
-    $correo = isset($_POST['correo']) ? trim($_POST['correo']) : '';
-    $id_empleado = isset($_POST['id_empleado']) ? intval($_POST['id_empleado']) : 0;
-
-    if ($correo === '' || $id_empleado <= 0) {
-        $mensaje = '<div class="alert alert-danger">Complete todos los campos correctamente.</div>';
-    } else {
-        $conn = conectar();
-        // Insert condicional: si se proporciona id_correo, lo incluimos explícitamente
-        if ($id_correo > 0) {
-            $stmt = $conn->prepare("INSERT INTO correos_empleado (id_correo, id_empleado, direccion_correo) VALUES (?, ?, ?)");
-            if ($stmt) {
-                $stmt->bind_param('iis', $id_correo, $id_empleado, $correo);
-            }
-        } else {
-            $stmt = $conn->prepare("INSERT INTO correos_empleado (id_empleado, direccion_correo) VALUES (?, ?)");
-            if ($stmt) {
-                $stmt->bind_param('is', $id_empleado, $correo);
-            }
-        }
-
-        if ($stmt) {
-            if ($stmt->execute()) {
-                $mensaje = '<div class="alert alert-success">Correo guardado correctamente.</div>';
-            } else {
-                $mensaje = '<div class="alert alert-danger">Error al guardar: ' . htmlspecialchars($stmt->error) . '</div>';
-            }
-            $stmt->close();
-        } else {
-            $mensaje = '<div class="alert alert-danger">Error en la consulta: ' . htmlspecialchars($conn->error) . '</div>';
-        }
-        desconectar($conn);
+    $operacion = $_POST['operacion'] ?? '';
+    switch ($operacion) {
+        case 'crear':
+            crearCorreo();
+            break;
+        case 'actualizar':
+            actualizarCorreo();
+            break;
+        case 'eliminar':
+            eliminarCorreo();
+            break;
     }
 }
 
-// Obtener correos registrados
+// ---------------------- FUNCIONES CRUD ----------------------
+
+function crearCorreo() {
+    $conn = conectar();
+    $id_empleado = $_POST['id_empleado'] ?? '';
+    $correo = $_POST['direccion_correo'] ?? '';
+
+    // Extraer ID si viene en formato "1 - Nombre Apellido"
+    if (!empty($id_empleado) && preg_match('/^\s*(\d+)/', $id_empleado, $m)) {
+        $id_empleado = intval($m[1]);
+    } else {
+        $id_empleado = null;
+    }
+
+    if (empty($id_empleado) || empty($correo)) {
+        $_SESSION['mensaje'] = 'Debe seleccionar un empleado y proporcionar un correo.';
+        $_SESSION['tipo_mensaje'] = 'error';
+    } else {
+        $sql = "INSERT INTO correos_empleado (id_empleado, direccion_correo) VALUES (?, ?)";
+        $stmt = $conn->prepare($sql);
+
+        if (!$stmt) {
+            $_SESSION['mensaje'] = 'Error en la consulta (crear): ' . $conn->error;
+            $_SESSION['tipo_mensaje'] = 'error';
+        } else {
+            $stmt->bind_param('is', $id_empleado, $correo);
+            if ($stmt->execute()) {
+                $_SESSION['mensaje'] = 'Correo registrado exitosamente';
+                $_SESSION['tipo_mensaje'] = 'success';
+            } else {
+                $_SESSION['mensaje'] = 'Error al registrar correo: ' . $stmt->error;
+                $_SESSION['tipo_mensaje'] = 'error';
+            }
+            $stmt->close();
+        }
+    }
+
+    desconectar($conn);
+    header('Location: Correo_Empleados.php');
+    exit();
+}
+
+function actualizarCorreo() {
+    $conn = conectar();
+    $id_correo = $_POST['id_correo'] ?? '';
+    $id_empleado = $_POST['id_empleado'] ?? '';
+    $correo = $_POST['direccion_correo'] ?? '';
+
+    // Extraer ID si viene en formato "1 - Nombre"
+    if (!empty($id_empleado) && preg_match('/^\s*(\d+)/', $id_empleado, $m)) {
+        $id_empleado = intval($m[1]);
+    } else {
+        $id_empleado = null;
+    }
+
+    $sql = "UPDATE correos_empleado 
+            SET id_empleado = ?, direccion_correo = ?
+            WHERE id_correo = ?";
+    $stmt = $conn->prepare($sql);
+
+    if (!$stmt) {
+        $_SESSION['mensaje'] = 'Error en la consulta (actualizar): ' . $conn->error;
+        $_SESSION['tipo_mensaje'] = 'error';
+    } else {
+        $stmt->bind_param('isi', $id_empleado, $correo, $id_correo);
+        if ($stmt->execute()) {
+            $_SESSION['mensaje'] = 'Correo actualizado exitosamente';
+            $_SESSION['tipo_mensaje'] = 'success';
+        } else {
+            $_SESSION['mensaje'] = 'Error al actualizar correo: ' . $stmt->error;
+            $_SESSION['tipo_mensaje'] = 'error';
+        }
+        $stmt->close();
+    }
+
+    desconectar($conn);
+    header('Location: Correo_Empleados.php');
+    exit();
+}
+
+function eliminarCorreo() {
+    $conn = conectar();
+    $id_correo = $_POST['id_correo'] ?? '';
+
+    $sql = "DELETE FROM correos_empleado WHERE id_correo = ?";
+    $stmt = $conn->prepare($sql);
+
+    if (!$stmt) {
+        $_SESSION['mensaje'] = 'Error en la consulta (eliminar): ' . $conn->error;
+        $_SESSION['tipo_mensaje'] = 'error';
+    } else {
+        $stmt->bind_param('i', $id_correo);
+        if ($stmt->execute()) {
+            $_SESSION['mensaje'] = 'Correo eliminado exitosamente';
+            $_SESSION['tipo_mensaje'] = 'success';
+        } else {
+            $_SESSION['mensaje'] = 'Error al eliminar correo: ' . $stmt->error;
+            $_SESSION['tipo_mensaje'] = 'error';
+        }
+        $stmt->close();
+    }
+
+    desconectar($conn);
+    header('Location: Correo_Empleados.php');
+    exit();
+}
+
 function obtenerCorreos() {
     $conn = conectar();
-    $sql = "SELECT id_correo, id_empleado, direccion_correo FROM correos_empleado ORDER BY id_correo";
+    $sql = "SELECT c.id_correo, c.direccion_correo, e.id_empleado, e.nombre_empleado, e.apellido_empleado
+            FROM correos_empleado c
+            INNER JOIN empleados e ON c.id_empleado = e.id_empleado
+            ORDER BY c.id_correo";
     $resultado = $conn->query($sql);
     $correos = [];
 
@@ -63,8 +151,23 @@ function obtenerCorreos() {
     return $correos;
 }
 
+// ---------------------- DATOS ADICIONALES ----------------------
+
 $correos = obtenerCorreos();
+
+// Obtener mapa de empleados (id => nombre completo)
+$conn = conectar();
+$empleados_map = [];
+$sql = "SELECT id_empleado, CONCAT(nombre_empleado, ' ', apellido_empleado) AS nombre_completo FROM empleados";
+$resultado = $conn->query($sql);
+if ($resultado && $resultado->num_rows > 0) {
+    while ($fila = $resultado->fetch_assoc()) {
+        $empleados_map[$fila['id_empleado']] = $fila['nombre_completo'];
+    }
+}
+desconectar($conn);
 ?>
+
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -75,74 +178,104 @@ $correos = obtenerCorreos();
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/SistemaWebRestaurante/css/bootstrap.min.css">
     <link rel="stylesheet" href="/SistemaWebRestaurante/css/diseñoModulos.css">
-    <link rel="stylesheet" href="/SistemaWebRestaurante/css/gestion_empleados.css">
 </head>
 <body>
-    <header class="mb-4">
-        <div class="container d-flex flex-column flex-md-row align-items-center justify-content-between py-3">
-            <h1 class="mb-0">Gestión de Correos</h1>
-            <ul class="nav nav-pills gap-2 mb-0">
-                <li class="nav-item"><a href="../menu_empleados.php" class="nav-link">Regresar al Menú</a></li>
-            </ul>
+<header class="mb-4">
+    <div class="container d-flex flex-column flex-md-row align-items-center justify-content-between py-3">
+        <h1 class="mb-0">Gestión de Correos de Empleados</h1>
+        <ul class="nav nav-pills gap-2 mb-0">
+            <li class="nav-item"><a href="../menu_empleados.php" class="nav-link">Regresar al Menú</a></li>
+        </ul>
+    </div>
+</header>
+
+<main class="container my-4">
+    <?php if (isset($_SESSION['mensaje'])): ?>
+        <div class="alert alert-<?php echo $_SESSION['tipo_mensaje'] === 'success' ? 'success' : 'danger'; ?>">
+            <?php
+            echo htmlspecialchars($_SESSION['mensaje']);
+            unset($_SESSION['mensaje'], $_SESSION['tipo_mensaje']);
+            ?>
         </div>
-    </header>
+    <?php endif; ?>
 
-    <main class="container my-4">
-        <section class="card shadow p-4">
-            <?php if (!empty($mensaje)) { echo $mensaje; } ?>
-            <h2 class="card__title text-primary mb-4">Formulario de Correos</h2>
+    <section class="card shadow p-4">
+        <h2 class="card__title text-primary mb-4">Formulario de Correos</h2>
 
-            <form class="row g-3" method="post" action="">
-                <div class="col-md-3">
-                    <label class="form-label" for="id_correo">ID Correo:</label>
-                    <input type="number" class="form-control" id="id_correo" name="id_correo" placeholder="2011">
-                   
-                </div>
+        <form id="form-correo" method="post" class="row g-3">
+            <input type="hidden" name="operacion" id="operacion" value="crear">
+            <input type="hidden" name="id_correo" id="id_correo">
 
-                <div class="col-md-6">
-                    <label class="form-label" for="correo">Correo:</label>
-                    <input type="email" class="form-control" id="correo" name="correo" placeholder="ejemplo@dominio.com" required>
-                </div>
-
-                <div class="col-md-3">
-                    <label class="form-label" for="id_empleado">ID Empleado:</label>
-                    <input type="number" class="form-control" id="id_empleado" name="id_empleado" placeholder="Ej. 1" required>
-                </div>
-
-                <div class="d-flex gap-2 mt-4">
-                    <button type="submit" class="btn btn-success">Guardar</button>
-                    <button type="reset" class="btn btn-secondary">Limpiar</button>
-                </div>
-            </form>
-
-            <h2 class="card__title mb-3 mt-5">Lista de Correos Registrados</h2>
-            <div class="table-responsive mt-3">
-                <table class="table table-striped table-bordered">
-                    <thead class="table-dark">
-                        <tr>
-                            <th>ID Correo</th>
-                            <th>Correo</th>
-                            <th>ID Empleado</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <?php if (!empty($correos)): ?>
-                            <?php foreach ($correos as $c): ?>
-                            <tr>
-                                <td><?php echo htmlspecialchars($c['id_correo']); ?></td>
-                                <td><?php echo htmlspecialchars($c['direccion_correo']); ?></td>
-                                <td><?php echo htmlspecialchars($c['id_empleado']); ?></td>
-                            </tr>
-                            <?php endforeach; ?>
-                        <?php else: ?>
-                            <tr>
-                                <td colspan="3" class="text-center">No hay correos registrados</td>
-                            </tr>
-                        <?php endif; ?>
-                    </tbody>
-                </table>
+            <div class="col-md-4">
+                <label class="form-label">Empleado</label>
+                <input type="text" class="form-control" name="id_empleado" id="id_empleado" list="empleados-list" inputmode="numeric" required>
+                <datalist id="empleados-list">
+                    <?php foreach ($empleados_map as $id => $nombre): ?>
+                        <option value="<?php echo htmlspecialchars($id . ' - ' . $nombre, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'); ?>"></option>
+                    <?php endforeach; ?>
+                </datalist>
             </div>
-        </section>
-    </main>
+
+            <div class="col-md-4">
+                <label class="form-label">Dirección de Correo</label>
+                <input type="email" class="form-control" name="direccion_correo" id="direccion_correo" required>
+            </div>
+
+            <div class="d-flex gap-2 mt-4">
+                <button id="btn-nuevo" type="button" class="btn btn-secondary">Nuevo</button>
+                <button id="btn-guardar" type="button" class="btn btn-success">Guardar</button>
+                <button id="btn-actualizar" type="button" class="btn btn-warning" style="display:none;">Actualizar</button>
+                <button id="btn-cancelar" type="button" class="btn btn-danger" style="display:none;">Cancelar</button>
+            </div>
+        </form>
+
+        <div class="d-flex justify-content-between align-items-center mt-5 mb-3">
+            <h3 class="mb-0">Lista de Correos</h3>
+            <button id="btn-mostrar-lista" type="button" class="btn btn-info btn-sm">Mostrar lista</button>
+        </div>
+
+        <div id="lista-correos" class="table-responsive" style="display:none;">
+            <table class="table table-bordered table-striped">
+                <thead class="table-dark">
+                    <tr>
+                        <th>ID Correo</th>
+                        <th>Empleado</th>
+                        <th>Dirección de Correo</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                <?php foreach ($correos as $corr): ?>
+                    <tr>
+                        <td><?= $corr['id_correo']; ?></td>
+                        <td><?= htmlspecialchars($corr['id_empleado'] . ' - ' . $corr['nombre_empleado'] . ' ' . $corr['apellido_empleado']); ?></td>
+                        <td><?= htmlspecialchars($corr['direccion_correo']); ?></td>
+                        <td class="text-center">
+                            <button type="button" class="btn btn-primary btn-sm editar-btn"
+                                data-id="<?= $corr['id_correo']; ?>"
+                                data-empleado="<?= $corr['id_empleado']; ?>"
+                                data-correo="<?= htmlspecialchars($corr['direccion_correo']); ?>">Editar</button>
+                            <form method="post" style="display:inline;margin-left:6px;" data-eliminar="true">
+                                <input type="hidden" name="operacion" value="eliminar">
+                                <input type="hidden" name="id_correo" value="<?= $corr['id_correo']; ?>">
+                                <button type="submit" class="btn btn-danger btn-sm">Eliminar</button>
+                            </form>
+                        </td>
+                    </tr>
+                <?php endforeach; ?>
+                <?php if (empty($correos)): ?>
+                    <tr><td colspan="4" class="text-center">No hay correos registrados</td></tr>
+                <?php endif; ?>
+                </tbody>
+            </table>
+        </div>
+    </section>
+</main>
+
+<script>
+    var EMPLEADOS_MAP = <?php echo json_encode($empleados_map, JSON_UNESCAPED_UNICODE); ?>;
+</script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script src="/SistemaWebRestaurante/javascript/Correo_Empleados.js"></script>
 </body>
 </html>
