@@ -1,6 +1,5 @@
 document.addEventListener("DOMContentLoaded", () => {
   const form = document.getElementById("form-reservaciones");
-  const tabla = document.getElementById("tabla-reservaciones").querySelector("tbody");
   const clienteInput = document.getElementById("res-cliente");
   const mesaInput = document.getElementById("res-mesa");
   const btnInsertar = form.querySelector("button[type='submit']");
@@ -10,103 +9,121 @@ document.addEventListener("DOMContentLoaded", () => {
   let editando = false;
   let idEditando = null;
 
-  // se reemplaza inputs por select dinamico
+  // Se reemplazan inputs por selects dinámicos
   const clienteSelect = document.createElement("select");
   clienteSelect.id = "res-cliente";
+  clienteSelect.name = "id_cliente";
   clienteSelect.className = "form-control";
   clienteInput.replaceWith(clienteSelect);
 
   const mesaSelect = document.createElement("select");
   mesaSelect.id = "res-mesa";
+  mesaSelect.name = "id_mesa";
   mesaSelect.className = "form-control";
   mesaInput.replaceWith(mesaSelect);
 
-  // Inicialización de componentes
+  // Inicialización
   cargarClientes();
   cargarMesas();
   cargarTabla();
+  cargarSiguienteId();
+
 
   btnActualizar.addEventListener("click", () => cargarTabla());
 
-  // insertar y modificar
-  form.addEventListener("submit", (e) => {
-    e.preventDefault();
-    if (!validarFormulario()) return;
+  // Insertar o Modificar
+form.addEventListener("submit", (e) => {
+  e.preventDefault();
+  if (!validarFormulario()) return;
 
-    const datos = new FormData(form);
-    datos.append("accion", editando ? "modificar" : "insertar");
-    if (editando) datos.append("id_reservacion", idEditando);
+  const datos = new FormData(form);
+  datos.append("accion", editando ? "modificar" : "insertar");
+  if (editando) datos.append("id_reservacion", idEditando);
 
-    fetch("../crud/reservaciones_crud.php", { method: "POST", body: datos })
-      .then(r => r.text())
-      .then(res => {
-        if (res === "ok") {
-          alert(editando ? "Reservación actualizada correctamente" : "Reservación agregada correctamente");
-          form.reset();
-          cargarTabla();
-          editando = false;
-          idEditando = null;
-          btnInsertar.textContent = "Insertar";
-        } else {
-          alert("Error en la operación. Revisa los datos.");
-        }
-      });
-  });
-
-  // validaciones contra sentencias sql
-  function validarFormulario() {
-    let valid = true;
-    const regexSQL = /['";=<>*%]/; // bloquea caracteres peligrosos
-
-    form.querySelectorAll("input, select").forEach(input => {
-      if (!input.value.trim()) {
-        input.classList.add("is-invalid");
-        valid = false;
-      } else if (regexSQL.test(input.value)) {
-        alert(`El campo "${input.id}" contiene caracteres no permitidos.`);
-        input.classList.add("is-invalid");
-        valid = false;
+  fetch("../reservaciones_crud.php", { method: "POST", body: datos })
+    .then(r => r.json()) // importante: usamos json() para poder acceder a res.status y res.msg
+    .then(res => {
+      if (res.status === "ok") {
+        alert(editando ? "Reservación actualizada correctamente" : "Reservación agregada correctamente");
+        form.reset();
+        cargarTabla();
+        editando = false;
+        idEditando = null;
+        btnInsertar.textContent = "Insertar";
       } else {
-        input.classList.remove("is-invalid");
+        alert("Error en la operación: " + (res.msg ?? "Revisa los datos."));
       }
     });
+});
 
-    if (!valid) alert("Por favor, corrige los campos marcados en rojo.");
-    return valid;
-  }
 
-  // carga clientes y mesas
-  function cargarClientes() {
-    fetch("../HTML/reservaciones_crud.php", {
-      method: "POST",
-      body: new URLSearchParams({ accion: "clientes" }),
-    })
-      .then(r => r.json())
-      .then(clientes => {
-        clienteSelect.innerHTML = "<option value=''>Seleccionar...</option>";
-        clientes.forEach(c => {
-          clienteSelect.innerHTML += `<option value="${c.id_cliente}">${c.nombre}</option>`;
-        });
+// Validación básica y anti-SQL
+function validarFormulario() {
+  let valid = true;
+  const regexSQL = /['";=<>*%]/;
+
+  form.querySelectorAll("input, select").forEach(input => {
+    // ignora campos ocultos y el ID autoincremental
+    if (input.type === "hidden" || input.id === "res-id") return;
+
+    if (!input.value.trim()) {
+      input.classList.add("is-invalid");
+      valid = false;
+    } else if (regexSQL.test(input.value)) {
+      alert(`El campo "${input.id}" contiene caracteres no permitidos.`);
+      input.classList.add("is-invalid");
+      valid = false;
+    } else {
+      input.classList.remove("is-invalid");
+    }
+  });
+
+  if (!valid) alert("Por favor, corrige los campos marcados en rojo.");
+  return valid;
+}
+
+
+// Cargar clientes y mesas 
+function cargarClientes() {
+  fetch("../reservaciones_crud.php", {
+    method: "POST",
+    body: new URLSearchParams({ accion: "clientes" }),
+  })
+  .then(r => r.json())
+  .then(res => {
+    if (res.status === "ok") {
+      clienteSelect.innerHTML = "<option value=''>Seleccionar...</option>";
+      res.data.forEach(c => {
+        // Convertimos el value a número para que bind_param reciba int
+        clienteSelect.innerHTML += `<option value="${Number(c.id_cliente)}">${c.nombre}</option>`;
       });
-  }
+    }
+  });
+}
 
-  function cargarMesas() {
-    fetch("../HTML/reservaciones_crud.php", {
-      method: "POST",
-      body: new URLSearchParams({ accion: "mesas" }),
-    })
-      .then(r => r.json())
-      .then(mesas => {
-        mesaSelect.innerHTML = "<option value=''>Seleccionar...</option>";
-        mesas.forEach(m => {
-          mesaSelect.innerHTML += `<option value="${m.id_mesa}">${m.descripcion}</option>`;
-        });
+// Cargar mesas dinámicamente
+function cargarMesas() {
+  fetch("../reservaciones_crud.php", {
+    method: "POST",
+    body: new URLSearchParams({ accion: "mesas" }),
+  })
+  .then(r => r.json())
+  .then(res => {
+    if (res.status === "ok") {
+      mesaSelect.innerHTML = "<option value=''>Seleccionar...</option>";
+      res.data.forEach(m => {
+        // Convertimos el value a número
+        mesaSelect.innerHTML += `<option value="${Number(m.id_mesa)}">${m.descripcion}</option>`;
       });
-  }
+    }
+  });
+}
 
-  // carga la tabla para mostrarla con boton de modificar y eliminar
+
+
+  // Cargar tabla
   function cargarTabla() {
-    fetch("../HTML/reservaciones_crud.php", {
+    fetch("../reservaciones_crud.php", {
       method: "POST",
       body: new URLSearchParams({ accion: "listar" }),
     })
@@ -128,7 +145,6 @@ document.addEventListener("DOMContentLoaded", () => {
               <button class="btn btn-sm btn-danger btn-eliminar">🗑️</button>
             </td>
           `;
-          // Eventos de los botones
           tr.querySelector(".btn-editar").addEventListener("click", () => editarFila(row));
           tr.querySelector(".btn-eliminar").addEventListener("click", () => eliminarFila(row.id_reservacion));
           tbody.appendChild(tr);
@@ -136,9 +152,10 @@ document.addEventListener("DOMContentLoaded", () => {
       });
   }
 
-  // metodo para editar o actualizar
+  // Editar reservación
   function editarFila(row) {
     document.getElementById("res-personas").value = row.cantidad_personas;
+    document.getElementById("res-fecha").value = row.fecha_hora.replace(" ", "T");
     document.getElementById("res-estado").value = row.estado;
     clienteSelect.value = row.id_cliente;
     mesaSelect.value = row.id_mesa;
@@ -148,7 +165,7 @@ document.addEventListener("DOMContentLoaded", () => {
     alert(`Editando reservación #${row.id_reservacion}`);
   }
 
-  // metodo para eliminar segun id
+  // Eliminar reservación
   function eliminarFila(id) {
     if (!confirm(`¿Deseas eliminar la reservación #${id}? Esta acción no se puede deshacer.`)) return;
 
@@ -156,7 +173,7 @@ document.addEventListener("DOMContentLoaded", () => {
     datos.append("accion", "eliminar");
     datos.append("id_reservacion", id);
 
-    fetch("../HTML/reservaciones_crud.php", { method: "POST", body: datos })
+    fetch("../reservaciones_crud.php", { method: "POST", body: datos })
       .then(r => r.text())
       .then(res => {
         if (res === "ok") {
@@ -168,4 +185,20 @@ document.addEventListener("DOMContentLoaded", () => {
       });
   }
 });
+
+function cargarSiguienteId() {
+  fetch("../reservaciones_crud.php", {
+    method: "POST",
+    body: new URLSearchParams({ accion: "siguiente_id" }),
+  })
+    .then(r => r.json())
+    .then(res => {
+      if (res.status === "ok") {
+        document.getElementById("res-id").value = res.siguiente;
+      } else {
+        console.error("Error al obtener siguiente ID:", res.msg);
+      }
+    })
+    .catch(err => console.error("Error fetch siguiente_id:", err));
+}
 
