@@ -58,7 +58,16 @@
                 <ul class="submenu">
                     <li><a href="../HTML/gestion_de_mobiliario/gestion_mobiliario.php">Control del Mobiliario</a></li>
                     <li><a href="../HTML/gestion_de_mobiliario/compras_mobiliario.php">Gestion de Compras</a></li>
-                    <li><a href="../HTML/gestion_de_mobiliario/detalle_compras_mobiliario.php">Gestion de Compras</a></li>
+                    <li><a href="../HTML/gestion_de_mobiliario/detalle_compras_mobiliario.php">detalle de Compras</a></li>
+                </ul>
+            </li>
+
+            <li>
+                <a href="#" class="submenu-toggle"><span>🛠️</span> mantenimiento de Mobiliario</a>
+                <ul class="submenu">
+                    <li><a href="../HTML/mantenimiento_de_Mobiliario/mantenimiento_muebles.php">mantenimiento de muebles</a></li>
+                    <li><a href="../HTML/mantenimiento_de_Mobiliario/mantenimiento_electrodomesticos.php">mantenimiento de electrónica</a></li>
+                    
                 </ul>
             </li>
 
@@ -68,7 +77,8 @@
                     <li><a href="../HTML/gestion_de_vehiculos/gestion_vehiculos.php">Gestion de Vehiculos</a></li>
                     <li><a href="../HTML/gestion_de_vehiculos/mantenimiento_vehiculos.php">mantenimiento</a></li>
                     <li><a href="../HTML/gestion_de_vehiculos/viajes_vehiculos.php">Viajes</a></li>
-                    <li><a href="rutas_vehiculos.html">Rutas</a></li>
+                    <li><a href="../HTML/gestion_de_vehiculos/rutas_vehiculos.php">Rutas</a></li>
+                    <li><a href="../HTML/gestion_de_vehiculos/reportes_accidentes.php">Accidentes</a></li>
                 </ul>
             </li>
 
@@ -102,6 +112,14 @@
                 <ul class="submenu">
                     <li><a href="../HTML/inventario_ingredientes/Gestion_Compras_Inventarios_Ingredientes.php">Gestion de Compra</a></li>
                     <li><a href="../HTML/inventario_ingredientes/Detalle_Compras_Ingredientes.php">Detalle de Compras</a></li>
+                </ul>
+            </li>
+
+            <li>
+                <a href="#" class="submenu-toggle"><span>👤</span> Proveedores</a>
+                <ul class="submenu">
+                    <li><a href="../HTML/proveedores/gestion_proveedores.php">Gestion de Proveedores</a></li>
+ 
                 </ul>
             </li>
 
