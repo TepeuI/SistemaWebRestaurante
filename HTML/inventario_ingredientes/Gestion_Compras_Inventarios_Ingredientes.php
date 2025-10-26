@@ -338,14 +338,14 @@ $proveedores = obtenerProveedores();
                         <td><?php echo htmlspecialchars($compra['nombre_proveedor']); ?></td>
                         <td><?php echo htmlspecialchars($compra['fecha_de_compra']); ?></td>
                         <td class="monto-alto">
-                            Q <?php echo number_format($compra['monto_total_compra_q'], 2); ?>
+                        <?php echo number_format($compra['monto_total_compra'], 2); ?>
                         </td>
                         <td>
                             <button class="btn btn-sm btn-primary btn-action editar-btn" 
                                     data-id="<?php echo $compra['id_compra_ingrediente']; ?>"
                                     data-proveedor="<?php echo $compra['id_proveedor']; ?>"
                                     data-fecha="<?php echo $compra['fecha_de_compra']; ?>"
-                                    data-monto="<?php echo $compra['monto_total_compra_q']; ?>">
+                                    data-monto="<?php echo $compra['monto_total_compra']; ?>">
                                 <i class="bi bi-pencil me-1"></i>Editar
                             </button>
                             <form method="post" style="display:inline;" onsubmit="return confirm('¿Estás seguro de eliminar esta compra?')">
@@ -422,7 +422,7 @@ $proveedores = obtenerProveedores();
                 idCompraInput.value = id;
                 document.getElementById('id_proveedor').value = proveedor;
                 document.getElementById('fecha_de_compra').value = fecha;
-                document.getElementById('monto_total_compra_q').value = monto;
+                document.getElementById('monto_total_compra').value = monto;
 
                 mostrarBotonesActualizar();
             });
@@ -451,7 +451,7 @@ $proveedores = obtenerProveedores();
         function validarFormulario() {
             const proveedor = document.getElementById('id_proveedor').value;
             const fecha = document.getElementById('fecha_de_compra').value;
-            const monto = document.getElementById('monto_total_compra_q').value;
+            const monto = document.getElementById('monto_total_compra').value;
 
             if (!proveedor) {
                 alert('El proveedor es requerido');
