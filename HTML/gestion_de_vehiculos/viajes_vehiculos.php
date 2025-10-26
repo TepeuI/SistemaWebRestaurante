@@ -37,11 +37,62 @@ function crearViaje() {
     $tiempo_aproximado_min = $_POST['tiempo_aproximado_min'] ?? null;
     $descripcion_viaje = $_POST['descripcion_viaje'] ?? '';
     
+    // DEBUG: Ver qué está llegando
+    error_log("DEBUG - Fecha recibida: " . $fecha_hora_salida);
+    
+    // CORREGIDO: Validación más robusta de la fecha
+    if (empty($fecha_hora_salida) || !validarFechaHora($fecha_hora_salida)) {
+        $_SESSION['mensaje'] = "Error: La fecha y hora de salida no son válidas";
+        $_SESSION['tipo_mensaje'] = "error";
+        desconectar($conn);
+        header('Location: viajes_vehiculos.php');
+        exit();
+    }
+    
+    // CORREGIDO: Convertir formato de fecha de HTML a MySQL
+    $fecha_hora_salida_mysql = convertirFechaHoraMySQL($fecha_hora_salida);
+    
+    // DEBUG: Ver la conversión
+    error_log("DEBUG - Fecha convertida: " . $fecha_hora_salida_mysql);
+    
+    // Validar que los datos existen
+    if (!validarRuta($id_ruta)) {
+        $_SESSION['mensaje'] = "Error: La ruta seleccionada no existe";
+        $_SESSION['tipo_mensaje'] = "error";
+        desconectar($conn);
+        header('Location: viajes_vehiculos.php');
+        exit();
+    }
+    
+    if (!validarVehiculo($id_vehiculo)) {
+        $_SESSION['mensaje'] = "Error: El vehículo seleccionado no existe";
+        $_SESSION['tipo_mensaje'] = "error";
+        desconectar($conn);
+        header('Location: viajes_vehiculos.php');
+        exit();
+    }
+    
+    if (!validarEmpleado($id_empleado_piloto)) {
+        $_SESSION['mensaje'] = "Error: El empleado piloto seleccionado no existe";
+        $_SESSION['tipo_mensaje'] = "error";
+        desconectar($conn);
+        header('Location: viajes_vehiculos.php');
+        exit();
+    }
+    
+    if ($id_empleado_acompanante && !validarEmpleado($id_empleado_acompanante)) {
+        $_SESSION['mensaje'] = "Error: El empleado acompañante seleccionado no existe";
+        $_SESSION['tipo_mensaje'] = "error";
+        desconectar($conn);
+        header('Location: viajes_vehiculos.php');
+        exit();
+    }
+    
     $sql = "INSERT INTO viajes (id_ruta, id_vehiculo, id_empleado_piloto, id_empleado_acompanante, fecha_hora_salida, tiempo_aproximado_min, descripcion_viaje) 
             VALUES (?, ?, ?, ?, ?, ?, ?)";
     
     $stmt = $conn->prepare($sql);
-    $stmt->bind_param("iiisiss", $id_ruta, $id_vehiculo, $id_empleado_piloto, $id_empleado_acompanante, $fecha_hora_salida, $tiempo_aproximado_min, $descripcion_viaje);
+    $stmt->bind_param("iiissss", $id_ruta, $id_vehiculo, $id_empleado_piloto, $id_empleado_acompanante, $fecha_hora_salida_mysql, $tiempo_aproximado_min, $descripcion_viaje);
     
     if ($stmt->execute()) {
         $_SESSION['mensaje'] = "Viaje creado exitosamente";
@@ -70,13 +121,58 @@ function actualizarViaje() {
     $tiempo_aproximado_min = $_POST['tiempo_aproximado_min'] ?? null;
     $descripcion_viaje = $_POST['descripcion_viaje'] ?? '';
     
+    // CORREGIDO: Validación más robusta de la fecha
+    if (empty($fecha_hora_salida) || !validarFechaHora($fecha_hora_salida)) {
+        $_SESSION['mensaje'] = "Error: La fecha y hora de salida no son válidas";
+        $_SESSION['tipo_mensaje'] = "error";
+        desconectar($conn);
+        header('Location: viajes_vehiculos.php');
+        exit();
+    }
+    
+    // CORREGIDO: Convertir formato de fecha de HTML a MySQL
+    $fecha_hora_salida_mysql = convertirFechaHoraMySQL($fecha_hora_salida);
+    
+    // Validar que los datos existen
+    if (!validarRuta($id_ruta)) {
+        $_SESSION['mensaje'] = "Error: La ruta seleccionada no existe";
+        $_SESSION['tipo_mensaje'] = "error";
+        desconectar($conn);
+        header('Location: viajes_vehiculos.php');
+        exit();
+    }
+    
+    if (!validarVehiculo($id_vehiculo)) {
+        $_SESSION['mensaje'] = "Error: El vehículo seleccionado no existe";
+        $_SESSION['tipo_mensaje'] = "error";
+        desconectar($conn);
+        header('Location: viajes_vehiculos.php');
+        exit();
+    }
+    
+    if (!validarEmpleado($id_empleado_piloto)) {
+        $_SESSION['mensaje'] = "Error: El empleado piloto seleccionado no existe";
+        $_SESSION['tipo_mensaje'] = "error";
+        desconectar($conn);
+        header('Location: viajes_vehiculos.php');
+        exit();
+    }
+    
+    if ($id_empleado_acompanante && !validarEmpleado($id_empleado_acompanante)) {
+        $_SESSION['mensaje'] = "Error: El empleado acompañante seleccionado no existe";
+        $_SESSION['tipo_mensaje'] = "error";
+        desconectar($conn);
+        header('Location: viajes_vehiculos.php');
+        exit();
+    }
+    
     $sql = "UPDATE viajes 
             SET id_ruta = ?, id_vehiculo = ?, id_empleado_piloto = ?, id_empleado_acompanante = ?, 
                 fecha_hora_salida = ?, tiempo_aproximado_min = ?, descripcion_viaje = ? 
             WHERE id_viaje = ?";
     
     $stmt = $conn->prepare($sql);
-    $stmt->bind_param("iiisissi", $id_ruta, $id_vehiculo, $id_empleado_piloto, $id_empleado_acompanante, $fecha_hora_salida, $tiempo_aproximado_min, $descripcion_viaje, $id_viaje);
+    $stmt->bind_param("iiissssi", $id_ruta, $id_vehiculo, $id_empleado_piloto, $id_empleado_acompanante, $fecha_hora_salida_mysql, $tiempo_aproximado_min, $descripcion_viaje, $id_viaje);
     
     if ($stmt->execute()) {
         $_SESSION['mensaje'] = "Viaje actualizado exitosamente";
@@ -117,6 +213,94 @@ function eliminarViaje() {
     exit();
 }
 
+// CORREGIDO: Función mejorada para validar fecha/hora
+function validarFechaHora($fechaHora) {
+    if (empty($fechaHora)) {
+        return false;
+    }
+    
+    // Verificar formato básico (debe contener T)
+    if (strpos($fechaHora, 'T') === false) {
+        return false;
+    }
+    
+    // Intentar crear DateTime object
+    try {
+        $dt = DateTime::createFromFormat('Y-m-d\TH:i', $fechaHora);
+        return $dt && $dt->format('Y-m-d\TH:i') === $fechaHora;
+    } catch (Exception $e) {
+        return false;
+    }
+}
+
+// CORREGIDO: Función mejorada para convertir fecha de HTML a formato MySQL
+function convertirFechaHoraMySQL($fechaHtml) {
+    // Si está vacío, retornar null
+    if (empty($fechaHtml)) {
+        return null;
+    }
+    
+    // Verificar que tenga el formato correcto
+    if (strpos($fechaHtml, 'T') === false) {
+        // Si no tiene 'T', intentar formatear de otra manera
+        $timestamp = strtotime($fechaHtml);
+        if ($timestamp === false) {
+            return null;
+        }
+        return date('Y-m-d H:i:s', $timestamp);
+    }
+    
+    // Formato normal: "2024-01-15T14:30" a "2024-01-15 14:30:00"
+    $fechaHora = str_replace('T', ' ', $fechaHtml);
+    
+    // Si no tiene segundos, agregarlos
+    if (strlen($fechaHora) == 16) { // YYYY-MM-DD HH:MM
+        $fechaHora .= ':00';
+    }
+    
+    return $fechaHora;
+}
+
+// Funciones de validación
+function validarRuta($id_ruta) {
+    $conn = conectar();
+    $sql = "SELECT id_ruta FROM rutas WHERE id_ruta = ?";
+    $stmt = $conn->prepare($sql);
+    $stmt->bind_param("i", $id_ruta);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    $exists = $result->num_rows > 0;
+    $stmt->close();
+    desconectar($conn);
+    return $exists;
+}
+
+function validarVehiculo($id_vehiculo) {
+    $conn = conectar();
+    $sql = "SELECT id_vehiculo FROM vehiculos WHERE id_vehiculo = ?";
+    $stmt = $conn->prepare($sql);
+    $stmt->bind_param("i", $id_vehiculo);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    $exists = $result->num_rows > 0;
+    $stmt->close();
+    desconectar($conn);
+    return $exists;
+}
+
+function validarEmpleado($id_empleado) {
+    $conn = conectar();
+    $sql = "SELECT id_empleado FROM empleados WHERE id_empleado = ?";
+    $stmt = $conn->prepare($sql);
+    $stmt->bind_param("i", $id_empleado);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    $exists = $result->num_rows > 0;
+    $stmt->close();
+    desconectar($conn);
+    return $exists;
+}
+
 // Obtener datos para los selectores
 function obtenerRutas() {
     $conn = conectar();
@@ -136,7 +320,6 @@ function obtenerRutas() {
 
 function obtenerVehiculos() {
     $conn = conectar();
-    // CORREGIDO: Removido WHERE estado = 'ACTIVO' ya que no existe la columna estado
     $sql = "SELECT id_vehiculo, no_placa, marca_vehiculo, modelo_vehiculo FROM vehiculos ORDER BY no_placa";
     $resultado = $conn->query($sql);
     $vehiculos = [];
@@ -153,7 +336,6 @@ function obtenerVehiculos() {
 
 function obtenerEmpleados() {
     $conn = conectar();
-    // CORREGIDO: Removido WHERE estado = 'ACTIVO' ya que no existe la columna estado
     $sql = "SELECT id_empleado, nombre_empleado, apellido_empleado FROM empleados ORDER BY nombre_empleado, apellido_empleado";
     $resultado = $conn->query($sql);
     $empleados = [];
@@ -228,6 +410,17 @@ $viajes = obtenerViajes();
         .btn-action {
             margin: 2px;
         }
+        .debug-info {
+            background-color: #f8f9fa;
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+            font-size: 12px;
+        }
+        .table-responsive {
+            max-height: 600px;
+            overflow-y: auto;
+        }
     </style>
     <!-- Frameworks y librerías base -->
     <link rel="stylesheet" href="../../css/bootstrap.min.css">
@@ -254,6 +447,17 @@ $viajes = obtenerViajes();
                 ?>
             </div>
         <?php endif; ?>
+
+        <!-- Debug info -->
+        <div class="debug-info">
+            <strong>Debug:</strong> 
+            <?php 
+            echo "Rutas: " . count($rutas) . " | ";
+            echo "Vehículos: " . count($vehiculos) . " | ";
+            echo "Empleados: " . count($empleados) . " | ";
+            echo "Viajes: " . count($viajes);
+            ?>
+        </div>
 
         <section class="card shadow p-4">
             <h2 class="card__title text-primary mb-4">FORMULARIO - Viajes de Vehículos</h2>
@@ -462,7 +666,10 @@ $viajes = obtenerViajes();
                 idViajeInput.value = '';
                 operacionInput.value = 'crear';
                 // Establecer fecha y hora actual por defecto
-                document.getElementById('fecha_hora_salida').valueAsDate = new Date();
+                const now = new Date();
+                // Ajustar a la zona horaria local
+                now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+                document.getElementById('fecha_hora_salida').value = now.toISOString().slice(0, 16);
             }
 
             function mostrarBotonesGuardar() {
@@ -504,7 +711,7 @@ $viajes = obtenerViajes();
             }
 
             // Establecer fecha y hora actual por defecto al cargar la página
-            document.getElementById('fecha_hora_salida').valueAsDate = new Date();
+            limpiarFormulario();
         });
     </script>
 </body>

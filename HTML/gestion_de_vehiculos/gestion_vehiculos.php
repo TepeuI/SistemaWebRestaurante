@@ -29,18 +29,24 @@ function crearVehiculo() {
     global $conn;
     $conn = conectar();
     
-    $no_placas = $_POST['no_placas'] ?? '';
-    $marca = $_POST['marca'] ?? '';
-    $modelo = $_POST['modelo'] ?? '';
+    $no_placa = $_POST['no_placas'] ?? '';
+    $marca_vehiculo = $_POST['marca'] ?? '';
+    $modelo_vehiculo = $_POST['modelo'] ?? '';
     $anio_vehiculo = $_POST['anio_vehiculo'] ?? '';
-    $id_mobiliario = $_POST['id_mobiliario'] ?? NULL;
+    $descripcion = $_POST['descripcion'] ?? '';
     $estado = $_POST['estado'] ?? 'ACTIVO';
+    $id_mobiliario = $_POST['id_mobiliario'] ?? NULL;
     
-    $sql = "INSERT INTO vehiculos (no_placas, marca, modelo, anio_vehiculo, id_mobiliario, estado) 
-            VALUES (?, ?, ?, ?, ?, ?)";
+    // Si id_mobiliario está vacío, establecerlo como NULL
+    if ($id_mobiliario === '') {
+        $id_mobiliario = NULL;
+    }
+    
+    $sql = "INSERT INTO vehiculos (no_placa, marca_vehiculo, modelo_vehiculo, anio_vehiculo, descripcion, estado, id_mobiliario) 
+            VALUES (?, ?, ?, ?, ?, ?, ?)";
     
     $stmt = $conn->prepare($sql);
-    $stmt->bind_param("sssiis", $no_placas, $marca, $modelo, $anio_vehiculo, $id_mobiliario, $estado);
+    $stmt->bind_param("sssissi", $no_placa, $marca_vehiculo, $modelo_vehiculo, $anio_vehiculo, $descripcion, $estado, $id_mobiliario);
     
     if ($stmt->execute()) {
         $_SESSION['mensaje'] = "Vehículo creado exitosamente";
@@ -60,19 +66,25 @@ function actualizarVehiculo() {
     global $conn;
     $conn = conectar();
     
-    $id_placa = $_POST['id_placa'] ?? '';
-    $no_placas = $_POST['no_placas'] ?? '';
-    $marca = $_POST['marca'] ?? '';
-    $modelo = $_POST['modelo'] ?? '';
+    $id_vehiculo = $_POST['id_placa'] ?? '';
+    $no_placa = $_POST['no_placas'] ?? '';
+    $marca_vehiculo = $_POST['marca'] ?? '';
+    $modelo_vehiculo = $_POST['modelo'] ?? '';
     $anio_vehiculo = $_POST['anio_vehiculo'] ?? '';
+    $descripcion = $_POST['descripcion'] ?? '';
+    $estado = $_POST['estado'] ?? 'ACTIVO';
     $id_mobiliario = $_POST['id_mobiliario'] ?? NULL;
-    $estado = $_POST['estado'] ?? '';
     
-    $sql = "UPDATE vehiculos SET no_placas = ?, marca = ?, modelo = ?, anio_vehiculo = ?, id_mobiliario = ?, estado = ? 
-            WHERE id_placa = ?";
+    // Si id_mobiliario está vacío, establecerlo como NULL
+    if ($id_mobiliario === '') {
+        $id_mobiliario = NULL;
+    }
+    
+    $sql = "UPDATE vehiculos SET no_placa = ?, marca_vehiculo = ?, modelo_vehiculo = ?, anio_vehiculo = ?, descripcion = ?, estado = ?, id_mobiliario = ? 
+            WHERE id_vehiculo = ?";
     
     $stmt = $conn->prepare($sql);
-    $stmt->bind_param("sssiisi", $no_placas, $marca, $modelo, $anio_vehiculo, $id_mobiliario, $estado, $id_placa);
+    $stmt->bind_param("sssissii", $no_placa, $marca_vehiculo, $modelo_vehiculo, $anio_vehiculo, $descripcion, $estado, $id_mobiliario, $id_vehiculo);
     
     if ($stmt->execute()) {
         $_SESSION['mensaje'] = "Vehículo actualizado exitosamente";
@@ -92,12 +104,12 @@ function eliminarVehiculo() {
     global $conn;
     $conn = conectar();
     
-    $id_placa = $_POST['id_placa'] ?? '';
+    $id_vehiculo = $_POST['id_placa'] ?? '';
     
-    $sql = "DELETE FROM vehiculos WHERE id_placa = ?";
+    $sql = "DELETE FROM vehiculos WHERE id_vehiculo = ?";
     
     $stmt = $conn->prepare($sql);
-    $stmt->bind_param("i", $id_placa);
+    $stmt->bind_param("i", $id_vehiculo);
     
     if ($stmt->execute()) {
         $_SESSION['mensaje'] = "Vehículo eliminado exitosamente";
@@ -117,35 +129,11 @@ function eliminarVehiculo() {
 function obtenerVehiculos() {
     $conn = conectar();
     
-    // Primero, verifiquemos la estructura de la tabla
-    $sql_check = "SHOW COLUMNS FROM vehiculos";
-    $result_check = $conn->query($sql_check);
-    $columns = [];
-    while($row = $result_check->fetch_assoc()) {
-        $columns[] = $row['Field'];
-    }
-    
-    // Debug: mostrar columnas disponibles
-    error_log("Columnas de vehiculos: " . implode(', ', $columns));
-    
-    // Construir la consulta según las columnas disponibles
-    if (in_array('id_placa', $columns)) {
-        $sql = "SELECT v.*, m.nombre_mobiliario 
-                FROM vehiculos v 
-                LEFT JOIN mobiliario m ON v.id_mobiliario = m.id_mobiliario 
-                ORDER BY v.id_placa";
-    } elseif (in_array('id_vehiculo', $columns)) {
-        $sql = "SELECT v.*, m.nombre_mobiliario 
-                FROM vehiculos v 
-                LEFT JOIN mobiliario m ON v.id_mobiliario = m.id_mobiliario 
-                ORDER BY v.id_vehiculo";
-    } else {
-        // Si no hay ninguna de las dos, usar la primera columna disponible
-        $sql = "SELECT v.*, m.nombre_mobiliario 
-                FROM vehiculos v 
-                LEFT JOIN mobiliario m ON v.id_mobiliario = m.id_mobiliario 
-                ORDER BY 1";
-    }
+    // CORREGIDO: Usar inventario_mobiliario en lugar de mobiliario
+    $sql = "SELECT v.*, im.nombre_mobiliario 
+            FROM vehiculos v 
+            LEFT JOIN inventario_mobiliario im ON v.id_mobiliario = im.id_mobiliario 
+            ORDER BY v.id_vehiculo";
     
     $resultado = $conn->query($sql);
     $vehiculos = [];
@@ -160,31 +148,40 @@ function obtenerVehiculos() {
     return $vehiculos;
 }
 
-// Obtener mobiliario para el select
+// Obtener mobiliario para el select - CORREGIDO: usar inventario_mobiliario
 function obtenerMobiliario() {
     $conn = conectar();
-    $sql = "SELECT id_mobiliario, nombre_mobiliario FROM mobiliario ORDER BY nombre_mobiliario";
-    $resultado = $conn->query($sql);
-    $mobiliario = [];
     
-    if ($resultado && $resultado->num_rows > 0) {
-        while($fila = $resultado->fetch_assoc()) {
-            $mobiliario[] = $fila;
+    try {
+        // Solo mobiliario de tipo vehículos (id_tipo_mobiliario = 1) de inventario_mobiliario
+        $sql = "SELECT id_mobiliario, nombre_mobiliario 
+                FROM inventario_mobiliario 
+                WHERE id_tipo_mobiliario = 1 
+                ORDER BY nombre_mobiliario";
+        
+        $resultado = $conn->query($sql);
+        $mobiliario = [];
+        
+        if ($resultado && $resultado->num_rows > 0) {
+            while($fila = $resultado->fetch_assoc()) {
+                $mobiliario[] = $fila;
+            }
         }
+        
+        desconectar($conn);
+        return $mobiliario;
+        
+    } catch (Exception $e) {
+        // Si hay error, retornar array vacío
+        desconectar($conn);
+        return [];
     }
-    
-    desconectar($conn);
-    return $mobiliario;
 }
 
 $vehiculos = obtenerVehiculos();
 $mobiliarios = obtenerMobiliario();
-
-// Debug: verificar estructura de los vehículos obtenidos
-if (!empty($vehiculos)) {
-    error_log("Primer vehículo: " . print_r($vehiculos[0], true));
-}
 ?>
+
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -215,6 +212,31 @@ if (!empty($vehiculos)) {
         .btn-action {
             margin: 2px;
         }
+        .debug-info {
+            background-color: #f8f9fa;
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+            font-size: 12px;
+        }
+        .descripcion-cell {
+            max-width: 200px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        .badge-activo {
+            background-color: #28a745;
+            color: white;
+        }
+        .badge-taller {
+            background-color: #ffc107;
+            color: black;
+        }
+        .badge-baja {
+            background-color: #dc3545;
+            color: white;
+        }
     </style>
     <!-- Frameworks y librerías base -->
     <link rel="stylesheet" href="../../css/bootstrap.min.css">
@@ -242,6 +264,15 @@ if (!empty($vehiculos)) {
             </div>
         <?php endif; ?>
 
+        <!-- Debug info -->
+        <div class="debug-info">
+            <strong>Debug:</strong> 
+            <?php 
+            echo "Vehículos: " . count($vehiculos) . " | ";
+            echo "Mobiliarios (inventario): " . count($mobiliarios);
+            ?>
+        </div>
+
         <section class="card shadow p-4">
             <h2 class="card__title text-primary mb-4">FORMULARIO - Vehículos</h2>
 
@@ -265,24 +296,39 @@ if (!empty($vehiculos)) {
                     <label class="form-label" for="anio_vehiculo">Año:</label>
                     <input type="number" class="form-control" id="anio_vehiculo" name="anio_vehiculo" required placeholder="Ej. 2014" min="1900" max="2030">
                 </div>
-                <div class="col-md-4">
-                    <label class="form-label" for="id_mobiliario">Mobiliario Asociado:</label>
-                    <select class="form-control" id="id_mobiliario" name="id_mobiliario">
-                        <option value="">-- Sin mobiliario --</option>
-                        <?php foreach($mobiliarios as $mob): ?>
-                            <option value="<?php echo $mob['id_mobiliario']; ?>">
-                                <?php echo htmlspecialchars($mob['nombre_mobiliario']); ?>
-                            </option>
-                        <?php endforeach; ?>
-                    </select>
-                </div>
-                <div class="col-md-4">
+                
+                <div class="col-md-6">
                     <label class="form-label" for="estado">Estado:</label>
                     <select class="form-control" id="estado" name="estado" required>
                         <option value="ACTIVO">ACTIVO</option>
                         <option value="EN_TALLER">EN TALLER</option>
                         <option value="BAJA">BAJA</option>
                     </select>
+                </div>
+                
+                <div class="col-md-6">
+                    <label class="form-label" for="id_mobiliario">Mobiliario Asociado:</label>
+                    <select class="form-control" id="id_mobiliario" name="id_mobiliario">
+                        <option value="">-- Sin mobiliario --</option>
+                        <?php if (!empty($mobiliarios)): ?>
+                            <?php foreach($mobiliarios as $mob): ?>
+                                <option value="<?php echo $mob['id_mobiliario']; ?>">
+                                    <?php echo htmlspecialchars($mob['nombre_mobiliario']); ?>
+                                </option>
+                            <?php endforeach; ?>
+                        <?php else: ?>
+                            <option value="">-- No hay mobiliario en inventario --</option>
+                        <?php endif; ?>
+                    </select>
+                    <?php if (empty($mobiliarios)): ?>
+                        <small class="text-muted">No se encontraron registros de mobiliario en el inventario</small>
+                    <?php endif; ?>
+                </div>
+                
+                <div class="col-12">
+                    <label class="form-label" for="descripcion">Descripción:</label>
+                    <textarea class="form-control" id="descripcion" name="descripcion" 
+                              rows="2" placeholder="Ej. Vehículo para entregas a domicilio, color blanco, etc."></textarea>
                 </div>
             </form>
 
@@ -303,44 +349,61 @@ if (!empty($vehiculos)) {
                             <th>Marca</th>
                             <th>Modelo</th>
                             <th>Año</th>
-                            <th>Mobiliario</th>
+                            <th>Descripción</th>
                             <th>Estado</th>
+                            <th>Mobiliario (Inventario)</th>
                             <th>Acciones</th>
                         </tr>
                     </thead>
                     <tbody>
                         <?php foreach($vehiculos as $vehiculo): ?>
                         <tr>
-                            <td><?php echo htmlspecialchars($vehiculo['id_placa'] ?? $vehiculo['id_vehiculo'] ?? 'N/A'); ?></td>
-                            <td><?php echo htmlspecialchars($vehiculo['no_placas'] ?? 'N/A'); ?></td>
-                            <td><?php echo htmlspecialchars($vehiculo['marca'] ?? 'N/A'); ?></td>
-                            <td><?php echo htmlspecialchars($vehiculo['modelo'] ?? 'N/A'); ?></td>
+                            <td><?php echo htmlspecialchars($vehiculo['id_vehiculo'] ?? 'N/A'); ?></td>
+                            <td><?php echo htmlspecialchars($vehiculo['no_placa'] ?? 'N/A'); ?></td>
+                            <td><?php echo htmlspecialchars($vehiculo['marca_vehiculo'] ?? 'N/A'); ?></td>
+                            <td><?php echo htmlspecialchars($vehiculo['modelo_vehiculo'] ?? 'N/A'); ?></td>
                             <td><?php echo htmlspecialchars($vehiculo['anio_vehiculo'] ?? 'N/A'); ?></td>
-                            <td><?php echo htmlspecialchars($vehiculo['nombre_mobiliario'] ?? 'Ninguno'); ?></td>
+                            <td class="descripcion-cell" title="<?php echo htmlspecialchars($vehiculo['descripcion'] ?? ''); ?>">
+                                <?php echo htmlspecialchars($vehiculo['descripcion'] ?? 'Sin descripción'); ?>
+                            </td>
                             <td>
-                                <span class="badge 
-                                    <?php 
-                                    $estado = $vehiculo['estado'] ?? 'ACTIVO';
-                                    echo $estado == 'ACTIVO' ? 'bg-success' : 
-                                           ($estado == 'EN_TALLER' ? 'bg-warning' : 'bg-danger'); 
-                                    ?>">
+                                <?php 
+                                $estado = $vehiculo['estado'] ?? 'ACTIVO';
+                                $badge_class = '';
+                                switch($estado) {
+                                    case 'ACTIVO':
+                                        $badge_class = 'badge-activo';
+                                        break;
+                                    case 'EN_TALLER':
+                                        $badge_class = 'badge-taller';
+                                        break;
+                                    case 'BAJA':
+                                        $badge_class = 'badge-baja';
+                                        break;
+                                    default:
+                                        $badge_class = 'badge-activo';
+                                }
+                                ?>
+                                <span class="badge <?php echo $badge_class; ?>">
                                     <?php echo htmlspecialchars($estado); ?>
                                 </span>
                             </td>
+                            <td><?php echo htmlspecialchars($vehiculo['nombre_mobiliario'] ?? 'Ninguno'); ?></td>
                             <td>
                                 <button class="btn btn-sm btn-primary btn-action editar-btn" 
-                                        data-id="<?php echo $vehiculo['id_placa'] ?? $vehiculo['id_vehiculo'] ?? ''; ?>"
-                                        data-placas="<?php echo htmlspecialchars($vehiculo['no_placas'] ?? ''); ?>"
-                                        data-marca="<?php echo htmlspecialchars($vehiculo['marca'] ?? ''); ?>"
-                                        data-modelo="<?php echo htmlspecialchars($vehiculo['modelo'] ?? ''); ?>"
+                                        data-id="<?php echo $vehiculo['id_vehiculo'] ?? ''; ?>"
+                                        data-placas="<?php echo htmlspecialchars($vehiculo['no_placa'] ?? ''); ?>"
+                                        data-marca="<?php echo htmlspecialchars($vehiculo['marca_vehiculo'] ?? ''); ?>"
+                                        data-modelo="<?php echo htmlspecialchars($vehiculo['modelo_vehiculo'] ?? ''); ?>"
                                         data-anio="<?php echo $vehiculo['anio_vehiculo'] ?? ''; ?>"
-                                        data-mobiliario="<?php echo $vehiculo['id_mobiliario'] ?? ''; ?>"
-                                        data-estado="<?php echo $vehiculo['estado'] ?? 'ACTIVO'; ?>">
+                                        data-descripcion="<?php echo htmlspecialchars($vehiculo['descripcion'] ?? ''); ?>"
+                                        data-estado="<?php echo $vehiculo['estado'] ?? 'ACTIVO'; ?>"
+                                        data-mobiliario="<?php echo $vehiculo['id_mobiliario'] ?? ''; ?>">
                                     Editar
                                 </button>
                                 <form method="post" style="display:inline;" onsubmit="return confirm('¿Estás seguro de eliminar este vehículo?')">
                                     <input type="hidden" name="operacion" value="eliminar">
-                                    <input type="hidden" name="id_placa" value="<?php echo $vehiculo['id_placa'] ?? $vehiculo['id_vehiculo'] ?? ''; ?>">
+                                    <input type="hidden" name="id_placa" value="<?php echo $vehiculo['id_vehiculo'] ?? ''; ?>">
                                     <button type="submit" class="btn btn-sm btn-danger btn-action">Eliminar</button>
                                 </form>
                             </td>
@@ -348,7 +411,7 @@ if (!empty($vehiculos)) {
                         <?php endforeach; ?>
                         <?php if (empty($vehiculos)): ?>
                         <tr>
-                            <td colspan="8" class="text-center">No hay vehículos registrados</td>
+                            <td colspan="9" class="text-center">No hay vehículos registrados</td>
                         </tr>
                         <?php endif; ?>
                     </tbody>
@@ -403,8 +466,9 @@ if (!empty($vehiculos)) {
                     const marca = this.getAttribute('data-marca');
                     const modelo = this.getAttribute('data-modelo');
                     const anio = this.getAttribute('data-anio');
-                    const mobiliario = this.getAttribute('data-mobiliario');
+                    const descripcion = this.getAttribute('data-descripcion');
                     const estado = this.getAttribute('data-estado');
+                    const mobiliario = this.getAttribute('data-mobiliario');
 
                     // Llenar formulario
                     idPlacaInput.value = id;
@@ -412,8 +476,9 @@ if (!empty($vehiculos)) {
                     document.getElementById('marca').value = marca;
                     document.getElementById('modelo').value = modelo;
                     document.getElementById('anio_vehiculo').value = anio;
-                    document.getElementById('id_mobiliario').value = mobiliario;
+                    document.getElementById('descripcion').value = descripcion;
                     document.getElementById('estado').value = estado;
+                    document.getElementById('id_mobiliario').value = mobiliario;
 
                     mostrarBotonesActualizar();
                 });
@@ -423,8 +488,8 @@ if (!empty($vehiculos)) {
                 form.reset();
                 idPlacaInput.value = '';
                 operacionInput.value = 'crear';
-                document.getElementById('id_mobiliario').value = '';
                 document.getElementById('estado').value = 'ACTIVO';
+                document.getElementById('id_mobiliario').value = '';
             }
 
             function mostrarBotonesGuardar() {
@@ -444,6 +509,7 @@ if (!empty($vehiculos)) {
                 const marca = document.getElementById('marca').value.trim();
                 const modelo = document.getElementById('modelo').value.trim();
                 const anio = document.getElementById('anio_vehiculo').value;
+                const estado = document.getElementById('estado').value;
 
                 if (!placas) {
                     alert('La placa es requerida');
@@ -459,6 +525,10 @@ if (!empty($vehiculos)) {
                 }
                 if (!anio) {
                     alert('El año es requerido');
+                    return false;
+                }
+                if (!estado) {
+                    alert('El estado es requerido');
                     return false;
                 }
 

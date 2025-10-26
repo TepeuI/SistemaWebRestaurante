@@ -1,285 +1,431 @@
+<?php
+session_start();
+require_once '../conexion.php';
+
+// Verificar si el usuario está logueado
+if (!isset($_SESSION['id_usuario'])) {
+    header('Location: ../login.php');
+    exit();
+}
+
+// Procesar operaciones CRUD
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $operacion = $_POST['operacion'] ?? '';
+    
+    switch($operacion) {
+        case 'crear':
+            crearMobiliario();
+            break;
+        case 'actualizar':
+            actualizarMobiliario();
+            break;
+        case 'eliminar':
+            eliminarMobiliario();
+            break;
+    }
+}
+
+function crearMobiliario() {
+    global $conn;
+    $conn = conectar();
+    
+    $nombre_mobiliario = $_POST['nombre_mobiliario'] ?? '';
+    $id_tipo_mobiliario = $_POST['id_tipo_mobiliario'] ?? '';
+    $descripcion = $_POST['descripcion'] ?? '';
+    $cantidad_en_stock = $_POST['cantidad_en_stock'] ?? 0;
+    
+    $sql = "INSERT INTO inventario_mobiliario (nombre_mobiliario, id_tipo_mobiliario, descripcion, cantidad_en_stock) 
+            VALUES (?, ?, ?, ?)";
+    
+    $stmt = $conn->prepare($sql);
+    $stmt->bind_param("sisi", $nombre_mobiliario, $id_tipo_mobiliario, $descripcion, $cantidad_en_stock);
+    
+    if ($stmt->execute()) {
+        $_SESSION['mensaje'] = "Mobiliario creado exitosamente";
+        $_SESSION['tipo_mensaje'] = "success";
+    } else {
+        $_SESSION['mensaje'] = "Error al crear mobiliario: " . $conn->error;
+        $_SESSION['tipo_mensaje'] = "error";
+    }
+    
+    $stmt->close();
+    desconectar($conn);
+    header('Location: gestion_mobiliario.php');
+    exit();
+}
+
+function actualizarMobiliario() {
+    global $conn;
+    $conn = conectar();
+    
+    $id_mobiliario = $_POST['id_mobiliario'] ?? '';
+    $nombre_mobiliario = $_POST['nombre_mobiliario'] ?? '';
+    $id_tipo_mobiliario = $_POST['id_tipo_mobiliario'] ?? '';
+    $descripcion = $_POST['descripcion'] ?? '';
+    $cantidad_en_stock = $_POST['cantidad_en_stock'] ?? 0;
+    
+    $sql = "UPDATE inventario_mobiliario SET nombre_mobiliario = ?, id_tipo_mobiliario = ?, descripcion = ?, cantidad_en_stock = ? 
+            WHERE id_mobiliario = ?";
+    
+    $stmt = $conn->prepare($sql);
+    $stmt->bind_param("sisii", $nombre_mobiliario, $id_tipo_mobiliario, $descripcion, $cantidad_en_stock, $id_mobiliario);
+    
+    if ($stmt->execute()) {
+        $_SESSION['mensaje'] = "Mobiliario actualizado exitosamente";
+        $_SESSION['tipo_mensaje'] = "success";
+    } else {
+        $_SESSION['mensaje'] = "Error al actualizar mobiliario: " . $conn->error;
+        $_SESSION['tipo_mensaje'] = "error";
+    }
+    
+    $stmt->close();
+    desconectar($conn);
+    header('Location: gestion_mobiliario.php');
+    exit();
+}
+
+function eliminarMobiliario() {
+    global $conn;
+    $conn = conectar();
+    
+    $id_mobiliario = $_POST['id_mobiliario'] ?? '';
+    
+    $sql = "DELETE FROM inventario_mobiliario WHERE id_mobiliario = ?";
+    
+    $stmt = $conn->prepare($sql);
+    $stmt->bind_param("i", $id_mobiliario);
+    
+    if ($stmt->execute()) {
+        $_SESSION['mensaje'] = "Mobiliario eliminado exitosamente";
+        $_SESSION['tipo_mensaje'] = "success";
+    } else {
+        $_SESSION['mensaje'] = "Error al eliminar mobiliario: " . $conn->error;
+        $_SESSION['tipo_mensaje'] = "error";
+    }
+    
+    $stmt->close();
+    desconectar($conn);
+    header('Location: gestion_mobiliario.php');
+    exit();
+}
+
+// Obtener tipos de mobiliario para el select
+function obtenerTiposMobiliario() {
+    $conn = conectar();
+    $sql = "SELECT id_tipo_mobiliario, descripcion FROM tipos_mobiliario ORDER BY descripcion";
+    $resultado = $conn->query($sql);
+    $tipos = [];
+    
+    if ($resultado && $resultado->num_rows > 0) {
+        while($fila = $resultado->fetch_assoc()) {
+            $tipos[] = $fila;
+        }
+    }
+    
+    desconectar($conn);
+    return $tipos;
+}
+
+// Obtener todos los mobiliarios del inventario
+function obtenerMobiliarios() {
+    $conn = conectar();
+    $sql = "SELECT im.*, tm.descripcion as tipo_mobiliario 
+            FROM inventario_mobiliario im 
+            LEFT JOIN tipos_mobiliario tm ON im.id_tipo_mobiliario = tm.id_tipo_mobiliario 
+            ORDER BY im.nombre_mobiliario";
+    $resultado = $conn->query($sql);
+    $mobiliarios = [];
+    
+    if ($resultado && $resultado->num_rows > 0) {
+        while($fila = $resultado->fetch_assoc()) {
+            $mobiliarios[] = $fila;
+        }
+    }
+    
+    desconectar($conn);
+    return $mobiliarios;
+}
+
+$tipos_mobiliario = obtenerTiposMobiliario();
+$mobiliarios = obtenerMobiliarios();
+?>
 <!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Inventario Mobiliario - Plantilla</title>
+    <title>Gestión de Mobiliario - Marina Roja</title>
     <!-- Google Fonts: Poppins -->
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
     <style>
         body, h1, h2, h3, h4, h5, h6, label, input, button, table, th, td {
             font-family: 'Poppins', Arial, Helvetica, sans-serif !important;
         }
+        .mensaje {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+        }
+        .mensaje.success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .mensaje.error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .btn-action {
+            margin: 2px;
+        }
+        .debug-info {
+            background-color: #f8f9fa;
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+            font-size: 12px;
+        }
+        .descripcion-cell {
+            max-width: 200px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        .table-responsive {
+            max-height: 400px;
+            overflow-y: auto;
+        }
     </style>
     <!-- Frameworks y librerías base -->
-    <link rel="stylesheet" href="../css/bootstrap.min.css">
-    <link rel="stylesheet" href="../css/animate.min.css">
-    <link rel="stylesheet" href="../css/boxicons.min.css">
-    <link rel="stylesheet" href="../css/swiper-bundle.min.css">
-    <link rel="stylesheet" href="../css/glightbox.min.css">
-    <!-- Estilos personalizados globales -->
-    <link rel="stylesheet" href="../css/diseñoModulos.css">
+    <link rel="stylesheet" href="../../css/bootstrap.min.css">
+    <link rel="stylesheet" href="../../css/diseñoModulos.css">
 </head>
 <body>
     <header class="mb-4">
         <div class="container d-flex flex-column flex-md-row align-items-center justify-content-between py-3">
-            <h1 class="mb-0">INVENTARIO MOBILIARIO</h1>
+            <h1 class="mb-0">GESTIÓN DE MOBILIARIO</h1>
             <ul class="nav nav-pills gap-2 mb-0">
-                <li class="nav-item"><a href="../menu_empleados.html" class="nav-link">Regresar</a></li>
+                <li class="nav-item"><a href="../menu_empleados.php" class="nav-link">Regresar al Menú</a></li>
             </ul>
         </div>
     </header>
 
     <main class="container my-4">
+        <!-- Mostrar mensajes -->
+        <?php if (isset($_SESSION['mensaje'])): ?>
+            <div class="mensaje <?php echo $_SESSION['tipo_mensaje']; ?>">
+                <?php 
+                echo htmlspecialchars($_SESSION['mensaje']); 
+                unset($_SESSION['mensaje']);
+                unset($_SESSION['tipo_mensaje']);
+                ?>
+            </div>
+        <?php endif; ?>
+
+        <!-- Debug info -->
+        <div class="debug-info">
+            <strong>Debug:</strong> 
+            <?php 
+            echo "Tipos Mobiliario: " . count($tipos_mobiliario) . " | ";
+            echo "Mobiliarios (inventario): " . count($mobiliarios);
+            ?>
+        </div>
+
         <section class="card shadow p-4">
             <h2 class="card__title text-primary mb-4">FORMULARIO - CONTROL DE MOBILIARIO</h2>
 
-            <!-- Inventario Mobiliario (copiado de inventario.html) -->
-                <h2 class="card__title mb-3">Registro Mobiliario</h2>
-            <form id="form-inventario" class="row g-3">
-                <div class="col-md-3">
-                    <label class="form-label" for="control-id">ID Control:</label>
-                    <input type="number" class="form-control" id="control-id" required placeholder="Ej. 1">
+            <form id="form-mobiliario" method="post" class="row g-3">
+                <input type="hidden" id="operacion" name="operacion" value="crear">
+                <input type="hidden" id="id_mobiliario" name="id_mobiliario" value="">
+                
+                <div class="col-md-4">
+                    <label class="form-label" for="nombre_mobiliario">Nombre del Mobiliario:</label>
+                    <input type="text" class="form-control" id="nombre_mobiliario" name="nombre_mobiliario" required placeholder="Ej. Silla ejecutiva">
                 </div>
-                <div class="col-md-3">
-                    <label class="form-label" for="control-inv">ID Inventario:</label>
-                    <input type="number" class="form-control" id="control-inv" required placeholder="Ej. 1">
+                
+                <div class="col-md-4">
+                    <label class="form-label" for="id_tipo_mobiliario">Tipo de Mobiliario:</label>
+                    <select class="form-control" id="id_tipo_mobiliario" name="id_tipo_mobiliario" required>
+                        <option value="">Seleccione un tipo</option>
+                        <?php foreach($tipos_mobiliario as $tipo): ?>
+                            <option value="<?php echo $tipo['id_tipo_mobiliario']; ?>">
+                                <?php echo htmlspecialchars($tipo['descripcion']); ?>
+                            </option>
+                        <?php endforeach; ?>
+                    </select>
                 </div>
-                <div class="col-md-3">
-                    <label class="form-label" for="inv-id">ID Mobiliario:</label>
-                    <input type="number" class="form-control" id="inv-id" required placeholder="Ej. 1">
+                
+                <div class="col-md-4">
+                    <label class="form-label" for="cantidad_en_stock">Cantidad en Stock:</label>
+                    <input type="number" class="form-control" id="cantidad_en_stock" name="cantidad_en_stock" min="0" required value="0">
                 </div>
-                <div class="col-md-3">
-                    <label class="form-label" for="inv-nombre">Nombre Mobiliario:</label>
-                    <input type="text" class="form-control" id="inv-nombre" required placeholder="Ej. Silla de oficina">
-                </div>
-                <div class="col-md-3">
-                    <label class="form-label" for="inv-cantidad">Cantidad:</label>
-                    <input type="number" class="form-control" id="inv-cantidad_stock" required placeholder="Ej. 13">
-                </div>
-                <div class="col-md-3">
-                    <label class="form-label" for="control-entrada">Fecha de Entrada:</label>
-                    <input type="date" class="form-control" id="control-entrada" required>
-                </div>
-                <div class="col-md-3">
-                    <label class="form-label" for="control-caducidad">Fecha de Caducidad:</label>
-                    <input type="date" class="form-control" id="control-caducidad" required>
-                </div>
-                <div class="col-md-3">
-                    <label class="form-label" for="control-estado">Estado:</label>
-                    <input type="text" class="form-control" id="control-estado" required placeholder="Ej. Bueno">
-                </div>
-                <div class="col-md-3">
-                    <label class="form-label" for="inv-tipo">Descripción</label>
-                    <input type="text" class="form-control" id="inv-descrip" required placeholder="Ej. .....">
+                
+                <div class="col-12">
+                    <label class="form-label" for="descripcion">Descripción:</label>
+                    <textarea class="form-control" id="descripcion" name="descripcion" rows="3" placeholder="Descripción detallada del mobiliario..."></textarea>
                 </div>
             </form>
+
+            <div class="d-flex gap-2 mt-4">
+                <button id="btn-nuevo" type="button" class="btn btn-secondary">Nuevo</button>
+                <button id="btn-guardar" type="button" class="btn btn-success">Guardar</button>
+                <button id="btn-actualizar" type="button" class="btn btn-warning" style="display:none;">Actualizar</button>
+                <button id="btn-cancelar" type="button" class="btn btn-danger" style="display:none;">Cancelar</button>
+            </div>
+
+            <h2 class="card__title mb-3 mt-5">INVENTARIO DE MOBILIARIO</h2>
             <div class="table-responsive mt-3">
-                <table class="table table-striped table-bordered" id="tabla-inventario">
+                <table class="table table-striped table-bordered" id="tabla-mobiliario">
                     <thead class="table-dark">
                         <tr>
-                            <th>ID control</th>
-                            <th>ID inventario</th>
-                            <th>ID mobiliario</th>
-                            <th>nombre del mobiliario</th>
-                            <th>cantidad</th>
-                            <th>fecha de entrada</th>
-                            <th>fecha de caducidad</th>
-                            <th>estado</th>
-                            <th>descripción</th>
-
+                            <th>ID</th>
+                            <th>Nombre</th>
+                            <th>Tipo</th>
+                            <th>Descripción</th>
+                            <th>Cantidad</th>
+                            <th>Acciones</th>
                         </tr>
                     </thead>
                     <tbody>
+                        <?php foreach($mobiliarios as $mobiliario): ?>
                         <tr>
-                            <td>1</td>
-                            <td>1</td>
-                            <td>1</td>
-                            <td>Silla de oficina</td>
-                            <td>13</td>
-                            <td>2025-09-20</td>
-                            <td>2028-09-20</td>
-                            <td>Bueno</td>
-                            <td>Ergonómica, color</td>
+                            <td><?php echo htmlspecialchars($mobiliario['id_mobiliario']); ?></td>
+                            <td><?php echo htmlspecialchars($mobiliario['nombre_mobiliario']); ?></td>
+                            <td><?php echo htmlspecialchars($mobiliario['tipo_mobiliario'] ?? 'N/A'); ?></td>
+                            <td class="descripcion-cell" title="<?php echo htmlspecialchars($mobiliario['descripcion'] ?? ''); ?>">
+                                <?php echo htmlspecialchars($mobiliario['descripcion'] ?? 'Sin descripción'); ?>
+                            </td>
+                            <td><?php echo htmlspecialchars($mobiliario['cantidad_en_stock']); ?></td>
+                            <td>
+                                <button class="btn btn-sm btn-primary btn-action editar-btn" 
+                                        data-id="<?php echo $mobiliario['id_mobiliario']; ?>"
+                                        data-nombre="<?php echo htmlspecialchars($mobiliario['nombre_mobiliario']); ?>"
+                                        data-tipo="<?php echo $mobiliario['id_tipo_mobiliario']; ?>"
+                                        data-descripcion="<?php echo htmlspecialchars($mobiliario['descripcion'] ?? ''); ?>"
+                                        data-cantidad="<?php echo $mobiliario['cantidad_en_stock']; ?>">
+                                    Editar
+                                </button>
+                                <form method="post" style="display:inline;" onsubmit="return confirm('¿Estás seguro de eliminar este mobiliario?')">
+                                    <input type="hidden" name="operacion" value="eliminar">
+                                    <input type="hidden" name="id_mobiliario" value="<?php echo $mobiliario['id_mobiliario']; ?>">
+                                    <button type="submit" class="btn btn-sm btn-danger btn-action">Eliminar</button>
+                                </form>
+                            </td>
                         </tr>
+                        <?php endforeach; ?>
+                        <?php if (empty($mobiliarios)): ?>
+                        <tr>
+                            <td colspan="6" class="text-center">No hay mobiliarios registrados en el inventario</td>
+                        </tr>
+                        <?php endif; ?>
                     </tbody>
                 </table>
             </div>
-
-            <!-- toolbar unificado para acciones (actúa sobre la tabla activa) -->
-            <div class="d-flex gap-2 mt-4">
-                <button id="btn-nuevo" type="button" class="btn btn-danger">Nuevo</button>
-                <button id="btn-guardar" type="button" class="btn btn-success">Guardar</button>
-                <button id="btn-actualizar" type="button" class="btn btn-warning">Actualizar</button>
-                <button id="btn-eliminar" type="button" class="btn btn-secondary">Eliminar</button>
-                <div class="ms-auto text-muted align-self-center">Tabla activa: <span id="tabla-activa">inventario</span></div>
-            </div>
-
         </section>
     </main>
 
     <script>
-        (function(){
-            const tablaInvent = document.getElementById('tabla-inventario');
-            const tablaControl = document.getElementById('tabla-control');
-            const tablaCompras = document.getElementById('tabla-compras');
-            const tablaDetalle = document.getElementById('tabla-detalle-compra');
-            const spanActiva = document.getElementById('tabla-activa');
+        document.addEventListener('DOMContentLoaded', function() {
+            const form = document.getElementById('form-mobiliario');
             const btnNuevo = document.getElementById('btn-nuevo');
             const btnGuardar = document.getElementById('btn-guardar');
             const btnActualizar = document.getElementById('btn-actualizar');
-            const btnEliminar = document.getElementById('btn-eliminar');
+            const btnCancelar = document.getElementById('btn-cancelar');
+            const operacionInput = document.getElementById('operacion');
+            const idMobiliarioInput = document.getElementById('id_mobiliario');
 
-            let tablaActiva = 'inventario';
-            let filaSeleccionada = null;
+            // Botón Nuevo
+            btnNuevo.addEventListener('click', function() {
+                limpiarFormulario();
+                mostrarBotonesGuardar();
+            });
 
-            function setActiva(name){
-                tablaActiva = name;
-                spanActiva.textContent = name;
-                filaSeleccionada = null;
-                [tablaInvent, tablaControl, tablaCompras, tablaDetalle].forEach(t => {
-                    if(!t) return;
-                    Array.from(t.querySelectorAll('tbody tr')).forEach(r => r.classList.remove('table-primary'));
-                });
-            }
-
-            function attachRowClicks(tabla, name){
-                tabla.addEventListener('click', function(e){
-                    const tr = e.target.closest('tr');
-                    if(!tr) return;
-                    setActiva(name);
-                    filaSeleccionada = tr;
-                    Array.from(tabla.querySelectorAll('tbody tr')).forEach(r => r.classList.remove('table-primary'));
-                    tr.classList.add('table-primary');
-                });
-            }
-
-            if(tablaInvent) attachRowClicks(tablaInvent, 'inventario');
-            if(tablaControl) attachRowClicks(tablaControl, 'control');
-            if(tablaCompras) attachRowClicks(tablaCompras, 'compras');
-            if(tablaDetalle) attachRowClicks(tablaDetalle, 'detalle');
-
-            function limpiarForm(){
-                document.getElementById('form-inventario').reset();
-                const fc = document.getElementById('form-control'); if(fc) fc.reset();
-                const fcp = document.getElementById('form-compras'); if(fcp) fcp.reset();
-                const fd = document.getElementById('form-detalle-compra'); if(fd) fd.reset();
-            }
-
-            btnNuevo.addEventListener('click', ()=>{ limpiarForm(); filaSeleccionada = null; });
-
-            btnGuardar.addEventListener('click', ()=>{
-                if(tablaActiva === 'inventario'){
-                    const id = document.getElementById('inv-id').value;
-                    const nombre = document.getElementById('inv-nombre').value;
-                    const desc = document.getElementById('inv-descrip').value;
-                    const cant = document.getElementById('inv-cantidad_stock').value;
-                    const tr = document.createElement('tr');
-                    tr.innerHTML = `<td>${id}</td><td>${nombre}</td><td>${desc}</td><td>${cant}</td>`;
-                    tablaInvent.querySelector('tbody').appendChild(tr);
-                } else if(tablaActiva === 'control'){
-                    const id = document.getElementById('control-id').value;
-                    const inv = document.getElementById('control-inv').value;
-                    const estado = document.getElementById('control-estado').value;
-                    const entrada = document.getElementById('control-entrada').value;
-                    const cad = document.getElementById('control-caducidad').value;
-                    const tr = document.createElement('tr');
-                    tr.innerHTML = `<td>${id}</td><td>${inv}</td><td>${estado}</td><td>${entrada}</td><td>${cad}</td>`;
-                    tablaControl.querySelector('tbody').appendChild(tr);
-                } else if(tablaActiva === 'compras'){
-                    const id = document.getElementById('compra-id').value;
-                    const prov = document.getElementById('compra-proveedor').value;
-                    const fecha = document.getElementById('compra-fecha').value;
-                    const monto = document.getElementById('compra-monto').value;
-                    const tr = document.createElement('tr');
-                    tr.innerHTML = `<td>${id}</td><td>${prov}</td><td>${fecha}</td><td>${monto}</td>`;
-                    tablaCompras.querySelector('tbody').appendChild(tr);
-                } else if(tablaActiva === 'detalle'){
-                    const id = document.getElementById('detalle-compra').value;
-                    const mob = document.getElementById('detalle-mobiliario').value;
-                    const cantidad = document.getElementById('detalle-cantidad').value;
-                    const unit = document.getElementById('detalle-unitario').value;
-                    const total = document.getElementById('detalle-total').value;
-                    const tr = document.createElement('tr');
-                    tr.innerHTML = `<td>${id}</td><td>${mob}</td><td>${cantidad}</td><td>${unit}</td><td>${total}</td>`;
-                    tablaDetalle.querySelector('tbody').appendChild(tr);
+            // Botón Guardar (Crear)
+            btnGuardar.addEventListener('click', function() {
+                if (validarFormulario()) {
+                    operacionInput.value = 'crear';
+                    form.submit();
                 }
-                limpiarForm();
             });
 
-            btnActualizar.addEventListener('click', ()=>{
-                if(!filaSeleccionada) return alert('Selecciona primero una fila de la tabla activa');
-                if(tablaActiva === 'inventario'){
-                    filaSeleccionada.cells[0].textContent = document.getElementById('inv-id').value;
-                    filaSeleccionada.cells[1].textContent = document.getElementById('inv-nombre').value;
-                    filaSeleccionada.cells[2].textContent = document.getElementById('inv-descrip').value;
-                    filaSeleccionada.cells[3].textContent = document.getElementById('inv-cantidad_stock').value;
-                } else if(tablaActiva === 'control'){
-                    filaSeleccionada.cells[0].textContent = document.getElementById('control-id').value;
-                    filaSeleccionada.cells[1].textContent = document.getElementById('control-inv').value;
-                    filaSeleccionada.cells[2].textContent = document.getElementById('control-estado').value;
-                    filaSeleccionada.cells[3].textContent = document.getElementById('control-entrada').value;
-                    filaSeleccionada.cells[4].textContent = document.getElementById('control-caducidad').value;
-                } else if(tablaActiva === 'compras'){
-                    filaSeleccionada.cells[0].textContent = document.getElementById('compra-id').value;
-                    filaSeleccionada.cells[1].textContent = document.getElementById('compra-proveedor').value;
-                    filaSeleccionada.cells[2].textContent = document.getElementById('compra-fecha').value;
-                    filaSeleccionada.cells[3].textContent = document.getElementById('compra-monto').value;
-                } else if(tablaActiva === 'detalle'){
-                    filaSeleccionada.cells[0].textContent = document.getElementById('detalle-compra').value;
-                    filaSeleccionada.cells[1].textContent = document.getElementById('detalle-mobiliario').value;
-                    filaSeleccionada.cells[2].textContent = document.getElementById('detalle-cantidad').value;
-                    filaSeleccionada.cells[3].textContent = document.getElementById('detalle-unitario').value;
-                    filaSeleccionada.cells[4].textContent = document.getElementById('detalle-total').value;
+            // Botón Actualizar
+            btnActualizar.addEventListener('click', function() {
+                if (validarFormulario()) {
+                    operacionInput.value = 'actualizar';
+                    form.submit();
                 }
-                limpiarForm();
             });
 
-            btnEliminar.addEventListener('click', ()=>{
-                if(!filaSeleccionada) return alert('Selecciona primero una fila de la tabla activa');
-                filaSeleccionada.remove();
-                filaSeleccionada = null;
+            // Botón Cancelar
+            btnCancelar.addEventListener('click', function() {
+                limpiarFormulario();
+                mostrarBotonesGuardar();
             });
 
-            function attachRowDbl(tabla, name){
-                tabla.addEventListener('dblclick', function(e){
-                    const tr = e.target.closest('tr');
-                    if(!tr) return;
-                    setActiva(name);
-                    filaSeleccionada = tr;
-                    if(name === 'inventario'){
-                        document.getElementById('inv-id').value = tr.cells[0].textContent;
-                        document.getElementById('inv-nombre').value = tr.cells[1].textContent;
-                        document.getElementById('inv-descrip').value = tr.cells[2].textContent;
-                        document.getElementById('inv-cantidad_stock').value = tr.cells[3].textContent;
-                    } else if(name === 'control'){
-                        document.getElementById('control-id').value = tr.cells[0].textContent;
-                        document.getElementById('control-inv').value = tr.cells[1].textContent;
-                        document.getElementById('control-estado').value = tr.cells[2].textContent;
-                        document.getElementById('control-entrada').value = tr.cells[3].textContent;
-                        document.getElementById('control-caducidad').value = tr.cells[4].textContent;
-                    } else if(name === 'compras'){
-                        document.getElementById('compra-id').value = tr.cells[0].textContent;
-                        document.getElementById('compra-proveedor').value = tr.cells[1].textContent;
-                        document.getElementById('compra-fecha').value = tr.cells[2].textContent;
-                        document.getElementById('compra-monto').value = tr.cells[3].textContent;
-                    } else if(name === 'detalle'){
-                        document.getElementById('detalle-compra').value = tr.cells[0].textContent;
-                        document.getElementById('detalle-mobiliario').value = tr.cells[1].textContent;
-                        document.getElementById('detalle-cantidad').value = tr.cells[2].textContent;
-                        document.getElementById('detalle-unitario').value = tr.cells[3].textContent;
-                        document.getElementById('detalle-total').value = tr.cells[4].textContent;
-                    }
+            // Eventos para botones Editar
+            document.querySelectorAll('.editar-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const id = this.getAttribute('data-id');
+                    const nombre = this.getAttribute('data-nombre');
+                    const tipo = this.getAttribute('data-tipo');
+                    const descripcion = this.getAttribute('data-descripcion');
+                    const cantidad = this.getAttribute('data-cantidad');
+
+                    // Llenar formulario
+                    idMobiliarioInput.value = id;
+                    document.getElementById('nombre_mobiliario').value = nombre;
+                    document.getElementById('id_tipo_mobiliario').value = tipo;
+                    document.getElementById('descripcion').value = descripcion;
+                    document.getElementById('cantidad_en_stock').value = cantidad;
+
+                    mostrarBotonesActualizar();
                 });
+            });
+
+            function limpiarFormulario() {
+                form.reset();
+                idMobiliarioInput.value = '';
+                operacionInput.value = 'crear';
+                document.getElementById('cantidad_en_stock').value = '0';
             }
 
-            if(tablaInvent) attachRowDbl(tablaInvent,'inventario');
-            if(tablaControl) attachRowDbl(tablaControl,'control');
-            if(tablaCompras) attachRowDbl(tablaCompras,'compras');
-            if(tablaDetalle) attachRowDbl(tablaDetalle,'detalle');
+            function mostrarBotonesGuardar() {
+                btnGuardar.style.display = 'inline-block';
+                btnActualizar.style.display = 'none';
+                btnCancelar.style.display = 'none';
+            }
 
-            setActiva('inventario');
-        })();
+            function mostrarBotonesActualizar() {
+                btnGuardar.style.display = 'none';
+                btnActualizar.style.display = 'inline-block';
+                btnCancelar.style.display = 'inline-block';
+            }
+
+            function validarFormulario() {
+                const nombre = document.getElementById('nombre_mobiliario').value.trim();
+                const tipo = document.getElementById('id_tipo_mobiliario').value;
+                const cantidad = document.getElementById('cantidad_en_stock').value;
+
+                if (!nombre) {
+                    alert('El nombre del mobiliario es requerido');
+                    return false;
+                }
+                if (!tipo) {
+                    alert('El tipo de mobiliario es requerido');
+                    return false;
+                }
+                if (!cantidad || cantidad < 0) {
+                    alert('La cantidad debe ser mayor o igual a 0');
+                    return false;
+                }
+
+                return true;
+            }
+
+            // Inicializar
+            limpiarFormulario();
+        });
     </script>
 </body>
 </html>

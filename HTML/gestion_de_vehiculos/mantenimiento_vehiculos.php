@@ -35,6 +35,24 @@ function crearMantenimiento() {
     $fecha_mantenimiento = $_POST['fecha_mantenimiento'] ?? '';
     $costo_mantenimiento = $_POST['costo_mantenimiento'] ?? '';
     
+    // Validar que el vehículo existe
+    if (!validarVehiculo($id_vehiculo)) {
+        $_SESSION['mensaje'] = "Error: El vehículo seleccionado no existe";
+        $_SESSION['tipo_mensaje'] = "error";
+        desconectar($conn);
+        header('Location: mantenimiento_vehiculos.php');
+        exit();
+    }
+    
+    // Validar que el taller existe
+    if (!validarTaller($id_taller)) {
+        $_SESSION['mensaje'] = "Error: El taller seleccionado no existe";
+        $_SESSION['tipo_mensaje'] = "error";
+        desconectar($conn);
+        header('Location: mantenimiento_vehiculos.php');
+        exit();
+    }
+    
     $sql = "INSERT INTO mantenimiento_vehiculo (id_vehiculo, id_taller, descripcion_mantenimiento, fecha_mantenimiento, costo_mantenimiento) 
             VALUES (?, ?, ?, ?, ?)";
     
@@ -65,6 +83,24 @@ function actualizarMantenimiento() {
     $descripcion_mantenimiento = $_POST['descripcion_mantenimiento'] ?? '';
     $fecha_mantenimiento = $_POST['fecha_mantenimiento'] ?? '';
     $costo_mantenimiento = $_POST['costo_mantenimiento'] ?? '';
+    
+    // Validar que el vehículo existe
+    if (!validarVehiculo($id_vehiculo)) {
+        $_SESSION['mensaje'] = "Error: El vehículo seleccionado no existe";
+        $_SESSION['tipo_mensaje'] = "error";
+        desconectar($conn);
+        header('Location: mantenimiento_vehiculos.php');
+        exit();
+    }
+    
+    // Validar que el taller existe
+    if (!validarTaller($id_taller)) {
+        $_SESSION['mensaje'] = "Error: El taller seleccionado no existe";
+        $_SESSION['tipo_mensaje'] = "error";
+        desconectar($conn);
+        header('Location: mantenimiento_vehiculos.php');
+        exit();
+    }
     
     $sql = "UPDATE mantenimiento_vehiculo 
             SET id_vehiculo = ?, id_taller = ?, descripcion_mantenimiento = ?, 
@@ -113,10 +149,40 @@ function eliminarMantenimiento() {
     exit();
 }
 
-// Obtener datos para los selectores
+// Funciones de validación
+function validarVehiculo($id_vehiculo) {
+    $conn = conectar();
+    $sql = "SELECT id_vehiculo FROM vehiculos WHERE id_vehiculo = ?";
+    $stmt = $conn->prepare($sql);
+    $stmt->bind_param("i", $id_vehiculo);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    $exists = $result->num_rows > 0;
+    $stmt->close();
+    desconectar($conn);
+    return $exists;
+}
+
+function validarTaller($id_taller) {
+    $conn = conectar();
+    $sql = "SELECT id_taller FROM talleres WHERE id_taller = ?";
+    $stmt = $conn->prepare($sql);
+    $stmt->bind_param("i", $id_taller);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    $exists = $result->num_rows > 0;
+    $stmt->close();
+    desconectar($conn);
+    return $exists;
+}
+
+// Obtener datos para los selectores - CORREGIDO: Solo vehículos en taller
 function obtenerVehiculos() {
     $conn = conectar();
-    $sql = "SELECT id_vehiculo, no_placa, marca_vehiculo, modelo_vehiculo FROM vehiculos ORDER BY no_placa";
+    $sql = "SELECT id_vehiculo, no_placa, marca_vehiculo, modelo_vehiculo 
+            FROM vehiculos 
+            WHERE estado = 'EN_TALLER' 
+            ORDER BY no_placa";
     $resultado = $conn->query($sql);
     $vehiculos = [];
     
@@ -201,6 +267,24 @@ $mantenimientos = obtenerMantenimientos();
         .btn-action {
             margin: 2px;
         }
+        .debug-info {
+            background-color: #f8f9fa;
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+            font-size: 12px;
+        }
+        .table-responsive {
+            max-height: 600px;
+            overflow-y: auto;
+        }
+        .no-vehiculos {
+            background-color: #fff3cd;
+            border: 1px solid #ffeaa7;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
     </style>
     <!-- Frameworks y librerías base -->
     <link rel="stylesheet" href="../../css/bootstrap.min.css">
@@ -228,16 +312,34 @@ $mantenimientos = obtenerMantenimientos();
             </div>
         <?php endif; ?>
 
+        <!-- Debug info (opcional) -->
+        <div class="debug-info">
+            <strong>Debug:</strong> 
+            <?php 
+            echo "Vehículos en taller: " . count($vehiculos) . " | ";
+            echo "Talleres: " . count($talleres) . " | ";
+            echo "Mantenimientos: " . count($mantenimientos);
+            ?>
+        </div>
+
         <section class="card shadow p-4">
             <h2 class="card__title text-primary mb-4">FORMULARIO - Mantenimiento de Vehículos</h2>
 
-            <form id="form-mantenimiento" method="post" class="row g-3">
+            <!-- Mensaje si no hay vehículos en taller -->
+            <?php if (empty($vehiculos)): ?>
+                <div class="no-vehiculos">
+                    <strong>⚠️ No hay vehículos en taller</strong>
+                    <p class="mb-0">Para registrar un mantenimiento, primero debe cambiar el estado de un vehículo a "EN TALLER" en el módulo de Gestión de Vehículos.</p>
+                </div>
+            <?php endif; ?>
+
+            <form id="form-mantenimiento" method="post" class="row g-3" <?php echo empty($vehiculos) ? 'style="opacity: 0.5; pointer-events: none;"' : ''; ?>>
                 <input type="hidden" id="operacion" name="operacion" value="crear">
                 <input type="hidden" id="id_mantenimiento" name="id_mantenimiento" value="">
                 
                 <div class="col-md-4">
                     <label class="form-label" for="id_vehiculo">Vehículo:</label>
-                    <select class="form-control" id="id_vehiculo" name="id_vehiculo" required>
+                    <select class="form-control" id="id_vehiculo" name="id_vehiculo" required <?php echo empty($vehiculos) ? 'disabled' : ''; ?>>
                         <option value="">Seleccione un vehículo</option>
                         <?php foreach($vehiculos as $vehiculo): ?>
                             <option value="<?php echo $vehiculo['id_vehiculo']; ?>">
@@ -245,11 +347,14 @@ $mantenimientos = obtenerMantenimientos();
                             </option>
                         <?php endforeach; ?>
                     </select>
+                    <?php if (empty($vehiculos)): ?>
+                        <small class="text-danger">No hay vehículos disponibles en taller</small>
+                    <?php endif; ?>
                 </div>
                 
                 <div class="col-md-4">
                     <label class="form-label" for="id_taller">Taller:</label>
-                    <select class="form-control" id="id_taller" name="id_taller" required>
+                    <select class="form-control" id="id_taller" name="id_taller" required <?php echo empty($vehiculos) ? 'disabled' : ''; ?>>
                         <option value="">Seleccione un taller</option>
                         <?php foreach($talleres as $taller): ?>
                             <option value="<?php echo $taller['id_taller']; ?>">
@@ -261,25 +366,25 @@ $mantenimientos = obtenerMantenimientos();
                 
                 <div class="col-md-4">
                     <label class="form-label" for="fecha_mantenimiento">Fecha de Mantenimiento:</label>
-                    <input type="date" class="form-control" id="fecha_mantenimiento" name="fecha_mantenimiento" required>
+                    <input type="date" class="form-control" id="fecha_mantenimiento" name="fecha_mantenimiento" required <?php echo empty($vehiculos) ? 'disabled' : ''; ?>>
                 </div>
                 
                 <div class="col-md-6">
                     <label class="form-label" for="costo_mantenimiento">Costo (Q):</label>
                     <input type="number" class="form-control" id="costo_mantenimiento" name="costo_mantenimiento" 
-                           step="0.01" min="0" required placeholder="Ej. 1250.00">
+                           step="0.01" min="0" required placeholder="Ej. 1250.00" <?php echo empty($vehiculos) ? 'disabled' : ''; ?>>
                 </div>
                 
                 <div class="col-12">
                     <label class="form-label" for="descripcion_mantenimiento">Descripción del Mantenimiento:</label>
                     <textarea class="form-control" id="descripcion_mantenimiento" name="descripcion_mantenimiento" 
-                              rows="3" required placeholder="Ej. Arreglo de suspensiones, cambio de aceite, etc."></textarea>
+                              rows="3" required placeholder="Ej. Cambio de aceite, reparación de frenos, etc." <?php echo empty($vehiculos) ? 'disabled' : ''; ?>></textarea>
                 </div>
             </form>
 
             <div class="d-flex gap-2 mt-4">
-                <button id="btn-nuevo" type="button" class="btn btn-secondary">Nuevo</button>
-                <button id="btn-guardar" type="button" class="btn btn-success">Guardar</button>
+                <button id="btn-nuevo" type="button" class="btn btn-secondary" <?php echo empty($vehiculos) ? 'disabled' : ''; ?>>Nuevo</button>
+                <button id="btn-guardar" type="button" class="btn btn-success" <?php echo empty($vehiculos) ? 'disabled' : ''; ?>>Guardar</button>
                 <button id="btn-actualizar" type="button" class="btn btn-warning" style="display:none;">Actualizar</button>
                 <button id="btn-cancelar" type="button" class="btn btn-danger" style="display:none;">Cancelar</button>
             </div>
@@ -400,6 +505,8 @@ $mantenimientos = obtenerMantenimientos();
                 form.reset();
                 idMantenimientoInput.value = '';
                 operacionInput.value = 'crear';
+                // Establecer fecha actual por defecto
+                document.getElementById('fecha_mantenimiento').valueAsDate = new Date();
             }
 
             function mostrarBotonesGuardar() {
@@ -445,8 +552,10 @@ $mantenimientos = obtenerMantenimientos();
                 return true;
             }
 
-            // Establecer fecha actual por defecto
-            document.getElementById('fecha_mantenimiento').valueAsDate = new Date();
+            // Establecer fecha actual por defecto al cargar la página
+            <?php if (!empty($vehiculos)): ?>
+                limpiarFormulario();
+            <?php endif; ?>
         });
     </script>
 </body>

@@ -58,6 +58,7 @@
                 <ul class="submenu">
                     <li><a href="../HTML/gestion_de_mobiliario/gestion_mobiliario.php">Control del Mobiliario</a></li>
                     <li><a href="../HTML/gestion_de_mobiliario/compras_mobiliario.php">Gestion de Compras</a></li>
+                    <li><a href="../HTML/gestion_de_mobiliario/detalle_compras_mobiliario.php">Gestion de Compras</a></li>
                 </ul>
             </li>
 
