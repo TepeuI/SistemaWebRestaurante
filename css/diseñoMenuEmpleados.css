@@ -160,7 +160,8 @@ header h1 img:hover {
 }
 
 .sidebar-empleados ul li.active .submenu {
-    max-height: 200px;
+    /* La altura se controla desde JS para soportar múltiples niveles
+       y animaciones fluidas. */
     padding: 10px 0;
 }
 
