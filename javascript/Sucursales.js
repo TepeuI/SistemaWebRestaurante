@@ -1,86 +1,168 @@
-document.addEventListener('DOMContentLoaded', function() {
+// Sucursales.js — Gestión del formulario de sucursales
+document.addEventListener('DOMContentLoaded', function () {
+    console.log('[Sucursales.js] DOMContentLoaded: inicio');
+
+    // Elementos base
     const form = document.getElementById('form-sucursal');
+    const inputs = form ? form.querySelectorAll('input, select, textarea') : [];
     const btnNuevo = document.getElementById('btn-nuevo');
     const btnGuardar = document.getElementById('btn-guardar');
     const btnActualizar = document.getElementById('btn-actualizar');
     const btnCancelar = document.getElementById('btn-cancelar');
     const operacionInput = document.getElementById('operacion');
     const idSucursalInput = document.getElementById('id_sucursal');
-    const btnMostrarLista = document.getElementById('btn-mostrar-lista');
-    const listaSucursales = document.getElementById('lista-sucursales');
 
-    if (!form) return;
+    // Campos del formulario
+    const direccionInput = document.getElementById('direccion_sucursal');
+    const aperturaInput = document.getElementById('horario_apertura');
+    const cierreInput = document.getElementById('hora_cierre');
+    const capacidadInput = document.getElementById('capacidad_empleados');
+    const telefonoInput = document.getElementById('telefono_sucursal');
+    const correoInput = document.getElementById('correo_sucursal');
+    const departamentoInput = document.getElementById('id_departamento');
 
-    // Asegurar que la lista esté oculta al cargar
-    if (listaSucursales) listaSucursales.style.display = 'none';
-
-    // Manejar botón mostrar/ocultar lista
-    if (btnMostrarLista && listaSucursales) {
-        btnMostrarLista.addEventListener('click', function() {
-            const isHidden = listaSucursales.style.display === 'none' || listaSucursales.style.display === '';
-            if (isHidden) {
-                listaSucursales.style.display = 'block';
-                btnMostrarLista.textContent = 'Ocultar lista';
-                listaSucursales.scrollIntoView({ behavior: 'smooth' });
-            } else {
-                listaSucursales.style.display = 'none';
-                btnMostrarLista.textContent = 'Mostrar lista';
-            }
+    // ---------- Formato teléfono (4-4) en sucursales ----------
+    if (telefonoInput) {
+        telefonoInput.maxLength = 9; // 4 dígitos + '-' + 4 dígitos
+        telefonoInput.addEventListener('input', function () {
+            let digits = this.value.replace(/\D/g, '');
+            if (digits.length > 8) digits = digits.slice(0, 8);
+            if (digits.length > 4) this.value = digits.slice(0,4) + '-' + digits.slice(4);
+            else this.value = digits;
+        });
+        telefonoInput.addEventListener('keydown', function (evt) {
+            const allowed = [8,9,13,27,37,38,39,40,46];
+            if (allowed.indexOf(evt.keyCode) !== -1) return;
+            if (evt.ctrlKey || evt.metaKey) return;
+            if ((evt.keyCode >= 48 && evt.keyCode <= 57) || (evt.keyCode >= 96 && evt.keyCode <= 105)) return;
+            evt.preventDefault();
         });
     }
 
-    // (display of department name under input removed per user request)
+    // ---------- Validaciones ----------
+    function validarFormulario() {
+        const direccion = direccionInput?.value.trim();
+        const apertura = aperturaInput?.value.trim();
+        const cierre = cierreInput?.value.trim();
+        const capacidad = capacidadInput?.value.trim();
+        const telefono = telefonoInput?.value.trim();
+        const correo = correoInput?.value.trim();
 
-    btnNuevo.addEventListener('click', function() {
+        const showWarning = (msg) => {
+            if (typeof Swal !== 'undefined') Swal.fire({ icon: 'warning', title: 'Atención', text: msg });
+            else alert(msg);
+        };
+
+    if (!direccion) { showWarning('Debe ingresar la dirección de la sucursal.'); if (direccionInput) direccionInput.focus(); return false; }
+    if (!apertura) { showWarning('Debe ingresar el horario de apertura.'); if (aperturaInput) aperturaInput.focus(); return false; }
+    if (!cierre) { showWarning('Debe ingresar la hora de cierre.'); if (cierreInput) cierreInput.focus(); return false; }
+    if (!capacidad || parseInt(capacidad) <= 0) { showWarning('Debe indicar una capacidad de empleados válida.'); if (capacidadInput) capacidadInput.focus(); return false; }
+
+        // Validar formato de teléfono (se requiere 4 dígitos + '-' + 4 dígitos, p.ej. 5460-1234)
+        if (telefono && !/^\d{4}-\d{4}$/.test(telefono)) {
+            showWarning('El número de teléfono no es válido. Use el formato 5460-1234');
+            if (telefonoInput) telefonoInput.focus();
+            return false;
+        }
+
+        // Validar correo
+        if (correo && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(correo)) {
+            showWarning('El formato del correo electrónico no es válido.');
+            if (correoInput) correoInput.focus();
+            return false;
+        }
+
+        return true;
+    }
+
+    // ---------- UI Helpers ----------
+    function limpiarFormulario() {
+        if (form) form.reset();
+        if (idSucursalInput) idSucursalInput.value = '';
+        if (operacionInput) operacionInput.value = 'crear';
+        mostrarBotonesGuardar();
+    }
+
+    function habilitarCampos() {
+        inputs.forEach(input => {
+            if (input.type !== 'hidden') input.disabled = false;
+        });
+        btnGuardar.disabled = false;
+        btnCancelar.style.display = 'inline-block';
+    }
+
+    function mostrarBotonesGuardar() {
+        btnGuardar.style.display = 'inline-block';
+        btnActualizar.style.display = 'none';
+        btnCancelar.style.display = 'inline-block';
+    }
+
+    function mostrarBotonesActualizar() {
+        btnGuardar.style.display = 'none';
+        btnActualizar.style.display = 'inline-block';
+        btnCancelar.style.display = 'inline-block';
+    }
+
+    // ---------- Botones ----------
+    btnNuevo?.addEventListener('click', function () {
         limpiarFormulario();
+        habilitarCampos();
         mostrarBotonesGuardar();
     });
 
-    btnGuardar.addEventListener('click', function() {
+    btnGuardar?.addEventListener('click', function (evt) {
+        evt.preventDefault();
+        if (!form) return;
         if (validarFormulario()) {
-            operacionInput.value = 'crear';
-            form.submit();
-        }
-    });
-
-    btnActualizar.addEventListener('click', function() {
-        if (validarFormulario()) {
-            operacionInput.value = 'actualizar';
-            form.submit();
-        }
-    });
-
-    btnCancelar.addEventListener('click', function() {
-        limpiarFormulario();
-        mostrarBotonesGuardar();
-    });
-
-    // Interceptar formularios de eliminación y mostrar SweetAlert confirm
-    document.querySelectorAll('form[data-eliminar="true"]').forEach(f => {
-        f.addEventListener('submit', function(evt) {
-            evt.preventDefault();
-            const form = this;
+            const doSubmit = () => {
+                operacionInput.value = 'crear';
+                form.submit();
+            };
             if (typeof Swal !== 'undefined') {
                 Swal.fire({
-                    title: '¿Eliminar sucursal?',
-                    text: 'Esta acción no se puede deshacer.',
-                    icon: 'warning',
+                    title: 'Guardar sucursal',
+                    text: '¿Deseas registrar esta sucursal?',
+                    icon: 'question',
                     showCancelButton: true,
                     confirmButtonText: 'Sí',
                     cancelButtonText: 'Cancelar'
-                }).then((result) => {
-                    if (result.isConfirmed) {
-                        form.submit();
-                    }
-                });
+                }).then(res => { if (res.isConfirmed) doSubmit(); });
             } else {
-                if (confirm('¿Eliminar sucursal?')) form.submit();
+                if (confirm('¿Deseas registrar esta sucursal?')) doSubmit();
             }
-        });
+        }
     });
 
+    btnActualizar?.addEventListener('click', function () {
+        if (!form) return;
+            if (validarFormulario()) {
+            const doSubmit = () => {
+                operacionInput.value = 'actualizar';
+                form.submit();
+            };
+            if (typeof Swal !== 'undefined') {
+                Swal.fire({
+                    title: 'Actualizar sucursal',
+                    text: '¿Deseas guardar los cambios?',
+                    icon: 'question',
+                    showCancelButton: true,
+                    confirmButtonText: 'Sí',
+                    cancelButtonText: 'Cancelar'
+                }).then(res => { if (res.isConfirmed) doSubmit(); });
+            } else {
+                if (confirm('¿Deseas guardar los cambios?')) doSubmit();
+            }
+        }
+    });
+
+    btnCancelar?.addEventListener('click', function () {
+        limpiarFormulario();
+        btnCancelar.style.display = 'none';
+    });
+
+    // ---------- Editar ----------
     document.querySelectorAll('.editar-btn').forEach(btn => {
-        btn.addEventListener('click', function() {
+        btn.addEventListener('click', function () {
             const id = this.getAttribute('data-id');
             const direccion = this.getAttribute('data-direccion');
             const apertura = this.getAttribute('data-apertura');
@@ -90,80 +172,75 @@ document.addEventListener('DOMContentLoaded', function() {
             const correo = this.getAttribute('data-correo');
             const departamento = this.getAttribute('data-departamento');
 
-            // Mostrar SweetAlert confirm antes de rellenar el formulario
+            const doFill = () => {
+                if (idSucursalInput) idSucursalInput.value = id || '';
+                if (direccionInput) direccionInput.value = direccion || '';
+                if (aperturaInput) aperturaInput.value = apertura || '';
+                if (cierreInput) cierreInput.value = cierre || '';
+                if (capacidadInput) capacidadInput.value = capacidad || '';
+                if (telefonoInput) telefonoInput.value = telefono || '';
+                if (correoInput) correoInput.value = correo || '';
+                if (departamentoInput) departamentoInput.value = departamento || '';
+
+                habilitarCampos();
+                mostrarBotonesActualizar();
+            };
+
             if (typeof Swal !== 'undefined') {
                 Swal.fire({
                     title: 'Editar sucursal',
-                    text: '¿Deseas editar la sucursal "' + (direccion || id) + '"? ',
+                    text: '¿Deseas editar esta sucursal?',
                     icon: 'question',
                     showCancelButton: true,
                     confirmButtonText: 'Sí',
                     cancelButtonText: 'Cancelar'
-                }).then((result) => {
-                    if (result.isConfirmed) {
-                        rellenarFormularioEdicion({id, direccion, apertura, cierre, capacidad, telefono, correo, departamento});
-                    }
-                });
+                }).then((res) => { if (res.isConfirmed) doFill(); });
             } else {
-                rellenarFormularioEdicion({id, direccion, apertura, cierre, capacidad, telefono, correo, departamento});
+                if (confirm('¿Deseas editar esta sucursal?')) doFill();
             }
         });
     });
 
-    // Helper para rellenar el formulario (separamos por claridad)
-    function rellenarFormularioEdicion(data) {
-        idSucursalInput.value = data.id || '';
-        document.getElementById('direccion_sucursal').value = data.direccion || '';
-        document.getElementById('horario_apertura').value = data.apertura || '';
-        document.getElementById('hora_cierre').value = data.cierre || '';
-        document.getElementById('capacidad_empleados').value = data.capacidad || 0;
-        document.getElementById('telefono_sucursal').value = data.telefono || '';
-        document.getElementById('correo_sucursal').value = data.correo || '';
-        // Poner el valor formateado 'id - Nombre' si conocemos el nombre
-        if (data.departamento) {
-            if (typeof DEPARTAMENTOS_MAP !== 'undefined' && DEPARTAMENTOS_MAP.hasOwnProperty(data.departamento)) {
-                document.getElementById('id_departamento').value = data.departamento + ' - ' + DEPARTAMENTOS_MAP[data.departamento];
+    // ---------- Confirmar eliminación ----------
+    document.querySelectorAll('form[data-eliminar="true"]').forEach(f => {
+        f.addEventListener('submit', function (evt) {
+            evt.preventDefault();
+            const frm = this;
+            if (typeof Swal !== 'undefined') {
+                Swal.fire({
+                    title: '¿Eliminar sucursal?',
+                    text: 'Esta acción no se puede deshacer.',
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonText: 'Sí',
+                    cancelButtonText: 'Cancelar'
+                }).then((res) => { if (res.isConfirmed) frm.submit(); });
             } else {
-                document.getElementById('id_departamento').value = data.departamento;
+                if (confirm('¿Eliminar sucursal?')) frm.submit();
             }
-        } else {
-            document.getElementById('id_departamento').value = '';
+        });
+    });
+
+    // ---------- Mostrar mensaje desde servidor ----------
+    try {
+        if (window.__mensaje && typeof window.__mensaje === 'object') {
+            const m = window.__mensaje;
+            const icon = (m.tipo === 'success' || m.tipo === 'ok')
+                ? 'success' : (m.tipo === 'warning' ? 'warning' : 'error');
+            if (typeof Swal !== 'undefined') {
+                Swal.fire({
+                    title: icon === 'success' ? 'Éxito' : 'Atención',
+                    text: m.text,
+                    icon: icon
+                });
+            } else {
+                alert(m.text);
+            }
+            delete window.__mensaje;
         }
-
-        mostrarBotonesActualizar();
-        document.getElementById('direccion_sucursal').focus();
+    } catch (e) {
+        console.warn('Error mostrando mensaje del servidor', e);
     }
 
-    function limpiarFormulario() {
-        form.reset();
-        idSucursalInput.value = '';
-        operacionInput.value = 'crear';
-        mostrarBotonesGuardar();
-    }
-
-    function mostrarBotonesGuardar() {
-        if (btnGuardar) btnGuardar.style.display = 'inline-block';
-        if (btnActualizar) btnActualizar.style.display = 'none';
-        if (btnCancelar) btnCancelar.style.display = 'none';
-    }
-
-    function mostrarBotonesActualizar() {
-        if (btnGuardar) btnGuardar.style.display = 'none';
-        if (btnActualizar) btnActualizar.style.display = 'inline-block';
-        if (btnCancelar) btnCancelar.style.display = 'inline-block';
-    }
-
-    function validarFormulario() {
-        const direccion = document.getElementById('direccion_sucursal').value.trim();
-        const apertura = document.getElementById('horario_apertura').value;
-        const cierre = document.getElementById('hora_cierre').value;
-        const capacidad = parseInt(document.getElementById('capacidad_empleados').value, 10);
-
-        if (!direccion) { alert('La dirección es requerida'); return false; }
-        if (!apertura) { alert('El horario de apertura es requerido'); return false; }
-        if (!cierre) { alert('La hora de cierre es requerida'); return false; }
-        if (isNaN(capacidad) || capacidad < 0) { alert('La capacidad debe ser un número 0 o mayor'); return false; }
-
-        return true;
-    }
+    console.log('[Sucursales.js] DOMContentLoaded: fin');
 });

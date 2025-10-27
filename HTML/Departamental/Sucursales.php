@@ -1,4 +1,3 @@
-<!-- Ernesto David Samayoa Jocol 0901-22-3415 -->
 <?php
 session_start();
 require_once '../conexion.php';
@@ -9,7 +8,7 @@ if (!isset($_SESSION['id_usuario'])) {
     exit();
 }
 
-// Manejo de operaciones CRUD
+// ---------------------- CRUD PRINCIPAL ----------------------
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $operacion = $_POST['operacion'] ?? '';
     switch ($operacion) {
@@ -25,38 +24,49 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
+// ---------------------- FUNCIONES CRUD ----------------------
+
 function crearSucursal() {
     $conn = conectar();
-    $direccion = $_POST['direccion_sucursal'] ?? '';
-    $horario_apertura = $_POST['horario_apertura'] ?? '';
-    $hora_cierre = $_POST['hora_cierre'] ?? '';
-    $capacidad = $_POST['capacidad_empleados'] ?? 0;
-    $telefono = $_POST['telefono_sucursal'] ?? '';
-    $correo = $_POST['correo_sucursal'] ?? '';
+    $direccion = trim($_POST['direccion_sucursal'] ?? '');
+    $apertura = $_POST['horario_apertura'] ?? '';
+    $cierre = $_POST['hora_cierre'] ?? '';
+    $capacidad = (int)($_POST['capacidad_empleados'] ?? 0);
+    $telefono = trim($_POST['telefono_sucursal'] ?? '');
+    $correo = trim($_POST['correo_sucursal'] ?? '');
     $id_departamento = $_POST['id_departamento'] ?? null;
-    // Si el input viene como "3 - Guatemala", extraer el id numérico
-    if ($id_departamento !== null && $id_departamento !== '') {
-        if (preg_match('/^\s*(\d+)/', $id_departamento, $m)) {
-            $id_departamento = intval($m[1]);
-        } else {
-            $id_departamento = null;
-        }
-    } else {
-        $id_departamento = null;
+
+    // Validaciones
+    if ($direccion === '' || $apertura === '' || $cierre === '' || $capacidad <= 0) {
+        $_SESSION['mensaje'] = 'Todos los campos obligatorios deben completarse.';
+        $_SESSION['tipo_mensaje'] = 'error';
+        header('Location: Sucursales.php');
+        exit();
+    }
+
+    if ($correo && !filter_var($correo, FILTER_VALIDATE_EMAIL)) {
+        $_SESSION['mensaje'] = 'El correo ingresado no es válido.';
+        $_SESSION['tipo_mensaje'] = 'error';
+        header('Location: Sucursales.php');
+        exit();
+    }
+
+    if ($telefono && !preg_match('/^[0-9+\-\s]{7,20}$/', $telefono)) {
+        $_SESSION['mensaje'] = 'El número de teléfono no es válido.';
+        $_SESSION['tipo_mensaje'] = 'error';
+        header('Location: Sucursales.php');
+        exit();
     }
 
     $sql = "INSERT INTO sucursales (direccion_sucursal, horario_apertura, hora_cierre, capacidad_empleados, telefono_sucursal, correo_sucursal, id_departamento)
             VALUES (?, ?, ?, ?, ?, ?, ?)";
     $stmt = $conn->prepare($sql);
-    $stmt->bind_param('sssissi', $direccion, $horario_apertura, $hora_cierre, $capacidad, $telefono, $correo, $id_departamento);
+    $stmt->bind_param('sssissi', $direccion, $apertura, $cierre, $capacidad, $telefono, $correo, $id_departamento);
+    $stmt->execute();
 
-    if ($stmt->execute()) {
-        $_SESSION['mensaje'] = 'Sucursal creada exitosamente';
-        $_SESSION['tipo_mensaje'] = 'success';
-    } else {
-        $_SESSION['mensaje'] = 'Error al crear la sucursal: ' . $conn->error;
-        $_SESSION['tipo_mensaje'] = 'error';
-    }
+    $success = $stmt->affected_rows > 0;
+    $_SESSION['mensaje'] = $success ? 'Sucursal creada exitosamente.' : 'Error al crear la sucursal.';
+    $_SESSION['tipo_mensaje'] = $success ? 'success' : 'error';
 
     $stmt->close();
     desconectar($conn);
@@ -67,37 +77,43 @@ function crearSucursal() {
 function actualizarSucursal() {
     $conn = conectar();
     $id_sucursal = $_POST['id_sucursal'] ?? '';
-    $direccion = $_POST['direccion_sucursal'] ?? '';
-    $horario_apertura = $_POST['horario_apertura'] ?? '';
-    $hora_cierre = $_POST['hora_cierre'] ?? '';
-    $capacidad = $_POST['capacidad_empleados'] ?? 0;
-    $telefono = $_POST['telefono_sucursal'] ?? '';
-    $correo = $_POST['correo_sucursal'] ?? '';
+    $direccion = trim($_POST['direccion_sucursal'] ?? '');
+    $apertura = $_POST['horario_apertura'] ?? '';
+    $cierre = $_POST['hora_cierre'] ?? '';
+    $capacidad = (int)($_POST['capacidad_empleados'] ?? 0);
+    $telefono = trim($_POST['telefono_sucursal'] ?? '');
+    $correo = trim($_POST['correo_sucursal'] ?? '');
     $id_departamento = $_POST['id_departamento'] ?? null;
-    // Si el input viene como "3 - Guatemala", extraer el id numérico
-    if ($id_departamento !== null && $id_departamento !== '') {
-        if (preg_match('/^\s*(\d+)/', $id_departamento, $m)) {
-            $id_departamento = intval($m[1]);
-        } else {
-            $id_departamento = null;
-        }
-    } else {
-        $id_departamento = null;
-    }
 
-    $sql = "UPDATE sucursales 
-            SET direccion_sucursal = ?, horario_apertura = ?, hora_cierre = ?, capacidad_empleados = ?, telefono_sucursal = ?, correo_sucursal = ?, id_departamento = ?
-            WHERE id_sucursal = ?";
-    $stmt = $conn->prepare($sql);
-    $stmt->bind_param('sssissii', $direccion, $horario_apertura, $hora_cierre, $capacidad, $telefono, $correo, $id_departamento, $id_sucursal);
-
-    if ($stmt->execute()) {
-        $_SESSION['mensaje'] = 'Sucursal actualizada exitosamente';
-        $_SESSION['tipo_mensaje'] = 'success';
-    } else {
-        $_SESSION['mensaje'] = 'Error al actualizar la sucursal: ' . $conn->error;
+    if ($id_sucursal === '' || $direccion === '' || $apertura === '' || $cierre === '' || $capacidad <= 0) {
+        $_SESSION['mensaje'] = 'Todos los campos obligatorios deben completarse.';
         $_SESSION['tipo_mensaje'] = 'error';
+        header('Location: Sucursales.php');
+        exit();
     }
+
+    if ($correo && !filter_var($correo, FILTER_VALIDATE_EMAIL)) {
+        $_SESSION['mensaje'] = 'El correo ingresado no es válido.';
+        $_SESSION['tipo_mensaje'] = 'error';
+        header('Location: Sucursales.php');
+        exit();
+    }
+
+    if ($telefono && !preg_match('/^[0-9+\-\s]{7,20}$/', $telefono)) {
+        $_SESSION['mensaje'] = 'El número de teléfono no es válido.';
+        $_SESSION['tipo_mensaje'] = 'error';
+        header('Location: Sucursales.php');
+        exit();
+    }
+
+    $sql = "UPDATE sucursales SET direccion_sucursal=?, horario_apertura=?, hora_cierre=?, capacidad_empleados=?, telefono_sucursal=?, correo_sucursal=?, id_departamento=? WHERE id_sucursal=?";
+    $stmt = $conn->prepare($sql);
+    $stmt->bind_param('sssissii', $direccion, $apertura, $cierre, $capacidad, $telefono, $correo, $id_departamento, $id_sucursal);
+    $stmt->execute();
+
+    $success = $stmt->affected_rows > 0;
+    $_SESSION['mensaje'] = $success ? 'Sucursal actualizada exitosamente.' : 'No se realizaron cambios.';
+    $_SESSION['tipo_mensaje'] = $success ? 'success' : 'warning';
 
     $stmt->close();
     desconectar($conn);
@@ -108,18 +124,12 @@ function actualizarSucursal() {
 function eliminarSucursal() {
     $conn = conectar();
     $id_sucursal = $_POST['id_sucursal'] ?? '';
-
-    $sql = "DELETE FROM sucursales WHERE id_sucursal = ?";
-    $stmt = $conn->prepare($sql);
+    $stmt = $conn->prepare("DELETE FROM sucursales WHERE id_sucursal=?");
     $stmt->bind_param('i', $id_sucursal);
+    $stmt->execute();
 
-    if ($stmt->execute()) {
-        $_SESSION['mensaje'] = 'Sucursal eliminada exitosamente';
-        $_SESSION['tipo_mensaje'] = 'success';
-    } else {
-        $_SESSION['mensaje'] = 'Error al eliminar la sucursal: ' . $conn->error;
-        $_SESSION['tipo_mensaje'] = 'error';
-    }
+    $_SESSION['mensaje'] = $stmt->affected_rows > 0 ? 'Sucursal eliminada exitosamente.' : 'Error al eliminar la sucursal.';
+    $_SESSION['tipo_mensaje'] = $stmt->affected_rows > 0 ? 'success' : 'error';
 
     $stmt->close();
     desconectar($conn);
@@ -129,41 +139,36 @@ function eliminarSucursal() {
 
 function obtenerSucursales() {
     $conn = conectar();
-    $sql = "SELECT * FROM sucursales ORDER BY id_sucursal";
-    $resultado = $conn->query($sql);
-    $sucursales = [];
-
-    if ($resultado && $resultado->num_rows > 0) {
-        while ($fila = $resultado->fetch_assoc()) {
-            $sucursales[] = $fila;
-        }
+    $sql = "SELECT s.*, d.nombre_departamento 
+            FROM sucursales s
+            LEFT JOIN departamentos d ON s.id_departamento = d.id_departamento
+            ORDER BY s.id_sucursal";
+    $res = $conn->query($sql);
+    $data = [];
+    while ($row = $res->fetch_assoc()) {
+        $data[] = $row;
     }
-
     desconectar($conn);
-    return $sucursales;
+    return $data;
 }
 
+// ---------------------- MAPEOS ----------------------
 $sucursales = obtenerSucursales();
-
-// Obtener mapa de departamentos (id => nombre) para mostrar el nombre junto al campo de ID
 $conn = conectar();
-$departamentos_map = [];
-$sql = "SELECT id_departamento, nombre_departamento FROM departamentos";
-$resultado = $conn->query($sql);
-if ($resultado && $resultado->num_rows > 0) {
-    while ($fila = $resultado->fetch_assoc()) {
-        $departamentos_map[$fila['id_departamento']] = $fila['nombre_departamento'];
-    }
+$departamentos = [];
+$res = $conn->query("SELECT id_departamento, nombre_departamento FROM departamentos");
+while ($row = $res->fetch_assoc()) {
+    $departamentos[$row['id_departamento']] = $row['nombre_departamento'];
 }
 desconectar($conn);
 ?>
+
 <!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Gestión de Sucursales</title>
-
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/SistemaWebRestaurante/css/bootstrap.min.css">
     <link rel="stylesheet" href="/SistemaWebRestaurante/css/diseñoModulos.css">
@@ -180,62 +185,60 @@ desconectar($conn);
 
 <main class="container my-4">
     <?php if (isset($_SESSION['mensaje'])): ?>
-        <div class="alert alert-<?php echo $_SESSION['tipo_mensaje'] === 'success' ? 'success' : 'danger'; ?>">
-            <?php
-            echo htmlspecialchars($_SESSION['mensaje']);
-            unset($_SESSION['mensaje'], $_SESSION['tipo_mensaje']);
-            ?>
-        </div>
+        <script>
+            window.__mensaje = {
+                text: <?php echo json_encode($_SESSION['mensaje']); ?>,
+                tipo: <?php echo json_encode($_SESSION['tipo_mensaje'] ?? 'error'); ?>
+            };
+        </script>
+        <?php unset($_SESSION['mensaje'], $_SESSION['tipo_mensaje']); ?>
     <?php endif; ?>
 
     <section class="card shadow p-4">
-        <h2 class="card__title text-primary mb-4">Formulario de Sucursales</h2>
+        <h2 class="text-primary mb-4">Formulario de Sucursales</h2>
 
         <form id="form-sucursal" method="post" class="row g-3">
             <input type="hidden" name="operacion" id="operacion" value="crear">
-            <input type="hidden" name="id_sucursal" id="id_sucursal" value="">
+            <input type="hidden" name="id_sucursal" id="id_sucursal">
 
-            <div class="col-md-4">
-                <label class="form-label">Dirección</label>
+            <div class="col-md-6">
+                <label class="form-label">Dirección de la Sucursal</label>
                 <input type="text" class="form-control" name="direccion_sucursal" id="direccion_sucursal" required>
             </div>
 
-            <div class="col-md-2">
-                <label class="form-label">Horario Apertura</label>
+            <div class="col-md-3">
+                <label class="form-label">Horario de Apertura</label>
                 <input type="time" class="form-control" name="horario_apertura" id="horario_apertura" required>
             </div>
 
-            <div class="col-md-2">
-                <label class="form-label">Hora Cierre</label>
+            <div class="col-md-3">
+                <label class="form-label">Hora de Cierre</label>
                 <input type="time" class="form-control" name="hora_cierre" id="hora_cierre" required>
             </div>
 
-            <div class="col-md-2">
-                <label class="form-label">Capacidad Empleados</label>
-                <input type="number" class="form-control" name="capacidad_empleados" id="capacidad_empleados" min="0" required>
-            </div>
-
-            <div class="col-md-2">
-                <label class="form-label">Teléfono</label>
-                <input type="text" class="form-control" name="telefono_sucursal" id="telefono_sucursal">
-            </div>
-
-            <div class="col-md-4">
-                <label class="form-label">Correo</label>
-                <input type="email" class="form-control" name="correo_sucursal" id="correo_sucursal">
+            <div class="col-md-3">
+                <label class="form-label">Capacidad de Empleados</label>
+                <input type="number" class="form-control" name="capacidad_empleados" id="capacidad_empleados" min="1" required>
             </div>
 
             <div class="col-md-3">
-                <label class="form-label">ID Departamento</label>
-                <!-- Usamos input text + datalist para que dentro del textbox aparezcan las IDs existentes (1,2,34,...) -->
-                <input type="text" class="form-control" name="id_departamento" id="id_departamento" list="departamentos-list" inputmode="numeric">
-                <datalist id="departamentos-list">
-                    <?php foreach ($departamentos_map as $dep_id => $dep_name): ?>
-                        <!-- Valor mostrado en el textbox: 'id - Nombre' -->
-                        <option value="<?php echo htmlspecialchars($dep_id . ' - ' . $dep_name, ENT_QUOTES|ENT_SUBSTITUTE, 'UTF-8'); ?>"></option>
+                <label class="form-label">Teléfono</label>
+                <input type="text" class="form-control" name="telefono_sucursal" id="telefono_sucursal" required>
+            </div>
+
+            <div class="col-md-3">
+                <label class="form-label">Correo Electrónico</label>
+                <input type="email" class="form-control" name="correo_sucursal" id="correo_sucursal" required>
+            </div>
+
+            <div class="col-md-3">
+                <label class="form-label">Departamento</label>
+                <select class="form-select" name="id_departamento" id="id_departamento">
+                    <option value="">-- Seleccione Departamento --</option>
+                    <?php foreach ($departamentos as $id => $nombre): ?>
+                        <option value="<?= $id; ?>"><?= $id . ' - ' . htmlspecialchars($nombre); ?></option>
                     <?php endforeach; ?>
-                </datalist>
-                <!-- departamento-nombre removed to avoid showing extra text under the input -->
+                </select>
             </div>
 
             <div class="d-flex gap-2 mt-4">
@@ -248,67 +251,63 @@ desconectar($conn);
 
         <div class="d-flex justify-content-between align-items-center mt-5 mb-3">
             <h3 class="mb-0">Lista de Sucursales</h3>
-            <button id="btn-mostrar-lista" type="button" class="btn btn-info btn-sm">Mostrar lista</button>
         </div>
-        <div id="lista-sucursales" class="table-responsive" style="display:none;">
+
+        <div class="table-responsive">
             <table class="table table-bordered table-striped">
                 <thead class="table-dark">
                     <tr>
                         <th>ID</th>
                         <th>Dirección</th>
-                        <th>Apertura</th>
-                        <th>Cierre</th>
+                        <th>Horario</th>
                         <th>Capacidad</th>
                         <th>Teléfono</th>
                         <th>Correo</th>
-                        <th>ID Departamento</th>
+                        <th>Departamento</th>
                         <th>Acciones</th>
                     </tr>
                 </thead>
                 <tbody>
-                <?php foreach ($sucursales as $sucursal): ?>
-                    <tr>
-                        <td><?php echo $sucursal['id_sucursal']; ?></td>
-                        <td><?php echo htmlspecialchars($sucursal['direccion_sucursal']); ?></td>
-                        <td><?php echo $sucursal['horario_apertura']; ?></td>
-                        <td><?php echo $sucursal['hora_cierre']; ?></td>
-                        <td><?php echo $sucursal['capacidad_empleados']; ?></td>
-                        <td><?php echo htmlspecialchars($sucursal['telefono_sucursal']); ?></td>
-                        <td><?php echo htmlspecialchars($sucursal['correo_sucursal']); ?></td>
-                        <td><?php echo $sucursal['id_departamento']; ?></td>
-                        <td class="text-center">
-                            <button type="button" class="btn btn-primary btn-sm editar-btn"
-                                    data-id="<?php echo $sucursal['id_sucursal']; ?>"
-                                    data-direccion="<?php echo htmlspecialchars($sucursal['direccion_sucursal']); ?>"
-                                    data-apertura="<?php echo $sucursal['horario_apertura']; ?>"
-                                    data-cierre="<?php echo $sucursal['hora_cierre']; ?>"
-                                    data-capacidad="<?php echo $sucursal['capacidad_empleados']; ?>"
-                                    data-telefono="<?php echo htmlspecialchars($sucursal['telefono_sucursal']); ?>"
-                                    data-correo="<?php echo htmlspecialchars($sucursal['correo_sucursal']); ?>"
-                                    data-departamento="<?php echo $sucursal['id_departamento']; ?>">
-                                Editar
-                            </button>
-                            <form method="post" style="display:inline;margin-left:6px;" data-eliminar="true">
-                                <input type="hidden" name="operacion" value="eliminar">
-                                <input type="hidden" name="id_sucursal" value="<?php echo $sucursal['id_sucursal']; ?>">
-                                <button type="submit" class="btn btn-danger btn-sm">Eliminar</button>
-                            </form>
-                        </td>
-                    </tr>
-                <?php endforeach; ?>
-                <?php if (empty($sucursales)): ?>
-                    <tr><td colspan="9" class="text-center">No hay sucursales registradas</td></tr>
-                <?php endif; ?>
+                    <?php foreach ($sucursales as $s): ?>
+                        <tr>
+                            <td><?= $s['id_sucursal']; ?></td>
+                            <td><?= htmlspecialchars($s['direccion_sucursal']); ?></td>
+                            <td><?= htmlspecialchars($s['horario_apertura']) . ' - ' . htmlspecialchars($s['hora_cierre']); ?></td>
+                            <td><?= htmlspecialchars($s['capacidad_empleados']); ?></td>
+                            <td><?= htmlspecialchars($s['telefono_sucursal']); ?></td>
+                            <td><?= htmlspecialchars($s['correo_sucursal']); ?></td>
+                            <td><?= htmlspecialchars($s['nombre_departamento'] ?? ''); ?></td>
+                            <td class="text-center">
+                                <div class="d-flex gap-2 justify-content-center align-items-center">
+                                    <button type="button" class="btn btn-primary btn-sm editar-btn"
+                                        data-id="<?= $s['id_sucursal']; ?>"
+                                        data-direccion="<?= htmlspecialchars($s['direccion_sucursal']); ?>"
+                                        data-apertura="<?= $s['horario_apertura']; ?>"
+                                        data-cierre="<?= $s['hora_cierre']; ?>"
+                                        data-capacidad="<?= $s['capacidad_empleados']; ?>"
+                                        data-telefono="<?= htmlspecialchars($s['telefono_sucursal']); ?>"
+                                        data-correo="<?= htmlspecialchars($s['correo_sucursal']); ?>"
+                                        data-departamento="<?= $s['id_departamento']; ?>">Editar</button>
+
+                                    <form method="post" class="d-inline" data-eliminar="true" style="margin:0;">
+                                        <input type="hidden" name="operacion" value="eliminar">
+                                        <input type="hidden" name="id_sucursal" value="<?= $s['id_sucursal']; ?>">
+                                        <button type="submit" class="btn btn-danger btn-sm">Eliminar</button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                    <?php endforeach; ?>
+                    <?php if (empty($sucursales)): ?>
+                        <tr><td colspan="8" class="text-center">No hay sucursales registradas</td></tr>
+                    <?php endif; ?>
                 </tbody>
             </table>
         </div>
     </section>
-    <script>
-        // Mapa id -> nombre de departamentos disponible para el JS
-        var DEPARTAMENTOS_MAP = <?php echo json_encode($departamentos_map, JSON_UNESCAPED_UNICODE); ?>;
-    </script>
-    <!-- SweetAlert2 -->
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    <script src="/SistemaWebRestaurante/javascript/Sucursales.js"></script>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script src="/SistemaWebRestaurante/javascript/Sucursales.js"></script>
 </body>
 </html>

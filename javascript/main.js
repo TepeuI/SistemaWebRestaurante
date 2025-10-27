@@ -1,10 +1,10 @@
 /**
-* Template Name: Delicious
-* Updated: Sep 18 2023 with Bootstrap v5.3.2
-* Template URL: https://bootstrapmade.com/delicious-free-restaurant-bootstrap-theme/
-* Author: BootstrapMade.com
-* License: https://bootstrapmade.com/license/
+* Template Name: Delicious (Modificado)
+* Bootstrap v5.3.2
+* Autor base: BootstrapMade.com
+* Adaptado por: Brandon Hernández
 */
+
 (function() {
   "use strict";
 
@@ -76,22 +76,15 @@
   }
 
   /**
-   * Toggle .header-scrolled class to #header when page is scrolled
+   * HEADER SCROLL EFFECT (Topbar permanece fijo)
    */
   let selectHeader = select('#header')
-  let selectTopbar = select('#topbar')
   if (selectHeader) {
     const headerScrolled = () => {
       if (window.scrollY > 100) {
         selectHeader.classList.add('header-scrolled')
-        if (selectTopbar) {
-          selectTopbar.classList.add('topbar-scrolled')
-        }
       } else {
         selectHeader.classList.remove('header-scrolled')
-        if (selectTopbar) {
-          selectTopbar.classList.remove('topbar-scrolled')
-        }
       }
     }
     window.addEventListener('load', headerScrolled)
@@ -134,7 +127,7 @@
   }, true)
 
   /**
-   * Scrool with ofset on links with a class name .scrollto
+   * Scroll con offset en links con clase .scrollto
    */
   on('click', '.scrollto', function(e) {
     if (select(this.hash)) {
@@ -152,7 +145,7 @@
   }, true)
 
   /**
-   * Scroll with ofset on page load with hash links in the url
+   * Scroll con offset al cargar página con hash en URL
    */
   window.addEventListener('load', () => {
     if (window.location.hash) {
@@ -168,11 +161,13 @@
   let heroCarouselIndicators = select("#hero-carousel-indicators")
   let heroCarouselItems = select('#heroCarousel .carousel-item', true)
 
-  heroCarouselItems.forEach((item, index) => {
-    (index === 0) ?
-    heroCarouselIndicators.innerHTML += "<li data-bs-target='#heroCarousel' data-bs-slide-to='" + index + "' class='active'></li>":
-      heroCarouselIndicators.innerHTML += "<li data-bs-target='#heroCarousel' data-bs-slide-to='" + index + "'></li>"
-  });
+  if (heroCarouselIndicators && heroCarouselItems.length) {
+    heroCarouselItems.forEach((item, index) => {
+      (index === 0)
+        ? heroCarouselIndicators.innerHTML += "<li data-bs-target='#heroCarousel' data-bs-slide-to='" + index + "' class='active'></li>"
+        : heroCarouselIndicators.innerHTML += "<li data-bs-target='#heroCarousel' data-bs-slide-to='" + index + "'></li>"
+    });
+  }
 
   /**
    * Menu isotope and filter
@@ -200,11 +195,10 @@
 
       }, true);
     }
-
   });
 
   /**
-   * Testimonials slider
+   * Swiper sliders
    */
   new Swiper('.events-slider', {
     speed: 600,
@@ -221,16 +215,6 @@
     }
   });
 
-  /**
-   * Initiate gallery lightbox 
-   */
-  const galleryLightbox = GLightbox({
-    selector: '.gallery-lightbox'
-  });
-
-  /**
-   * Testimonials slider
-   */
   new Swiper('.testimonials-slider', {
     speed: 600,
     loop: true,
@@ -246,4 +230,11 @@
     }
   });
 
-})()
+  /**
+   * Gallery lightbox
+   */
+  const galleryLightbox = GLightbox({
+    selector: '.gallery-lightbox'
+  });
+
+})();
