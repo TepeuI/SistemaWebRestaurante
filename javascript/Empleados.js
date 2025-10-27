@@ -292,3 +292,35 @@ document.addEventListener('DOMContentLoaded', function () {
     if (contenedorLista) { try { contenedorLista.style.display = 'block'; } catch (e) {} }
 
 });
+
+// form_text_toggle.js — Muestra/oculta texto de ayuda en formularios al enfocar/perder foco
+    (function(){
+        // Muestra el small.help-text dentro del mismo contenedor (.col-*) cuando el input/select/textarea recibe foco
+        function initFormTextToggle() {
+            var form = document.getElementById('form-empleado');
+            if (!form) return;
+
+            var fields = form.querySelectorAll('input, select, textarea');
+            fields.forEach(function(f){
+                f.addEventListener('focus', function(){
+                    var container = f.closest('.col-md-1, .col-md-2, .col-md-3, .col-md-4, .col-md-6, .col, .form-group') || f.parentElement;
+                    if (!container) return;
+                    var help = container.querySelector('small.form-text.help-text');
+                    if (help) help.classList.add('visible');
+                });
+                f.addEventListener('blur', function(){
+                    var container = f.closest('.col-md-1, .col-md-2, .col-md-3, .col-md-4, .col-md-6, .col, .form-group') || f.parentElement;
+                    if (!container) return;
+                    var help = container.querySelector('small.form-text.help-text');
+                    if (help) help.classList.remove('visible');
+                });
+            });
+        }
+
+        // Inicializar cuando DOM esté listo
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initFormTextToggle);
+        } else {
+            initFormTextToggle();
+        }
+    })();
