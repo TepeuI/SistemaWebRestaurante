@@ -170,33 +170,125 @@ document.addEventListener('DOMContentLoaded', function () {
         if (btnCancelar) btnCancelar.style.display = 'none';
     });
 
-    // ---------- Editar desde la tabla ----------
-    document.querySelectorAll('.editar-btn').forEach(btn => {
+    // ---------- Editar por empleado (selección de número en SweetAlert) ----------
+    document.querySelectorAll('.editar-emp-btn').forEach(btn => {
         btn.addEventListener('click', function () {
-            const id = this.getAttribute('data-id');
-            const idEmpleado = this.getAttribute('data-id_empleado');
-            const numero = this.getAttribute('data-numero');
+            const phonesJson = this.getAttribute('data-phones') || '[]';
+            let phones = [];
+            try { phones = JSON.parse(phonesJson); } catch (e) { phones = []; }
+            if (!phones.length) {
+                if (typeof Swal !== 'undefined') {
+                    Swal.fire('No hay números', 'Este empleado no tiene teléfonos registrados.', 'info');
+                } else {
+                    alert('Este empleado no tiene teléfonos registrados.');
+                }
+                return;
+            }
 
-            const doFill = () => {
-                if (idTelefonoInput) idTelefonoInput.value = id || '';
-                if (idEmpleadoInput) idEmpleadoInput.value = idEmpleado || '';
-                if (telefonoInput) telefonoInput.value = numero || '';
-
-                habilitarCampos();
-                mostrarBotonesActualizar();
-            };
+            const inputOptions = {};
+            phones.forEach(p => { inputOptions[p.id_telefono] = p.numero; });
 
             if (typeof Swal !== 'undefined') {
                 Swal.fire({
-                    title: 'Editar teléfono',
-                    text: '¿Deseas editar este número?',
-                    icon: 'question',
-                    showCancelButton: true,
-                    confirmButtonText: 'Sí',
-                    cancelButtonText: 'Cancelar'
-                }).then((res) => { if (res.isConfirmed) doFill(); });
+                    title: 'Seleccione número a editar',
+                    input: 'select',
+                    inputOptions: inputOptions,
+                    inputPlaceholder: '-- Seleccione número --',
+                    showCancelButton: true
+                }).then((res) => {
+                    if (res.isConfirmed && res.value) {
+                        const selId = res.value;
+                        const sel = phones.find(x => String(x.id_telefono) === String(selId));
+                        if (sel) {
+                            if (idTelefonoInput) idTelefonoInput.value = sel.id_telefono || '';
+                            if (idEmpleadoInput) idEmpleadoInput.value = this.getAttribute('data-id_empleado') || '';
+                            if (telefonoInput) telefonoInput.value = sel.numero || '';
+                            habilitarCampos();
+                            if (operacionInput) operacionInput.value = 'actualizar';
+                            mostrarBotonesActualizar();
+                        }
+                    }
+                });
             } else {
-                doFill();
+                // Fallback: prompt simple
+                const choices = phones.map(p => p.numero).join('\n');
+                const pick = prompt('Números:\n' + choices + '\nEscriba el número a editar:');
+                const sel = phones.find(x => x.numero === pick);
+                if (sel) {
+                    if (idTelefonoInput) idTelefonoInput.value = sel.id_telefono || '';
+                    if (idEmpleadoInput) idEmpleadoInput.value = this.getAttribute('data-id_empleado') || '';
+                    if (telefonoInput) telefonoInput.value = sel.numero || '';
+                    habilitarCampos();
+                    if (operacionInput) operacionInput.value = 'actualizar';
+                    mostrarBotonesActualizar();
+                }
+            }
+        });
+    });
+
+    // ---------- Eliminar por empleado (selección de número) ----------
+    document.querySelectorAll('.eliminar-emp-btn').forEach(btn => {
+        btn.addEventListener('click', function () {
+            const phonesJson = this.getAttribute('data-phones') || '[]';
+            let phones = [];
+            try { phones = JSON.parse(phonesJson); } catch (e) { phones = []; }
+            if (!phones.length) {
+                if (typeof Swal !== 'undefined') {
+                    Swal.fire('No hay números', 'Este empleado no tiene teléfonos registrados.', 'info');
+                } else {
+                    alert('Este empleado no tiene teléfonos registrados.');
+                }
+                return;
+            }
+
+            const inputOptions = {};
+            phones.forEach(p => { inputOptions[p.id_telefono] = p.numero; });
+
+            if (typeof Swal !== 'undefined') {
+                Swal.fire({
+                    title: 'Seleccione número a eliminar',
+                    input: 'select',
+                    inputOptions: inputOptions,
+                    inputPlaceholder: '-- Seleccione número --',
+                    showCancelButton: true
+                }).then((res) => {
+                    if (res.isConfirmed && res.value) {
+                        const selId = res.value;
+                        // Confirmar eliminación
+                        Swal.fire({
+                            title: '¿Eliminar teléfono?',
+                            text: 'Esta acción no se puede deshacer.',
+                            icon: 'warning',
+                            showCancelButton: true,
+                            confirmButtonText: 'Sí, eliminar'
+                        }).then((r2) => {
+                            if (r2.isConfirmed) {
+                                // Crear formulario y enviarlo
+                                const f = document.createElement('form');
+                                f.method = 'post';
+                                f.style.display = 'none';
+                                const op = document.createElement('input');
+                                op.name = 'operacion'; op.value = 'eliminar';
+                                const idf = document.createElement('input');
+                                idf.name = 'id_telefono'; idf.value = selId;
+                                f.appendChild(op); f.appendChild(idf);
+                                document.body.appendChild(f);
+                                f.submit();
+                            }
+                        });
+                    }
+                });
+            } else {
+                const choices = phones.map(p => p.numero).join('\n');
+                const pick = prompt('Números:\n' + choices + '\nEscriba el número a eliminar:');
+                const sel = phones.find(x => x.numero === pick);
+                if (sel && confirm('¿Eliminar número ' + sel.numero + '?')) {
+                    const f = document.createElement('form');
+                    f.method = 'post'; f.style.display='none';
+                    const op = document.createElement('input'); op.name='operacion'; op.value='eliminar';
+                    const idf = document.createElement('input'); idf.name='id_telefono'; idf.value = sel.id_telefono;
+                    f.appendChild(op); f.appendChild(idf); document.body.appendChild(f); f.submit();
+                }
             }
         });
     });

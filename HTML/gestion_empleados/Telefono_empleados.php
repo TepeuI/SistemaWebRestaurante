@@ -224,25 +224,52 @@ desconectar($conn);
                     </tr>
                 </thead>
                 <tbody>
-                    <?php foreach ($telefonos as $t): ?>
+                    <?php
+                    // Agrupar teléfonos por empleado para mostrar todos los números en una sola fila por empleado
+                    $grupos = [];
+                    foreach ($telefonos as $t) {
+                        $idem = $t['id_empleado'];
+                        if (!isset($grupos[$idem])) {
+                            $grupos[$idem] = [
+                                'id_empleado' => $idem,
+                                'nombre' => $t['nombre_empleado'] . ' ' . $t['apellido_empleado'],
+                                'telefonos' => []
+                            ];
+                        }
+                        $grupos[$idem]['telefonos'][] = [
+                            'id_telefono' => $t['id_telefono'],
+                            'numero' => $t['numero_telefono']
+                        ];
+                    }
+
+                    if (!empty($grupos)):
+                        foreach ($grupos as $g):
+                    ?>
                         <tr>
-                            <td><?= $t['id_telefono']; ?></td>
-                            <td><?= htmlspecialchars($t['nombre_empleado'] . ' ' . $t['apellido_empleado']); ?></td>
-                            <td><?= htmlspecialchars($t['numero_telefono']); ?></td>
+                            <td><?= $g['id_empleado']; ?></td>
+                            <td><?= htmlspecialchars($g['nombre']); ?></td>
+                            <td>
+                                <?php foreach ($g['telefonos'] as $p): ?>
+                                    <div><?= htmlspecialchars($p['numero']); ?></div>
+                                <?php endforeach; ?>
+                            </td>
                             <td class="text-center">
-                                <button type="button" class="btn btn-primary btn-sm editar-btn"
-                                    data-id="<?= $t['id_telefono']; ?>"
-                                    data-id_empleado="<?= $t['id_empleado']; ?>"
-                                    data-numero="<?= htmlspecialchars($t['numero_telefono']); ?>">Editar</button>
-                                <form method="post" style="display:inline;margin-left:6px;">
-                                    <input type="hidden" name="operacion" value="eliminar">
-                                    <input type="hidden" name="id_telefono" value="<?= $t['id_telefono']; ?>">
-                                    <button type="submit" class="btn btn-danger btn-sm">Eliminar</button>
-                                </form>
+                                <?php
+                                    // Preparar JSON con los teléfonos para el atributo data-phones
+                                    $phones_json = htmlspecialchars(json_encode($g['telefonos']), ENT_QUOTES, 'UTF-8');
+                                ?>
+                                <button type="button" class="btn btn-primary btn-sm editar-emp-btn"
+                                    data-phones='<?= $phones_json; ?>'
+                                    data-id_empleado="<?= $g['id_empleado']; ?>">Editar</button>
+                                <button type="button" class="btn btn-danger btn-sm eliminar-emp-btn"
+                                    data-phones='<?= $phones_json; ?>'
+                                    data-id_empleado="<?= $g['id_empleado']; ?>">Eliminar</button>
                             </td>
                         </tr>
-                    <?php endforeach; ?>
-                    <?php if (empty($telefonos)): ?>
+                        <?php
+                        endforeach;
+                    else:
+                        ?>
                         <tr><td colspan="4" class="text-center">No hay teléfonos registrados</td></tr>
                     <?php endif; ?>
                 </tbody>
