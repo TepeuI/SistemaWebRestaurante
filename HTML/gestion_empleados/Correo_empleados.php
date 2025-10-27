@@ -1,4 +1,3 @@
-//Formularios de correos de empty empleados
 <?php
 session_start();
 require_once '../conexion.php';
@@ -244,7 +243,11 @@ desconectar($conn);
                             <td><?= htmlspecialchars($g['nombre']); ?></td>
                             <td>
                                 <?php foreach ($g['correos'] as $cr): ?>
-                                    <div><?= htmlspecialchars($cr['direccion']); ?></div>
+                                    <div>
+                                        <a class="correo-empleado" href="mailto:<?= htmlspecialchars($cr['direccion']); ?>">
+                                            <?= htmlspecialchars($cr['direccion']); ?>
+                                        </a>
+                                    </div>
                                 <?php endforeach; ?>
                             </td>
                             <td class="text-center">

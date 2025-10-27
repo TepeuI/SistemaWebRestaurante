@@ -126,3 +126,9 @@ footer {
         gap: 10px;
     }
 }
+
+
+a.correo-empleado {
+    color: #007bff;
+    text-decoration: underline;
+}
