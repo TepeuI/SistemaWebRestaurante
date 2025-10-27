@@ -129,6 +129,15 @@
                     <li><a href="Facturacion_Ventas.html">Nueva Factura</a></li>
                 </ul>
             </li>
+
+            <li>
+                <a href="#" class="submenu-toggle"><span>👨🏻‍💻</span> Gestión de Cuentas</a>
+                <ul class="submenu">
+                    <li><a href="crear_usuario.php">Crear Cuenta</a></li>
+                    <li><a href="../HTML/Usuarios_Aplicaciones/Aplicaciones.php">Mantenimieno Modulos</a></li>
+                    <li><a href="../HTML/Usuarios_Aplicaciones/Asignación_Usuario_Aplicaciones.php">Asignacion Permisos Usuarios</a></li>
+                </ul>
+            </li>
             
             <li><a href="login.php"><span>🚪</span> Cerrar Sesión</a></li>
         </ul>
