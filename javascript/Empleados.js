@@ -1,7 +1,7 @@
-// Ernesto David Samayoa Jocol 0901-22-3415 version2610
-document.addEventListener('DOMContentLoaded', function() {
-    console.log('[Empleados.js] DOMContentLoaded: inicio');
-    // Obtener elementos del DOM (con comprobaciones)
+// Empleados.js — gestión de formulario de empleados
+
+document.addEventListener('DOMContentLoaded', function () {
+    // Elementos
     const form = document.getElementById('form-empleado');
     const inputs = form ? form.querySelectorAll('input, select, textarea') : [];
     const btnNuevo = document.getElementById('btn-nuevo');
@@ -14,7 +14,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const idPuestoInput = document.getElementById('id_puesto');
     const contenedorLista = document.getElementById('lista-empleados');
 
-    // Formateo y validación en campo DPI: debe ser 13 dígitos agrupados como 4-5-4 -> "dddd ddddd dddd"
+    // DPI: formato 4-5-4
     const dpiInput = document.getElementById('dpi');
     function formatDPIValue(value) {
         const digits = (value || '').toString().replace(/\D/g, '');
@@ -24,16 +24,11 @@ document.addEventListener('DOMContentLoaded', function() {
         return [part1, part2, part3].filter(Boolean).join(' ');
     }
     if (dpiInput) {
-        // Formatear mientras el usuario escribe
-        dpiInput.addEventListener('input', function (e) {
-            const pos = this.selectionStart;
-            const before = this.value;
+        dpiInput.addEventListener('input', function () {
             const formatted = formatDPIValue(this.value);
             this.value = formatted;
-            // intentar mantener caret al final simple
             try { this.setSelectionRange(this.value.length, this.value.length); } catch (err) {}
         });
-        // Al pegar, limpiar y formatear
         dpiInput.addEventListener('paste', function (e) {
             e.preventDefault();
             const text = (e.clipboardData || window.clipboardData).getData('text');
@@ -41,22 +36,19 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // Campos nombre y apellido: permitir sólo letras y espacios (incluye acentos y Ñ).
+    // Nombre / Apellido: sanitizar y formatear
     const nombreInput = document.getElementById('nombre_empleado');
     const apellidoInput = document.getElementById('apellido_empleado');
     const nameSanitizeRegex = /[^A-Za-zÁÉÍÓÚÜÑáéíóúüñ\s]/g;
 
     function sanitizeAndFormatNameField(el) {
         if (!el) return;
-        // Al escribir: eliminar caracteres no permitidos y colapsar espacios múltiples
         el.addEventListener('input', function () {
             let v = this.value || '';
             v = v.replace(nameSanitizeRegex, '');
             v = v.replace(/\s+/g, ' ');
             this.value = v;
         });
-
-        // Al perder foco: normalizar espacios y aplicar Title Case salvo si todo está en MAYÚSCULAS
         el.addEventListener('blur', function () {
             let v = (this.value || '').trim();
             if (!v) return;
@@ -75,71 +67,31 @@ document.addEventListener('DOMContentLoaded', function() {
             this.value = formatted;
         });
     }
-
     sanitizeAndFormatNameField(nombreInput);
     sanitizeAndFormatNameField(apellidoInput);
 
-    // 🔒 Funciones para bloquear/habilitar campos y botones (como en Telefono_Empleados.js)
-    // obtener elementos dinámicamente (por si cambian en el DOM)
-    function getEditarBtns() { return Array.from(document.querySelectorAll('.editar-btn')); }
-    function getEliminarSubmitButtons() { return Array.from(document.querySelectorAll('form[data-eliminar="true"] button[type="submit"]')); }
-
-    // Nota: ya no se aplica un deshabilitado global al iniciar. Los campos y botones
-    // estarán activos por defecto al cargar la página.
-
-    function bloquearCampos() {
-        console.log('[Empleados.js] ejecutar bloquearCampos()');
-        inputs.forEach(input => {
-            if (input.type !== 'hidden') input.disabled = true;
-        });
-        if (btnGuardar) btnGuardar.disabled = true;
-        if (btnActualizar) btnActualizar.disabled = true;
-        if (btnCancelar) btnCancelar.style.display = 'none';
-        if (btnNuevo) btnNuevo.disabled = false; // permitir Nuevo
-
-        // Deshabilitar botones de editar y botones de eliminar (submit) al inicio
-        const eb = getEditarBtns();
-        const delBtns = getEliminarSubmitButtons();
-        console.log('[Empleados.js] botones editar detectados:', eb.length, 'eliminar detectados:', delBtns.length);
-        eb.forEach(b => {
-            try { b.disabled = true; b.classList.add('disabled'); b.setAttribute('aria-disabled','true'); } catch(e){}
-        });
-        delBtns.forEach(btn => {
-            try { btn.disabled = true; btn.classList.add('disabled'); btn.setAttribute('aria-disabled','true'); } catch(e){}
-        });
-    }
-
-    // Nota: no forzamos el bloqueo tras un timeout; la UI inicia activa.
-
+    // Helpers UI
     function habilitarCampos() {
         inputs.forEach(input => {
             if (input.type !== 'hidden') input.disabled = false;
         });
         if (btnGuardar) btnGuardar.disabled = false;
         if (btnCancelar) btnCancelar.style.display = 'inline-block';
-        if (btnNuevo) btnNuevo.disabled = true;
+        // btnNuevo no se deshabilita
         // enfocar el primer campo no hidden
         for (let i = 0; i < inputs.length; i++) {
             if (inputs[i].type !== 'hidden') { inputs[i].focus(); break; }
         }
     }
 
-    // Inicial: la UI inicia activa (no se deshabilitan campos por defecto)
-
-    // Manejo de botones
-    if (btnNuevo) btnNuevo.addEventListener('click', function() {
+    // Botones
+    if (btnNuevo) btnNuevo.addEventListener('click', function () {
         limpiarFormulario();
         habilitarCampos();
         mostrarBotonesGuardar();
-        // Al crear un nuevo empleado permitimos también editar/eliminar desde la lista
-        // (al usuario pedirlo) — habilitamos los botones de editar y los botones de eliminar
-        const eb = getEditarBtns();
-        const delBtns = getEliminarSubmitButtons();
-        eb.forEach(b => { try { b.disabled = false; b.classList.remove('disabled'); b.removeAttribute('aria-disabled'); } catch (e) {} });
-        delBtns.forEach(b => { try { b.disabled = false; b.classList.remove('disabled'); b.removeAttribute('aria-disabled'); } catch (e) {} });
     });
 
-    if (btnGuardar) btnGuardar.addEventListener('click', function() {
+    if (btnGuardar) btnGuardar.addEventListener('click', function () {
         if (!form) return console.warn('Formulario no encontrado');
         if (validarFormulario()) {
             const doSubmit = () => {
@@ -152,7 +104,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     text: '¿Deseas guardar este empleado?',
                     icon: 'question',
                     showCancelButton: true,
-                    confirmButtonText: 'Sí, guardar',
+                    confirmButtonText: 'Sí',
                     cancelButtonText: 'Cancelar'
                 }).then((result) => { if (result.isConfirmed) doSubmit(); });
             } else {
@@ -161,7 +113,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
-    if (btnActualizar) btnActualizar.addEventListener('click', function() {
+    if (btnActualizar) btnActualizar.addEventListener('click', function () {
         if (!form) return console.warn('Formulario no encontrado');
         if (validarFormulario()) {
             const doSubmit = () => {
@@ -187,13 +139,11 @@ document.addEventListener('DOMContentLoaded', function() {
         limpiarFormulario();
         // Al cancelar no deshabilitamos la interfaz: simplemente ocultamos el botón Cancelar
         try { if (btnCancelar) btnCancelar.style.display = 'none'; } catch(e) {}
-        try { if (btnNuevo) btnNuevo.disabled = false; } catch(e) {}
     });
 
     // Editar desde la tabla
-    // Note: los botones '.editar-btn' estarán deshabilitados al inicio; se habilitan al mostrar la lista
     document.querySelectorAll('.editar-btn').forEach(btn => {
-        btn.addEventListener('click', function() {
+        btn.addEventListener('click', function () {
             const id = this.getAttribute('data-id');
             const dpi = this.getAttribute('data-dpi');
             const nombre = this.getAttribute('data-nombre');
@@ -267,7 +217,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const departamentoEl = document.getElementById('id_departamento');
         const puestoEl = document.getElementById('id_puesto');
 
-    const dpi = dpiEl ? dpiEl.value.trim() : '';
+        const dpi = dpiEl ? dpiEl.value.trim() : '';
         const nombre = nombreEl ? nombreEl.value.trim() : '';
         const apellido = apellidoEl ? apellidoEl.value.trim() : '';
         const departamento = departamentoEl ? departamentoEl.value : '';
@@ -336,27 +286,9 @@ document.addEventListener('DOMContentLoaded', function() {
             // limpiar para no mostrar de nuevo
             try { delete window.__mensaje; } catch(e) { window.__mensaje = null; }
         }
-    } catch(e) { /* no bloquear la carga si falla */ }
+    } catch (e) { /* no bloquear la carga si falla */ }
 
-    // La lista de empleados es fija en la interfaz; no es necesario el botón mostrar/ocultar.
-    if (contenedorLista) {
-        // Asegurar que esté visible
-        try { contenedorLista.style.display = 'block'; } catch(e){}
-    }
+    // La lista de empleados es fija en la interfaz; asegurar visibilidad
+    if (contenedorLista) { try { contenedorLista.style.display = 'block'; } catch (e) {} }
 
-    // Mostrar/ocultar lista de sucursales (en la misma página de empleados)
-    const btnMostrarSucursales = document.getElementById('btn-mostrar-sucursales');
-    const listaSucursales = document.getElementById('lista-sucursales');
-    if (btnMostrarSucursales && listaSucursales) {
-        btnMostrarSucursales.addEventListener('click', function() {
-            if (listaSucursales.style.display === 'none' || listaSucursales.style.display === '') {
-                listaSucursales.style.display = 'block';
-                btnMostrarSucursales.textContent = 'Ocultar lista sucursales';
-                listaSucursales.scrollIntoView({ behavior: 'smooth' });
-            } else {
-                listaSucursales.style.display = 'none';
-                btnMostrarSucursales.textContent = 'Mostrar lista sucursales';
-            }
-        });
-    }
-}); 
+});

@@ -74,23 +74,7 @@ function crearEmpleado() {
     }
     $dpi = $dpi_digits;
 
-    // normalizar/validar nombre y apellido (ya agregado arriba para consistencia)
-    $nombre = normalize_name($nombre);
-    $apellido = normalize_name($apellido);
-    if (!is_valid_name($nombre)) {
-        $_SESSION['mensaje'] = 'El nombre sólo debe contener letras y espacios';
-        $_SESSION['tipo_mensaje'] = 'error';
-        desconectar($conn);
-        header('Location: Empleados.php');
-        exit();
-    }
-    if (!is_valid_name($apellido)) {
-        $_SESSION['mensaje'] = 'El apellido sólo debe contener letras y espacios';
-        $_SESSION['tipo_mensaje'] = 'error';
-        desconectar($conn);
-        header('Location: Empleados.php');
-        exit();
-    }
+    
 
     // Verificar unicidad del DPI
     $check = $conn->prepare("SELECT id_empleado FROM empleados WHERE dpi = ? LIMIT 1");
