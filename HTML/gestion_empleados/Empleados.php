@@ -1,5 +1,5 @@
+<!--Ernesto David Samayoa Jocol 0901-22-3415 version2610-->
 <?php
-// Ernesto David Samayoa Jocol 0901-22-3415
 session_start();
 require_once '../conexion.php';
 
@@ -45,6 +45,53 @@ function crearEmpleado() {
         exit();
     }
 
+    // Normalizar y validar nombres/apellidos
+    $nombre = normalize_name($nombre);
+    $apellido = normalize_name($apellido);
+    if (!is_valid_name($nombre)) {
+        $_SESSION['mensaje'] = 'El nombre sólo debe contener letras y espacios';
+        $_SESSION['tipo_mensaje'] = 'error';
+        desconectar($conn);
+        header('Location: Empleados.php');
+        exit();
+    }
+    if (!is_valid_name($apellido)) {
+        $_SESSION['mensaje'] = 'El apellido sólo debe contener letras y espacios';
+        $_SESSION['tipo_mensaje'] = 'error';
+        desconectar($conn);
+        header('Location: Empleados.php');
+        exit();
+    }
+
+    // Normalizar DPI: conservar sólo dígitos
+    $dpi_digits = preg_replace('/\D/', '', $dpi);
+    if (strlen($dpi_digits) !== 13) {
+        $_SESSION['mensaje'] = 'El DPI debe contener 13 dígitos';
+        $_SESSION['tipo_mensaje'] = 'error';
+        desconectar($conn);
+        header('Location: Empleados.php');
+        exit();
+    }
+    $dpi = $dpi_digits;
+
+    // normalizar/validar nombre y apellido (ya agregado arriba para consistencia)
+    $nombre = normalize_name($nombre);
+    $apellido = normalize_name($apellido);
+    if (!is_valid_name($nombre)) {
+        $_SESSION['mensaje'] = 'El nombre sólo debe contener letras y espacios';
+        $_SESSION['tipo_mensaje'] = 'error';
+        desconectar($conn);
+        header('Location: Empleados.php');
+        exit();
+    }
+    if (!is_valid_name($apellido)) {
+        $_SESSION['mensaje'] = 'El apellido sólo debe contener letras y espacios';
+        $_SESSION['tipo_mensaje'] = 'error';
+        desconectar($conn);
+        header('Location: Empleados.php');
+        exit();
+    }
+
     // Verificar unicidad del DPI
     $check = $conn->prepare("SELECT id_empleado FROM empleados WHERE dpi = ? LIMIT 1");
     $check->bind_param('s', $dpi);
@@ -66,11 +113,33 @@ function crearEmpleado() {
     $stmt->bind_param('sssii', $dpi, $nombre, $apellido, $id_departamento, $id_puesto);
     $stmt->execute();
 
-    $_SESSION['mensaje'] = $stmt->affected_rows > 0 ? 'Empleado creado exitosamente' : 'Error al crear empleado: ' . $stmt->error;
-    $_SESSION['tipo_mensaje'] = $stmt->affected_rows > 0 ? 'success' : 'error';
+    $success = $stmt->affected_rows > 0;
+    $message = $success ? 'Empleado creado exitosamente' : 'Error al crear empleado: ' . $stmt->error;
+    $tipo = $success ? 'success' : 'error';
+    $new_id = $stmt->insert_id;
 
     $stmt->close();
     desconectar($conn);
+
+    // Si es una petición AJAX, respondemos JSON y no redirigimos
+    if (isset($_POST['ajax']) && $_POST['ajax'] == '1') {
+        header('Content-Type: application/json; charset=utf-8');
+        echo json_encode([
+            'success' => $success,
+            'message' => $message,
+            'tipo' => $tipo,
+            'id_empleado' => $new_id,
+            'dpi' => format_dpi($dpi),
+            'nombre' => $nombre,
+            'apellido' => $apellido,
+            'id_departamento' => $id_departamento,
+            'id_puesto' => $id_puesto
+        ]);
+        exit();
+    }
+
+    $_SESSION['mensaje'] = $message;
+    $_SESSION['tipo_mensaje'] = $tipo;
     header('Location: Empleados.php');
     exit();
 }
@@ -97,6 +166,17 @@ function actualizarEmpleado() {
         exit();
     }
 
+    // Normalizar DPI: conservar sólo dígitos
+    $dpi_digits = preg_replace('/\D/', '', $dpi);
+    if (strlen($dpi_digits) !== 13) {
+        $_SESSION['mensaje'] = 'El DPI debe contener 13 dígitos';
+        $_SESSION['tipo_mensaje'] = 'error';
+        desconectar($conn);
+        header('Location: Empleados.php');
+        exit();
+    }
+    $dpi = $dpi_digits;
+
     // Verificar que el DPI no exista en otro registro
     $check = $conn->prepare("SELECT id_empleado FROM empleados WHERE dpi = ? AND id_empleado != ? LIMIT 1");
     $check->bind_param('si', $dpi, $id_empleado);
@@ -117,11 +197,31 @@ function actualizarEmpleado() {
     $stmt->bind_param('sssiii', $dpi, $nombre, $apellido, $id_departamento, $id_puesto, $id_empleado);
     $stmt->execute();
 
-    $_SESSION['mensaje'] = $stmt->affected_rows > 0 ? 'Empleado actualizado exitosamente' : 'Error al actualizar empleado: ' . $stmt->error;
-    $_SESSION['tipo_mensaje'] = $stmt->affected_rows > 0 ? 'success' : 'error';
+    $success = $stmt->affected_rows > 0;
+    $message = $success ? 'Empleado actualizado exitosamente' : 'Error al actualizar empleado: ' . $stmt->error;
+    $tipo = $success ? 'success' : 'error';
 
     $stmt->close();
     desconectar($conn);
+
+    if (isset($_POST['ajax']) && $_POST['ajax'] == '1') {
+        header('Content-Type: application/json; charset=utf-8');
+        echo json_encode([
+            'success' => $success,
+            'message' => $message,
+            'tipo' => $tipo,
+            'id_empleado' => $id_empleado,
+            'dpi' => format_dpi($dpi),
+            'nombre' => $nombre,
+            'apellido' => $apellido,
+            'id_departamento' => $id_departamento,
+            'id_puesto' => $id_puesto
+        ]);
+        exit();
+    }
+
+    $_SESSION['mensaje'] = $message;
+    $_SESSION['tipo_mensaje'] = $tipo;
     header('Location: Empleados.php');
     exit();
 }
@@ -173,6 +273,56 @@ while ($row = $res->fetch_assoc()) {
     $puestos_map[$row['id_puesto']] = $row['puesto'];
 }
 desconectar($conn);
+
+// Formatear DPI para mostrar en la interfaz (4-5-4)
+function format_dpi($dpi) {
+    $d = preg_replace('/\D/', '', (string)$dpi);
+    if (strlen($d) === 13) {
+        return substr($d, 0, 4) . ' ' . substr($d, 4, 5) . ' ' . substr($d, 9, 4);
+    }
+    return $dpi;
+}
+
+// Formatear y validar nombres/apellidos en servidor
+function normalize_name($s) {
+    // eliminar caracteres no permitidos (permitir letras latinas con tildes, Ñ y espacios)
+    $s = isset($s) ? (string)$s : '';
+    // quitar todo lo que no sea letra o espacio
+    $s = preg_replace('/[^A-Za-zÁÉÍÓÚÜÑáéíóúüñ\s]/u', '', $s);
+    // colapsar espacios múltiples y trim
+    $s = preg_replace('/\s+/u', ' ', trim($s));
+    if ($s === '') return '';
+
+    // Si el usuario ingresó todo en mayúsculas, respetarlo
+    if (function_exists('mb_strtoupper')) {
+        $upper = mb_strtoupper($s, 'UTF-8');
+        if ($s === $upper) return $s;
+    } else {
+        if ($s === strtoupper($s)) return $s;
+    }
+
+    // Intentar Title Case con mb_convert_case si está disponible
+    if (function_exists('mb_convert_case')) {
+        return mb_convert_case($s, MB_CASE_TITLE, 'UTF-8');
+    }
+
+    // Fallback: capitalizar cada palabra manualmente
+    $parts = preg_split('/\s+/u', $s);
+    $out = [];
+    foreach ($parts as $p) {
+        $first = strtoupper(substr($p, 0, 1));
+        $rest = strtolower(substr($p, 1));
+        $out[] = $first . $rest;
+    }
+    return implode(' ', $out);
+}
+
+function is_valid_name($s) {
+    if (!is_string($s)) return false;
+    $s = trim($s);
+    if ($s === '') return false;
+    return preg_match('/^[A-Za-zÁÉÍÓÚÜÑáéíóúüñ\s]+$/u', $s) === 1;
+}
 ?>
 
 <!DOCTYPE html>
@@ -283,7 +433,7 @@ desconectar($conn);
                 <?php foreach ($empleados as $empleado): ?>
                     <tr>
                         <td><?= $empleado['id_empleado']; ?></td>
-                        <td><?= htmlspecialchars($empleado['dpi']); ?></td>
+                        <td><?= htmlspecialchars(format_dpi($empleado['dpi'])); ?></td>
                         <td><?= htmlspecialchars($empleado['nombre_empleado']); ?></td>
                         <td><?= htmlspecialchars($empleado['apellido_empleado']); ?></td>
                         <td><?= htmlspecialchars($departamentos_map[$empleado['id_departamento']] ?? ''); ?></td>
@@ -291,7 +441,7 @@ desconectar($conn);
                         <td class="text-center">
                             <button type="button" class="btn btn-primary btn-sm editar-btn"
                                 data-id="<?= $empleado['id_empleado']; ?>"
-                                data-dpi="<?= htmlspecialchars($empleado['dpi']); ?>"
+                                data-dpi="<?= htmlspecialchars(format_dpi($empleado['dpi'])); ?>"
                                 data-nombre="<?= htmlspecialchars($empleado['nombre_empleado']); ?>"
                                 data-apellido="<?= htmlspecialchars($empleado['apellido_empleado']); ?>"
                                 data-departamento="<?= $empleado['id_departamento']; ?>"

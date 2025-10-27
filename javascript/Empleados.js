@@ -1,3 +1,4 @@
+// Ernesto David Samayoa Jocol 0901-22-3415 version2610
 document.addEventListener('DOMContentLoaded', function() {
     console.log('[Empleados.js] DOMContentLoaded: inicio');
     // Obtener elementos del DOM (con comprobaciones)
@@ -12,6 +13,71 @@ document.addEventListener('DOMContentLoaded', function() {
     const idDepartamentoInput = document.getElementById('id_departamento');
     const idPuestoInput = document.getElementById('id_puesto');
     const contenedorLista = document.getElementById('lista-empleados');
+
+    // Formateo y validación en campo DPI: debe ser 13 dígitos agrupados como 4-5-4 -> "dddd ddddd dddd"
+    const dpiInput = document.getElementById('dpi');
+    function formatDPIValue(value) {
+        const digits = (value || '').toString().replace(/\D/g, '');
+        const part1 = digits.slice(0, 4);
+        const part2 = digits.slice(4, 9);
+        const part3 = digits.slice(9, 13);
+        return [part1, part2, part3].filter(Boolean).join(' ');
+    }
+    if (dpiInput) {
+        // Formatear mientras el usuario escribe
+        dpiInput.addEventListener('input', function (e) {
+            const pos = this.selectionStart;
+            const before = this.value;
+            const formatted = formatDPIValue(this.value);
+            this.value = formatted;
+            // intentar mantener caret al final simple
+            try { this.setSelectionRange(this.value.length, this.value.length); } catch (err) {}
+        });
+        // Al pegar, limpiar y formatear
+        dpiInput.addEventListener('paste', function (e) {
+            e.preventDefault();
+            const text = (e.clipboardData || window.clipboardData).getData('text');
+            this.value = formatDPIValue(text);
+        });
+    }
+
+    // Campos nombre y apellido: permitir sólo letras y espacios (incluye acentos y Ñ).
+    const nombreInput = document.getElementById('nombre_empleado');
+    const apellidoInput = document.getElementById('apellido_empleado');
+    const nameSanitizeRegex = /[^A-Za-zÁÉÍÓÚÜÑáéíóúüñ\s]/g;
+
+    function sanitizeAndFormatNameField(el) {
+        if (!el) return;
+        // Al escribir: eliminar caracteres no permitidos y colapsar espacios múltiples
+        el.addEventListener('input', function () {
+            let v = this.value || '';
+            v = v.replace(nameSanitizeRegex, '');
+            v = v.replace(/\s+/g, ' ');
+            this.value = v;
+        });
+
+        // Al perder foco: normalizar espacios y aplicar Title Case salvo si todo está en MAYÚSCULAS
+        el.addEventListener('blur', function () {
+            let v = (this.value || '').trim();
+            if (!v) return;
+            // conservar si el usuario ingresó todo en mayúsculas (por ejemplo: ERNESTO DAVID)
+            if (v === v.toUpperCase()) {
+                this.value = v.replace(/\s+/g, ' ');
+                return;
+            }
+            // Si no, convertir a Title Case (primera letra mayúscula, resto minúsculas)
+            const parts = v.split(' ').filter(Boolean);
+            const formatted = parts.map(p => {
+                const first = p.charAt(0).toLocaleUpperCase('es-ES');
+                const rest = p.slice(1).toLocaleLowerCase('es-ES');
+                return first + rest;
+            }).join(' ');
+            this.value = formatted;
+        });
+    }
+
+    sanitizeAndFormatNameField(nombreInput);
+    sanitizeAndFormatNameField(apellidoInput);
 
     // 🔒 Funciones para bloquear/habilitar campos y botones (como en Telefono_Empleados.js)
     // obtener elementos dinámicamente (por si cambian en el DOM)
@@ -201,7 +267,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const departamentoEl = document.getElementById('id_departamento');
         const puestoEl = document.getElementById('id_puesto');
 
-        const dpi = dpiEl ? dpiEl.value.trim() : '';
+    const dpi = dpiEl ? dpiEl.value.trim() : '';
         const nombre = nombreEl ? nombreEl.value.trim() : '';
         const apellido = apellidoEl ? apellidoEl.value.trim() : '';
         const departamento = departamentoEl ? departamentoEl.value : '';
@@ -215,9 +281,18 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         };
 
-        if (!dpi) { showWarning('El DPI es requerido'); if (dpiEl) dpiEl.focus(); return false; }
+    if (!dpi) { showWarning('El DPI es requerido'); if (dpiEl) dpiEl.focus(); return false; }
+    // Comprobar que tenga 13 dígitos (ignorando espacios)
+    const dpiDigits = dpi.replace(/\D/g, '');
+    if (dpiDigits.length !== 13) { showWarning('El DPI debe contener 13 dígitos'); if (dpiEl) dpiEl.focus(); return false; }
+        // Validar nombre y apellido: sólo letras y espacios
+        const nameRegex = /^[A-Za-zÁÉÍÓÚÜÑáéíóúüñ\s]+$/;
         if (!nombre) { showWarning('El nombre es requerido'); if (nombreEl) nombreEl.focus(); return false; }
+        const nombreNorm = nombre.replace(/\s+/g, ' ');
+        if (!nameRegex.test(nombreNorm)) { showWarning('El nombre sólo debe contener letras y espacios'); if (nombreEl) nombreEl.focus(); return false; }
         if (!apellido) { showWarning('El apellido es requerido'); if (apellidoEl) apellidoEl.focus(); return false; }
+        const apellidoNorm = apellido.replace(/\s+/g, ' ');
+        if (!nameRegex.test(apellidoNorm)) { showWarning('El apellido sólo debe contener letras y espacios'); if (apellidoEl) apellidoEl.focus(); return false; }
         if (!departamento) { showWarning('El departamento es requerido'); if (departamentoEl) departamentoEl.focus(); return false; }
         if (!puesto) { showWarning('El puesto es requerido'); if (puestoEl) puestoEl.focus(); return false; }
 
