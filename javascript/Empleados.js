@@ -1,6 +1,8 @@
 document.addEventListener('DOMContentLoaded', function() {
-    // Obtener elementos del DOM con comprobaciones para evitar errores si faltan
+    console.log('[Empleados.js] DOMContentLoaded: inicio');
+    // Obtener elementos del DOM (con comprobaciones)
     const form = document.getElementById('form-empleado');
+    const inputs = form ? form.querySelectorAll('input, select, textarea') : [];
     const btnNuevo = document.getElementById('btn-nuevo');
     const btnGuardar = document.getElementById('btn-guardar');
     const btnActualizar = document.getElementById('btn-actualizar');
@@ -9,36 +11,121 @@ document.addEventListener('DOMContentLoaded', function() {
     const idEmpleadoInput = document.getElementById('id_empleado');
     const idDepartamentoInput = document.getElementById('id_departamento');
     const idPuestoInput = document.getElementById('id_puesto');
-    const btnMostrarLista = document.getElementById('btn-mostrar-lista');
     const contenedorLista = document.getElementById('lista-empleados');
 
+    // 🔒 Funciones para bloquear/habilitar campos y botones (como en Telefono_Empleados.js)
+    // obtener elementos dinámicamente (por si cambian en el DOM)
+    function getEditarBtns() { return Array.from(document.querySelectorAll('.editar-btn')); }
+    function getEliminarSubmitButtons() { return Array.from(document.querySelectorAll('form[data-eliminar="true"] button[type="submit"]')); }
+
+    // Nota: ya no se aplica un deshabilitado global al iniciar. Los campos y botones
+    // estarán activos por defecto al cargar la página.
+
+    function bloquearCampos() {
+        console.log('[Empleados.js] ejecutar bloquearCampos()');
+        inputs.forEach(input => {
+            if (input.type !== 'hidden') input.disabled = true;
+        });
+        if (btnGuardar) btnGuardar.disabled = true;
+        if (btnActualizar) btnActualizar.disabled = true;
+        if (btnCancelar) btnCancelar.style.display = 'none';
+        if (btnNuevo) btnNuevo.disabled = false; // permitir Nuevo
+
+        // Deshabilitar botones de editar y botones de eliminar (submit) al inicio
+        const eb = getEditarBtns();
+        const delBtns = getEliminarSubmitButtons();
+        console.log('[Empleados.js] botones editar detectados:', eb.length, 'eliminar detectados:', delBtns.length);
+        eb.forEach(b => {
+            try { b.disabled = true; b.classList.add('disabled'); b.setAttribute('aria-disabled','true'); } catch(e){}
+        });
+        delBtns.forEach(btn => {
+            try { btn.disabled = true; btn.classList.add('disabled'); btn.setAttribute('aria-disabled','true'); } catch(e){}
+        });
+    }
+
+    // Nota: no forzamos el bloqueo tras un timeout; la UI inicia activa.
+
+    function habilitarCampos() {
+        inputs.forEach(input => {
+            if (input.type !== 'hidden') input.disabled = false;
+        });
+        if (btnGuardar) btnGuardar.disabled = false;
+        if (btnCancelar) btnCancelar.style.display = 'inline-block';
+        if (btnNuevo) btnNuevo.disabled = true;
+        // enfocar el primer campo no hidden
+        for (let i = 0; i < inputs.length; i++) {
+            if (inputs[i].type !== 'hidden') { inputs[i].focus(); break; }
+        }
+    }
+
+    // Inicial: la UI inicia activa (no se deshabilitan campos por defecto)
+
+    // Manejo de botones
     if (btnNuevo) btnNuevo.addEventListener('click', function() {
         limpiarFormulario();
+        habilitarCampos();
         mostrarBotonesGuardar();
+        // Al crear un nuevo empleado permitimos también editar/eliminar desde la lista
+        // (al usuario pedirlo) — habilitamos los botones de editar y los botones de eliminar
+        const eb = getEditarBtns();
+        const delBtns = getEliminarSubmitButtons();
+        eb.forEach(b => { try { b.disabled = false; b.classList.remove('disabled'); b.removeAttribute('aria-disabled'); } catch (e) {} });
+        delBtns.forEach(b => { try { b.disabled = false; b.classList.remove('disabled'); b.removeAttribute('aria-disabled'); } catch (e) {} });
     });
 
     if (btnGuardar) btnGuardar.addEventListener('click', function() {
         if (!form) return console.warn('Formulario no encontrado');
         if (validarFormulario()) {
-            if (operacionInput) operacionInput.value = 'crear';
-            form.submit();
+            const doSubmit = () => {
+                if (operacionInput) operacionInput.value = 'crear';
+                form.submit();
+            };
+            if (typeof Swal !== 'undefined') {
+                Swal.fire({
+                    title: 'Guardar empleado',
+                    text: '¿Deseas guardar este empleado?',
+                    icon: 'question',
+                    showCancelButton: true,
+                    confirmButtonText: 'Sí, guardar',
+                    cancelButtonText: 'Cancelar'
+                }).then((result) => { if (result.isConfirmed) doSubmit(); });
+            } else {
+                if (confirm('¿Deseas guardar este empleado?')) doSubmit();
+            }
         }
     });
 
     if (btnActualizar) btnActualizar.addEventListener('click', function() {
         if (!form) return console.warn('Formulario no encontrado');
         if (validarFormulario()) {
-            if (operacionInput) operacionInput.value = 'actualizar';
-            form.submit();
+            const doSubmit = () => {
+                if (operacionInput) operacionInput.value = 'actualizar';
+                form.submit();
+            };
+            if (typeof Swal !== 'undefined') {
+                Swal.fire({
+                    title: 'Actualizar empleado',
+                    text: '¿Deseas guardar los cambios?',
+                    icon: 'question',
+                    showCancelButton: true,
+                    confirmButtonText: 'Sí, actualizar',
+                    cancelButtonText: 'Cancelar'
+                }).then((result) => { if (result.isConfirmed) doSubmit(); });
+            } else {
+                if (confirm('¿Deseas guardar los cambios?')) doSubmit();
+            }
         }
     });
 
     if (btnCancelar) btnCancelar.addEventListener('click', function() {
         limpiarFormulario();
-        mostrarBotonesGuardar();
+        // Al cancelar no deshabilitamos la interfaz: simplemente ocultamos el botón Cancelar
+        try { if (btnCancelar) btnCancelar.style.display = 'none'; } catch(e) {}
+        try { if (btnNuevo) btnNuevo.disabled = false; } catch(e) {}
     });
-    // Editar: conectar botones de la tabla al formulario con confirmación SweetAlert
-    // Conectar botones de edición si existen en la tabla
+
+    // Editar desde la tabla
+    // Note: los botones '.editar-btn' estarán deshabilitados al inicio; se habilitan al mostrar la lista
     document.querySelectorAll('.editar-btn').forEach(btn => {
         btn.addEventListener('click', function() {
             const id = this.getAttribute('data-id');
@@ -49,22 +136,23 @@ document.addEventListener('DOMContentLoaded', function() {
             const puesto = this.getAttribute('data-puesto');
 
             const doFill = () => {
-                idEmpleadoInput.value = id;
-                document.getElementById('dpi').value = dpi || '';
-                document.getElementById('nombre_empleado').value = nombre || '';
-                document.getElementById('apellido_empleado').value = apellido || '';
-                // Poner 'id - nombre' si existe el mapa
-                if (typeof DEPARTAMENTOS_MAP !== 'undefined' && departamento && DEPARTAMENTOS_MAP.hasOwnProperty(departamento)) {
-                    idDepartamentoInput.value = departamento + ' - ' + DEPARTAMENTOS_MAP[departamento];
-                } else {
+                if (idEmpleadoInput) idEmpleadoInput.value = id || '';
+                const dpiEl = document.getElementById('dpi');
+                const nombreEl = document.getElementById('nombre_empleado');
+                const apellidoEl = document.getElementById('apellido_empleado');
+                if (dpiEl) dpiEl.value = dpi || '';
+                if (nombreEl) nombreEl.value = nombre || '';
+                if (apellidoEl) apellidoEl.value = apellido || '';
+
+                // Los <select> usan sólo el ID como value; asignar directamente
+                if (idDepartamentoInput) {
                     idDepartamentoInput.value = departamento || '';
                 }
-                if (typeof PUESTOS_MAP !== 'undefined' && puesto && PUESTOS_MAP.hasOwnProperty(puesto)) {
-                    idPuestoInput.value = puesto + ' - ' + PUESTOS_MAP[puesto];
-                } else {
+                if (idPuestoInput) {
                     idPuestoInput.value = puesto || '';
                 }
 
+                habilitarCampos();
                 mostrarBotonesActualizar();
             };
 
@@ -89,19 +177,20 @@ document.addEventListener('DOMContentLoaded', function() {
         if (form) form.reset();
         if (idEmpleadoInput) idEmpleadoInput.value = '';
         if (operacionInput) operacionInput.value = 'crear';
-        // Asegurar que se muestren los botones correctos
         mostrarBotonesGuardar();
     }
 
     function mostrarBotonesGuardar() {
-        if (btnGuardar) btnGuardar.style.display = 'inline-block';
-        if (btnActualizar) btnActualizar.style.display = 'none';
-        if (btnCancelar) btnCancelar.style.display = 'none';
+        if (btnGuardar) { btnGuardar.style.display = 'inline-block'; btnGuardar.disabled = false; }
+        if (btnActualizar) { btnActualizar.style.display = 'none'; btnActualizar.disabled = true; }
+        // Mostrar también el botón cancelar junto a guardar para que el usuario pueda
+        // volver atrás sin recargar la página.
+        if (btnCancelar) btnCancelar.style.display = 'inline-block';
     }
 
     function mostrarBotonesActualizar() {
-        if (btnGuardar) btnGuardar.style.display = 'none';
-        if (btnActualizar) btnActualizar.style.display = 'inline-block';
+        if (btnGuardar) { btnGuardar.style.display = 'none'; btnGuardar.disabled = true; }
+        if (btnActualizar) { btnActualizar.style.display = 'inline-block'; btnActualizar.disabled = false; }
         if (btnCancelar) btnCancelar.style.display = 'inline-block';
     }
 
@@ -110,25 +199,36 @@ document.addEventListener('DOMContentLoaded', function() {
         const nombreEl = document.getElementById('nombre_empleado');
         const apellidoEl = document.getElementById('apellido_empleado');
         const departamentoEl = document.getElementById('id_departamento');
+        const puestoEl = document.getElementById('id_puesto');
 
         const dpi = dpiEl ? dpiEl.value.trim() : '';
         const nombre = nombreEl ? nombreEl.value.trim() : '';
         const apellido = apellidoEl ? apellidoEl.value.trim() : '';
         const departamento = departamentoEl ? departamentoEl.value : '';
+        const puesto = puestoEl ? puestoEl.value : '';
 
-        if (!dpi) { alert('El DPI es requerido'); return false; }
-        if (!nombre) { alert('El nombre es requerido'); return false; }
-        if (!apellido) { alert('El apellido es requerido'); return false; }
-        if (!departamento) { alert('El departamento es requerido'); return false; }
+        const showWarning = (msg) => {
+            if (typeof Swal !== 'undefined') {
+                Swal.fire({ icon: 'warning', title: 'Campo requerido', text: msg });
+            } else {
+                alert(msg);
+            }
+        };
+
+        if (!dpi) { showWarning('El DPI es requerido'); if (dpiEl) dpiEl.focus(); return false; }
+        if (!nombre) { showWarning('El nombre es requerido'); if (nombreEl) nombreEl.focus(); return false; }
+        if (!apellido) { showWarning('El apellido es requerido'); if (apellidoEl) apellidoEl.focus(); return false; }
+        if (!departamento) { showWarning('El departamento es requerido'); if (departamentoEl) departamentoEl.focus(); return false; }
+        if (!puesto) { showWarning('El puesto es requerido'); if (puestoEl) puestoEl.focus(); return false; }
 
         return true;
     }
 
-    // Interceptar formularios de eliminación y mostrar SweetAlert confirm
+    // Confirmar eliminación con SweetAlert si existe
     document.querySelectorAll('form[data-eliminar="true"]').forEach(f => {
         f.addEventListener('submit', function(evt) {
             evt.preventDefault();
-            const form = this;
+            const frm = this;
             if (typeof Swal !== 'undefined') {
                 Swal.fire({
                     title: '¿Eliminar empleado?',
@@ -139,26 +239,34 @@ document.addEventListener('DOMContentLoaded', function() {
                     cancelButtonText: 'Cancelar'
                 }).then((result) => {
                     if (result.isConfirmed) {
-                        form.submit();
+                        frm.submit();
                     }
                 });
             } else {
-                if (confirm('¿Eliminar empleado?')) form.submit();
+                if (confirm('¿Eliminar empleado?')) frm.submit();
             }
         });
     });
 
-    // Mostrar/ocultar lista de empleados
-    if (btnMostrarLista && contenedorLista) {
-        btnMostrarLista.addEventListener('click', function() {
-            if (contenedorLista.style.display === 'none' || contenedorLista.style.display === '') {
-                contenedorLista.style.display = 'block';
-                btnMostrarLista.textContent = 'Ocultar lista';
+    // Mostrar mensaje enviado desde el servidor (si existe)
+    try {
+        if (window.__mensaje && typeof window.__mensaje === 'object') {
+            const m = window.__mensaje;
+            const icon = (m.tipo === 'success' || m.tipo === 'ok') ? 'success' : 'error';
+            if (typeof Swal !== 'undefined') {
+                Swal.fire({ title: icon === 'success' ? 'Éxito' : 'Atención', text: m.text, icon: icon });
             } else {
-                contenedorLista.style.display = 'none';
-                btnMostrarLista.textContent = 'Mostrar lista';
+                alert(m.text);
             }
-        });
+            // limpiar para no mostrar de nuevo
+            try { delete window.__mensaje; } catch(e) { window.__mensaje = null; }
+        }
+    } catch(e) { /* no bloquear la carga si falla */ }
+
+    // La lista de empleados es fija en la interfaz; no es necesario el botón mostrar/ocultar.
+    if (contenedorLista) {
+        // Asegurar que esté visible
+        try { contenedorLista.style.display = 'block'; } catch(e){}
     }
 
     // Mostrar/ocultar lista de sucursales (en la misma página de empleados)
@@ -176,4 +284,4 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     }
-});
+}); 
