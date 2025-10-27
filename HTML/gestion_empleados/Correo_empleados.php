@@ -1,3 +1,4 @@
+//Formularios de correos de empty empleados
 <?php
 session_start();
 require_once '../conexion.php';
