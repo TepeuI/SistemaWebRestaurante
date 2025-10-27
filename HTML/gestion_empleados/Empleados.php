@@ -27,7 +27,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 function crearEmpleado() {
     $conn = conectar();
-    $dpi = $_POST['dpi'] ?? '';
+    $dpi = isset($_POST['dpi']) ? trim($_POST['dpi']) : '';
     $nombre = $_POST['nombre_empleado'] ?? '';
     $apellido = $_POST['apellido_empleado'] ?? '';
     $id_departamento = $_POST['id_departamento'] ?? null;
@@ -35,6 +35,30 @@ function crearEmpleado() {
 
     if ($id_departamento && preg_match('/^\s*(\d+)/', $id_departamento, $m)) $id_departamento = (int)$m[1];
     if ($id_puesto && preg_match('/^\s*(\d+)/', $id_puesto, $m)) $id_puesto = (int)$m[1];
+
+    // Validaciones básicas en servidor
+    if ($dpi === '') {
+        $_SESSION['mensaje'] = 'El DPI es requerido';
+        $_SESSION['tipo_mensaje'] = 'error';
+        desconectar($conn);
+        header('Location: Empleados.php');
+        exit();
+    }
+
+    // Verificar unicidad del DPI
+    $check = $conn->prepare("SELECT id_empleado FROM empleados WHERE dpi = ? LIMIT 1");
+    $check->bind_param('s', $dpi);
+    $check->execute();
+    $res = $check->get_result();
+    if ($res && $res->num_rows > 0) {
+        $_SESSION['mensaje'] = 'El DPI ingresado ya está registrado para otro empleado';
+        $_SESSION['tipo_mensaje'] = 'error';
+        $check->close();
+        desconectar($conn);
+        header('Location: Empleados.php');
+        exit();
+    }
+    $check->close();
 
     $sql = "INSERT INTO empleados (dpi, nombre_empleado, apellido_empleado, id_departamento, id_puesto)
             VALUES (?, ?, ?, ?, ?)";
@@ -54,7 +78,7 @@ function crearEmpleado() {
 function actualizarEmpleado() {
     $conn = conectar();
     $id_empleado = $_POST['id_empleado'] ?? '';
-    $dpi = $_POST['dpi'] ?? '';
+    $dpi = isset($_POST['dpi']) ? trim($_POST['dpi']) : '';
     $nombre = $_POST['nombre_empleado'] ?? '';
     $apellido = $_POST['apellido_empleado'] ?? '';
     $id_departamento = $_POST['id_departamento'] ?? null;
@@ -62,6 +86,31 @@ function actualizarEmpleado() {
 
     if ($id_departamento && preg_match('/^\s*(\d+)/', $id_departamento, $m)) $id_departamento = (int)$m[1];
     if ($id_puesto && preg_match('/^\s*(\d+)/', $id_puesto, $m)) $id_puesto = (int)$m[1];
+    $id_empleado = (int)$id_empleado;
+
+    // Validación básica
+    if ($dpi === '') {
+        $_SESSION['mensaje'] = 'El DPI es requerido';
+        $_SESSION['tipo_mensaje'] = 'error';
+        desconectar($conn);
+        header('Location: Empleados.php');
+        exit();
+    }
+
+    // Verificar que el DPI no exista en otro registro
+    $check = $conn->prepare("SELECT id_empleado FROM empleados WHERE dpi = ? AND id_empleado != ? LIMIT 1");
+    $check->bind_param('si', $dpi, $id_empleado);
+    $check->execute();
+    $res = $check->get_result();
+    if ($res && $res->num_rows > 0) {
+        $_SESSION['mensaje'] = 'El DPI ingresado ya está registrado';
+        $_SESSION['tipo_mensaje'] = 'error';
+        $check->close();
+        desconectar($conn);
+        header('Location: Empleados.php');
+        exit();
+    }
+    $check->close();
 
     $sql = "UPDATE empleados SET dpi=?, nombre_empleado=?, apellido_empleado=?, id_departamento=?, id_puesto=? WHERE id_empleado=?";
     $stmt = $conn->prepare($sql);
@@ -237,8 +286,8 @@ desconectar($conn);
                         <td><?= htmlspecialchars($empleado['dpi']); ?></td>
                         <td><?= htmlspecialchars($empleado['nombre_empleado']); ?></td>
                         <td><?= htmlspecialchars($empleado['apellido_empleado']); ?></td>
-                        <td><?= $empleado['id_departamento'] . ' - ' . ($departamentos_map[$empleado['id_departamento']] ?? ''); ?></td>
-                        <td><?= $empleado['id_puesto'] . ' - ' . ($puestos_map[$empleado['id_puesto']] ?? ''); ?></td>
+                        <td><?= htmlspecialchars($departamentos_map[$empleado['id_departamento']] ?? ''); ?></td>
+                        <td><?= htmlspecialchars($puestos_map[$empleado['id_puesto']] ?? ''); ?></td>
                         <td class="text-center">
                             <button type="button" class="btn btn-primary btn-sm editar-btn"
                                 data-id="<?= $empleado['id_empleado']; ?>"
