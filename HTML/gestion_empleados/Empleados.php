@@ -318,6 +318,7 @@ function is_valid_name($s) {
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/SistemaWebRestaurante/css/bootstrap.min.css">
     <link rel="stylesheet" href="/SistemaWebRestaurante/css/diseñoModulos.css">
+    <link rel="stylesheet" href="/SistemaWebRestaurante/css/form_text_toggle.css">
 </head>
 <body>
 <header class="mb-4">
@@ -356,6 +357,7 @@ function is_valid_name($s) {
             <div class="col-md-3">
                 <label class="form-label">DPI</label>
                 <input type="text" class="form-control" name="dpi" id="dpi" required>
+                <small class="form-text text-muted help-text">13 dígitos numéricos</small>
             </div>
 
             <div class="col-md-3">
@@ -449,5 +451,6 @@ function is_valid_name($s) {
 
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script src="/SistemaWebRestaurante/javascript/Empleados.js"></script>
+<script src="/SistemaWebRestaurante/javascript/form_text_toggle.js"></script>
 </body>
 </html>  

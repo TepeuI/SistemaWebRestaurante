@@ -132,3 +132,21 @@ a.correo-empleado {
     color: #007bff;
     text-decoration: underline;
 }
+
+/* Texto de ayuda en formularios en color rojo para destacar reglas (sobrescribe .text-muted de Bootstrap) */
+small.form-text.text-muted,
+small.form-text {
+    color: #dc3545 !important; /* rojo bootstrap (danger) */
+}
+
+/* Oculta los textos de ayuda por defecto y aplica color rojo cuando se muestran */
+small.form-text.help-text {
+    display: none;
+    color: #dc3545; /* rojo - clase danger de bootstrap */
+    margin-top: .25rem;
+}
+
+/* clase para forzar visibilidad desde JS */
+small.form-text.help-text.visible {
+    display: block !important;
+}
