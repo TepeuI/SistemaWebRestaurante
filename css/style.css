@@ -1,1775 +1,461 @@
+/* ===================================
+   BASE GENERAL
+=================================== */
 body {
-  font-family: "Poppins", sans-serif; /* Fuente principal */
-  color: #444444; /* Color de texto principal */
+  font-family: "Poppins", sans-serif;
+  color: #444;
+  background: #fff;
+  margin: 0;
+  padding: 0;
 }
 
 a {
-  text-decoration: none; /* Sin subrayado */
-  color: #ff3333; /* Color rojo para enlaces */
+  text-decoration: none;
+  color: #ff3333;
 }
 
 a:hover {
-  color: #ff6666; /* Color más claro al pasar el mouse */
-  text-decoration: none; /* Mantiene sin subrayado */
+  color: #ff6666;
 }
 
-h1,
-h2,
-h3,
-h4,
-h5,
-h6 {
-  font-family: "Satisfy", sans-serif; /* Fuente decorativa para títulos */
+h1, h2, h3, h4, h5, h6 {
+  font-family: "Satisfy", sans-serif;
 }
 
-/*--------------------------------------------------------------
-# Back to top button
---------------------------------------------------------------*/
-/* Botón para volver arriba, fijo y oculto por defecto */
+
+
+/* ===================================
+   BOTÓN VOLVER ARRIBA
+=================================== */
 .back-to-top {
-  position: fixed; /* Fijo en pantalla */
-  visibility: hidden; /* Oculto inicialmente */
-  opacity: 0; /* Transparente inicialmente */
-  right: 15px; /* Separado del borde derecho */
-  bottom: 15px; /* Separado del borde inferior */
-  z-index: 996; /* Prioridad de apilamiento */
-  background: #ff3333; /* Fondo rojo */
-  width: 40px; /* Tamaño ancho */
-  height: 40px; /* Tamaño alto */
-  border-radius: 50px; /* Forma circular */
-  transition: all 0.4s; /* Transición suave */
+  position: fixed;
+  visibility: hidden;
+  opacity: 0;
+  right: 15px;
+  bottom: 15px;
+  z-index: 996;
+  background: #ff3333;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  transition: all 0.4s;
 }
 
-/* Icono dentro del botón */
 .back-to-top i {
-  font-size: 28px; /* Tamaño del icono */
-  color: #fff; /* Color blanco */
-  line-height: 0; /* Sin espacio vertical extra */
+  font-size: 28px;
+  color: #fff;
 }
 
-/* Efecto hover en el botón */
 .back-to-top:hover {
-  background: #ffc064; /* Fondo amarillo */
-  color: #fff; /* Color blanco */
+  background: #ffc064;
 }
 
-/* Cuando el botón está activo, se muestra */
 .back-to-top.active {
-  visibility: visible; /* Visible */
-  opacity: 1; /* Opaco */
+  visibility: visible;
+  opacity: 1;
 }
 
-/*--------------------------------------------------------------
-# Top Bar
---------------------------------------------------------------*/
-/* Barra superior fija */
-#topbar {
-  padding: 0; /* Sin relleno */
-  font-size: 15px; /* Tamaño de fuente */
-  height: 50px; /* Altura */
-  transition: all 0.5s; /* Transición suave */
-  background: rgba(26, 24, 22, 0.8); /* Fondo oscuro semitransparente */
-  z-index: 996; /* Prioridad de apilamiento */
-  color: rgba(255, 255, 255, 0.7); /* Color de texto blanco semitransparente */
-}
 
-/* Barra superior transparente */
-#topbar.topbar-transparent {
-  background: transparent; /* Sin fondo */
-}
 
-/* Barra superior desplazada */
-#topbar.topbar-scrolled {
-  top: -50px; /* Se mueve hacia arriba */
-}
-
-/* Iconos en la barra superior */
-#topbar i {
-  color: #ff0000; /* Rojo */
-  line-height: 0; /* Sin espacio extra */
-}
-
-/* Texto junto a iconos en la barra superior */
-#topbar i span {
-  color: #fff; /* Blanco */
-  font-style: normal; /* Normal */
-  padding-left: 5px; /* Separación izquierda */
-}
-
-/*--------------------------------------------------------------
-# Header
---------------------------------------------------------------*/
-/* Encabezado principal */
+/* ===================================
+   HEADER / NAVBAR (sin topbar)
+=================================== */
 #header {
-  top: 50px; /* Separado de arriba */
-  height: 70px; /* Altura */
-  z-index: 997; /* Prioridad de apilamiento */
-  transition: all 0.5s; /* Transición suave */
-  padding: 10px 0; /* Relleno vertical */
-  background: rgba(0, 0, 0, 0.85); /* Fondo negro semitransparente */
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 80px;
+  z-index: 1200;
+  display: flex;
+  align-items: center;
+  padding: 14px 28px;
+  background: linear-gradient(90deg,
+    rgba(3,169,244,0.85) 0%,
+    rgba(14,165,233,0.75) 100%);
+  color: #fff;
+  box-shadow: none;
+  transition: background 0.4s ease, box-shadow 0.3s ease, top 0.3s ease;
 }
 
-/* Encabezado transparente */
-#header.header-transparent {
-  background: transparent; /* Sin fondo */
-}
-
-/* Encabezado desplazado */
 #header.header-scrolled {
-  top: 0; /* Se pega arriba */
-  background: rgba(121, 164, 225, 0.85); /* Fondo negro semitransparente  cuando se dezplasa*/
+  background: linear-gradient(90deg,
+    rgba(3,169,244,0.98) 0%,
+    rgba(14,165,233,0.95) 100%);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
 }
 
-/* Logo en el encabezado */
-#header .logo h1 {
-  font-size: 60px; /* Tamaño grande */
-  margin: 0; /* Sin margen */
-  line-height: 1; /* Altura de línea */
-  font-weight: 400; /* Peso normal */
-  letter-spacing: 3px; /* Espaciado entre letras */
-  font-family: fantasy; /* Fuente decorativa */
+/* LOGO */
+#header .logo {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  font-weight: 700;
+  font-size: 32px;
+  letter-spacing: 1px;
+  color: #ffffff;
 }
 
-/* Enlaces del logo */
-#header .logo h1 a, 
-#header .logo h1 a:hover {
-  color: #000000; /* Cambia el color del titulo de marea rojo  */ 
-  text-decoration: none; /* Sin subrayado */
-}
-
-/* Imagen del logo */
 #header .logo img {
-  padding: 0; /* Sin relleno */
-  margin: 0; /* Sin margen */
-  max-height: 40px; /* Altura máxima */
+  width: 70px;
+  height: 70px;
+  object-fit: contain;
+  transition: transform 0.35s ease, filter 0.35s ease;
+  filter: drop-shadow(0 4px 12px rgba(0,0,0,0.25));
 }
 
-/*--------------------------------------------------------------
-# Book a table button Menu
---------------------------------------------------------------*/
-/* Botón para reservar mesa */
-.book-a-table-btn {
-  background: #ff0000; /* Fondo rojo */
-  color: #fff; /* Texto blanco */
-  border-radius: 50px; /* Forma circular */
-  margin: 0 0 0 20px; /* Margen izquierdo */
-  padding: 10px 25px; /* Relleno */
-  font-size: 13px; /* Tamaño de fuente */
-  font-weight: 500; /* Peso medio */
-  letter-spacing: 1px; /* Espaciado entre letras */
-  transition: 0.3s; /* Transición suave */
-  white-space: nowrap; /* No se rompe línea */
+#header .logo img:hover {
+  transform: scale(1.06) rotate(2deg);
 }
 
-/* Efecto hover en el botón */
-.book-a-table-btn:hover {
-  background: #000000; /* Fondo negro */
-  color: #fff; /* Texto blanco */
-}
-
-/* Responsive para el botón */
-@media (max-width: 992px) {
-  .book-a-table-btn {
-    margin: 0 15px 0 0; /* Margen derecho */
-    padding: 8px 20px; /* Relleno menor */
-    letter-spacing: 1px; /* Espaciado igual */
-  }
-}
-
-/*--------------------------------------------------------------
-# Navigation Menu
---------------------------------------------------------------*/
-/**
-* Desktop Navigation
-*/
-/* Menú de navegación principal */
+/* NAVBAR */
 .navbar {
-  padding: 0; /* Sin relleno */
+  padding: 0;
 }
 
-/* Lista del menú */
 .navbar ul {
-  margin: 0; /* Sin margen */
-  padding: 0; /* Sin relleno */
-  display: flex; /* Elementos en línea */
-  list-style: none; /* Sin viñetas */
-  align-items: center; /* Centrado vertical */
+  display: flex;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  align-items: center;
 }
 
-/* Elementos de la lista */
-.navbar li {
-  position: relative; /* Para dropdowns */
+.navbar a {
+  display: flex;
+  align-items: center;
+  padding: 12px 0 12px 26px;
+  font-size: 17px;
+  font-weight: 600;
+  color: #ffffff;
+  transition: 0.25s;
 }
 
-/* Enlaces del menú */
-.navbar a,
-.navbar a:focus {
-  display: flex; /* Elementos en línea */
-  align-items: center; /* Centrado vertical */
-  justify-content: space-between; /* Espaciado entre elementos */
-  padding: 10px 0 10px 24px; /* Relleno izquierdo */
-  font-size: 15px; /* Tamaño de fuente */
-  font-weight: 500; /* Peso medio */
-  color: white; /* Blanco */
-  white-space: nowrap; /* No se rompe línea */
-  transition: 0.3s; /* Transición suave */
-}
-
-/* Iconos en los enlaces */
-.navbar a i,
-.navbar a:focus i {
-  font-size: 12px; /* Tamaño pequeño */
-  line-height: 0; /* Sin espacio extra */
-  margin-left: 5px; /* Separación izquierda */
-}
-
-/* Efecto hover y activo en enlaces */
 .navbar a:hover,
 .navbar .active,
-.navbar .active:focus,
-.navbar li:hover>a {
-  color: #ff0000; /* Rojo */
+.navbar li:hover > a {
+  color: #ffeb3b;
 }
 
-/* Dropdown del menú */
-.navbar .dropdown ul {
-  display: block; /* Se muestra como bloque */
-  position: absolute; /* Posición absoluta */
-  left: 24px; /* Separación izquierda */
-  top: calc(100% + 30px); /* Debajo del elemento */
-  margin: 0; /* Sin margen */
-  padding: 10px 0; /* Relleno vertical */
-  z-index: 99; /* Prioridad de apilamiento */
-  opacity: 0; /* Oculto inicialmente */
-  visibility: hidden; /* Oculto inicialmente */
-  background: #fff; /* Fondo blanco */
-  box-shadow: 0px 0px 30px rgba(127, 137, 161, 0.25); /* Sombra */
-  transition: 0.3s; /* Transición suave */
-  border-radius: 4px; /* Bordes redondeados */
-}
-
-/* Elementos del dropdown */
-.navbar .dropdown ul li {
-  min-width: 200px; /* Ancho mínimo */
-}
-
-/* Enlaces del dropdown */
-.navbar .dropdown ul a {
-  padding: 10px 20px; /* Relleno */
-  font-size: 14px; /* Tamaño de fuente */
-  font-weight: 400; /* Peso normal */
-  color: #433f39; /* Color oscuro */
-}
-
-/* Iconos en el dropdown */
-.navbar .dropdown ul a i {
-  font-size: 12px; /* Tamaño pequeño */
-}
-
-/* Efecto hover en el dropdown */
-.navbar .dropdown ul a:hover,
-.navbar .dropdown ul .active:hover,
-.navbar .dropdown ul li:hover>a {
-  color: #ff0000; /* Rojo */
-}
-
-/* Muestra el dropdown al hacer hover */
-.navbar .dropdown:hover>ul {
-  opacity: 1; /* Opaco */
-  top: 100%; /* Posición */
-  visibility: visible; /* Visible */
-}
-
-/* Sub-dropdowns */
-.navbar .dropdown .dropdown ul {
-  top: 0; /* Posición superior */
-  left: calc(100% - 30px); /* A la derecha */
-  visibility: hidden; /* Oculto */
-}
-
-/* Muestra sub-dropdown al hacer hover */
-.navbar .dropdown .dropdown:hover>ul {
-  opacity: 1; /* Opaco */
-  top: 0; /* Posición superior */
-  left: 100%; /* A la derecha */
-  visibility: visible; /* Visible */
-}
-
-/* Responsive para sub-dropdowns */
-@media (max-width: 1366px) {
-  .navbar .dropdown .dropdown ul {
-    left: -90%; /* Ajusta posición */
-  }
-
-  .navbar .dropdown .dropdown:hover>ul {
-    left: -100%; /* Ajusta posición */
-  }
-}
-
-/**
-* Mobile Navigation
-*/
-/* Botón para menú móvil */
+/* NAVBAR MÓVIL */
 .mobile-nav-toggle {
-  color: #fff; /* Blanco */
-  font-size: 28px; /* Tamaño grande */
-  cursor: pointer; /* Cursor de mano */
-  display: none; /* Oculto por defecto */
-  line-height: 0; /* Sin espacio extra */
-  transition: 0.5s; /* Transición suave */
+  color: #fff;
+  font-size: 28px;
+  cursor: pointer;
+  display: none;
+  transition: 0.5s;
 }
 
-/* Responsive para menú móvil */
 @media (max-width: 991px) {
   .mobile-nav-toggle {
-    display: block; /* Se muestra */
+    display: block;
+    color: #fff;
   }
-
   .navbar ul {
-    display: none; /* Oculta menú normal */
+    display: none;
+  }
+  #header {
+    height: 72px;
+    padding: 10px 16px;
+  }
+  #header .logo img {
+    width: 56px;
+    height: 56px;
+  }
+  #header .logo {
+    font-size: 20px;
+    gap: 10px;
   }
 }
 
-/* Menú móvil */
 .navbar-mobile {
-  position: fixed; /* Fijo en pantalla */
-  overflow: hidden; /* Oculta desbordamiento */
-  top: 0; /* Arriba */
-  right: 0; /* Derecha */
-  left: 0; /* Izquierda */
-  bottom: 0; /* Abajo */
-  background: rgba(39, 37, 34, 0.9); /* Fondo oscuro */
-  transition: 0.3s; /* Transición suave */
-  z-index: 0; /* Prioridad baja */
+  position: fixed;
+  top: 0; right: 0; left: 0; bottom: 0;
+  background: rgba(39, 37, 34, 0.9);
+  z-index: 999;
 }
 
-/* Botón de menú móvil */
-.navbar-mobile .mobile-nav-toggle {
-  position: absolute; /* Posición absoluta */
-  top: 15px; /* Separación arriba */
-  right: 15px; /* Separación derecha */
-}
-
-/* Lista del menú móvil */
 .navbar-mobile ul {
-  display: block; /* Se muestra */
-  position: absolute; /* Posición absoluta */
-  top: 55px; /* Separación arriba */
-  right: 15px; /* Separación derecha */
-  bottom: 15px; /* Separación abajo */
-  left: 15px; /* Separación izquierda */
-  padding: 10px 0; /* Relleno vertical */
-  border-radius: 8px; /* Bordes redondeados */
-  background-color: #fff; /* Fondo blanco */
-  overflow-y: auto; /* Scroll vertical */
-  transition: 0.3s; /* Transición suave */
+  background: #fff;
+  position: absolute;
+  top: 55px; left: 15px; right: 15px; bottom: 15px;
+  border-radius: 8px;
+  padding: 10px 0;
+  overflow-y: auto;
 }
 
-/* Enlaces del menú móvil */
-.navbar-mobile a,
-.navbar-mobile a:focus {
-  padding: 10px 20px; /* Relleno */
-  font-size: 15px; /* Tamaño de fuente */
-  color: #433f39; /* Color oscuro */
+.navbar-mobile a {
+  padding: 10px 20px;
+  color: #433f39;
 }
 
-/* Efecto hover en menú móvil */
-.navbar-mobile a:hover,
-.navbar-mobile .active,
-.navbar-mobile li:hover>a {
-  color: #ff3333; /* Rojo */
+.navbar-mobile a:hover {
+  color: #ff3333;
 }
 
-/* Botón especial en menú móvil */
-.navbar-mobile .getstarted,
-.navbar-mobile .getstarted:focus {
-  margin: 15px; /* Margen */
-}
 
-/* Dropdown en menú móvil */
-.navbar-mobile .dropdown ul {
-  position: static; /* Posición normal */
-  display: none; /* Oculto por defecto */
-  margin: 10px 20px; /* Margen */
-  padding: 10px 0; /* Relleno vertical */
-  z-index: 99; /* Prioridad de apilamiento */
-  opacity: 1; /* Opaco */
-  visibility: visible; /* Visible */
-  background: #fff; /* Fondo blanco */
-  box-shadow: 0px 0px 30px rgba(127, 137, 161, 0.25); /* Sombra */
-}
 
-/* Elementos del dropdown móvil */
-.navbar-mobile .dropdown ul li {
-  min-width: 200px; /* Ancho mínimo */
-}
-
-/* Enlaces del dropdown móvil */
-.navbar-mobile .dropdown ul a {
-  padding: 10px 20px; /* Relleno */
-}
-
-/* Iconos en el dropdown móvil */
-.navbar-mobile .dropdown ul a i {
-  font-size: 12px; /* Tamaño pequeño */
-}
-
-/* Efecto hover en dropdown móvil */
-.navbar-mobile .dropdown ul a:hover,
-.navbar-mobile .dropdown ul .active:hover,
-.navbar-mobile .dropdown ul li:hover>a {
-  color: #ff3333; /* Rojo */
-}
-
-/* Dropdown activo en menú móvil */
-.navbar-mobile .dropdown>.dropdown-active {
-  display: block; /* Se muestra */
-}
-
-/*--------------------------------------------------------------
-# Hero Section
---------------------------------------------------------------*/
-/* Sección principal de bienvenida */
+/* ===================================
+   HERO / CARRUSEL PRINCIPAL
+=================================== */
 #hero {
-  width: 100%; /* Ancho completo */
-  height: 100vh; /* Alto de la ventana */
-  background-color: rgba(39, 37, 34, 0.8); /* Fondo oscuro */
-  overflow: hidden; /* Oculta desbordamiento */
-  padding: 0; /* Sin relleno */
+  width: 100%;
+  height: 100vh;
+  background-color: rgba(39, 37, 34, 0.8);
+  overflow: hidden;
+  margin-top: 0; /* sin espacio arriba */
 }
 
-/* Elementos del carrusel */
 #hero .carousel-item {
-  width: 100%; /* Ancho completo */
-  height: 100vh; /* Alto de la ventana */
-  background-size: cover; /* Imagen cubre todo */
-  background-position: center; /* Centrado */
-  background-repeat: no-repeat; /* Sin repetir */
+  width: 100%;
+  height: 100vh;
+  background-size: cover;
+  background-position: center;
 }
 
-/* Capa oscura sobre el carrusel */
 #hero .carousel-item::before {
-  content: ""; /* Elemento vacío */
-  background-color: rgba(12, 11, 10, 0.5); /* Fondo oscuro */
-  position: absolute; /* Posición absoluta */
-  top: 0; right: 0; left: 0; bottom: 0; /* Cubre todo */
+  content: "";
+  background-color: rgba(12, 11, 10, 0.5);
+  position: absolute;
+  inset: 0;
 }
 
-/* Contenedor del carrusel */
 #hero .carousel-container {
-  display: flex; /* Elementos en línea */
-  justify-content: center; /* Centrado horizontal */
-  align-items: center; /* Centrado vertical */
-  position: absolute; /* Posición absoluta */
-  bottom: 0; top: 0; left: 0; right: 0; /* Cubre todo */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  position: absolute;
+  inset: 0;
 }
 
-/* Contenido del carrusel */
 #hero .carousel-content {
-  text-align: center; /* Centrado */
+  text-align: center;
 }
 
-/* Título principal */
 #hero h2 {
-  color: #fff; /* Blanco */
-  margin-bottom: 30px; /* Margen inferior */
-  font-size: 48px; /* Tamaño grande */
-  font-weight: 700; /* Peso fuerte */
+  color: #fff;
+  margin-bottom: 30px;
+  font-size: 48px;
+  font-weight: 700;
 }
 
-/* Resalta parte del título */
-#hero h2 span {
-  color: #ff3333; /* Rojo */
-}
-
-/* Texto principal */
 #hero p {
-  width: 80%; /* Ancho relativo */
-  animation-delay: 0.4s; /* Retraso animación */
-  margin: 0 auto 30px auto; /* Centrado y margen inferior */
-  color: #fff; /* Blanco */
+  width: 80%;
+  margin: 0 auto 30px;
+  color: #fff;
 }
 
-/* Transición de opacidad en carrusel */
-#hero .carousel-inner .carousel-item {
-  transition-property: opacity; /* Solo opacidad */
-  background-position: center top; /* Posición imagen */
+#hero .btn-menu {
+  font-weight: 600;
+  font-size: 13px;
+  text-transform: uppercase;
+  display: inline-block;
+  padding: 12px 30px;
+  border-radius: 50px;
+  color: #fff;
+  border: 2px solid #ff3333;
+  transition: 0.5s;
 }
 
-/* Oculta elementos no activos */
-#hero .carousel-inner .carousel-item,
-#hero .carousel-inner .active.carousel-item-start,
-#hero .carousel-inner .active.carousel-item-end {
-  opacity: 0; /* Transparente */
+#hero .btn-menu:hover {
+  background: #ff3333;
 }
 
-/* Muestra elementos activos */
-#hero .carousel-inner .active,
-#hero .carousel-inner .carousel-item-next.carousel-item-start,
-#hero .carousel-inner .carousel-item-prev.carousel-item-end {
-  opacity: 5; /* Opaco (debería ser 1, posible error) */
-  transition: 0.5s; /* Transición suave */
-}
-
-/* Posiciona elementos del carrusel */
-#hero .carousel-inner .carousel-item-next,
-#hero .carousel-inner .carousel-item-prev,
-#hero .carousel-inner .active.carousel-item-start,
-#hero .carousel-inner .active.carousel-item-end {
-  left: 0; /* Sin desplazamiento */
-  transform: translate3d(0, 0, 0); /* Sin transformación */
-}
-
-/* Iconos de control del carrusel */
-#hero .carousel-control-next-icon,
-#hero .carousel-control-prev-icon {
-  background: none; /* Sin fondo */
-  font-size: 30px; /* Tamaño grande */
-  line-height: 0; /* Sin espacio extra */
-  width: auto; /* Ancho automático */
-  height: auto; /* Alto automático */
-  background: rgba(255, 255, 255, 0.2); /* Fondo semitransparente */
-  border-radius: 50px; /* Forma circular */
-  transition: 0.3s; /* Transición suave */
-  color: rgba(255, 255, 255, 0.5); /* Color semitransparente */
-  width: 54px; /* Ancho fijo */
-  height: 54px; /* Alto fijo */
-  display: flex; /* Elementos en línea */
-  align-items: center; /* Centrado vertical */
-  justify-content: center; /* Centrado horizontal */
-}
-
-/* Efecto hover en iconos de control */
-#hero .carousel-control-next-icon:hover,
-#hero .carousel-control-prev-icon:hover {
-  background: rgba(255, 255, 255, 0.3); /* Fondo más claro */
-  color: rgba(255, 255, 255, 0.8); /* Color más claro */
-}
-
-/* Indicadores del carrusel */
-#hero .carousel-indicators li {
-  cursor: pointer; /* Cursor de mano */
-  list-style-type: none; /* Sin viñetas */
-}
-
-/* Botones en el héroe */
-#hero .btn-menu,
-#hero .btn-book {
-  font-weight: 600; /* Peso fuerte */
-  font-size: 13px; /* Tamaño de fuente */
-  letter-spacing: 1px; /* Espaciado entre letras */
-  text-transform: uppercase; /* Mayúsculas */
-  display: inline-block; /* En línea */
-  padding: 12px 30px; /* Relleno */
-  border-radius: 50px; /* Bordes redondeados */
-  transition: 0.5s; /* Transición suave */
-  line-height: 1; /* Altura de línea */
-  margin: 0 10px; /* Margen */
-  animation-delay: 0.8s; /* Retraso en animación */
-  color: #fff; /* Blanco */
-  border: 2px solid #ff3333; /* Borde rojo */
-}
-
-/* Efecto hover en botones del héroe */
-#hero .btn-menu:hover,
-#hero .btn-book:hover {
-  background: #ff3333; /* Fondo rojo */
-  color: #fff; /* Texto blanco */
-}
-
-/* Responsive para el héroe */
 @media (max-width: 768px) {
   #hero h2 {
-    font-size: 28px; /* Tamaño menor en móviles */
+    font-size: 28px;
   }
 }
 
-@media (min-width: 1024px) {
-  #hero p {
-    width: 50%; /* Ancho mayor en pantallas grandes */
-  }
 
-  #hero .carousel-control-prev,
-  #hero .carousel-control-next {
-    width: 5%; /* Ancho fijo para controles */
-  }
-}
 
-/*--------------------------------------------------------------
-# Sections General
---------------------------------------------------------------*/
-/* Sección con relleno general */
-section {
-  padding: 60px 0; /* Relleno superior e inferior */
-}
-
-/* Fondo blanco para secciones */
-.section-bg {
-  background-color: white
-}
-
-/* Títulos de sección */
-.section-title {
-  text-align: center; /* Centrado */
-  padding-bottom: 30px; /* Relleno inferior */
-}
-
-/* Estilo del título de sección */
-.section-title h2 {
-  margin: 15px 0 0 0; /* Margen superior */
-  font-size: 32px; /* Tamaño de fuente */
-  font-weight: 700; /* Peso fuerte */
-  color: #5f5950; /* Color oscuro */
-}
-
-/* Resalta parte del título de sección */
-.section-title h2 span {
-  color: #ff3333; /* Rojo */
-}
-
-/* Estilo del texto en sección */
-.section-title p {
-  margin: 15px auto 0 auto; /* Margen automático */
-  font-weight: 300; /* Peso ligero */
-}
-
-/* Ajuste en pantallas grandes */
-@media (min-width: 1024px) {
-  .section-title p {
-    width: 50%; /* Ancho mayor en pantallas grandes */
-  }
-}
-
-/*--------------------------------------------------------------
-# Breadcrumbs
---------------------------------------------------------------*/
-/* Estilo para las migas de pan */
-.breadcrumbs {
-  padding: 20px 0; /* Relleno vertical */
-  background-color: #f2f1ef; /* Fondo gris claro */
-  min-height: 40px; /* Altura mínima */
-  margin-top: 120px; /* Margen superior */
-}
-
-@media (max-width: 992px) {
-  .breadcrumbs {
-    margin-top: 70px; /* Margen superior menor en móviles */
-  }
-}
-
-/* Estilo del título en migas de pan */
-.breadcrumbs h2 {
-  font-size: 24px; /* Tamaño de fuente */
-  font-weight: 300; /* Peso ligero */
-  margin: 0; /* Sin margen */
-}
-
-@media (max-width: 992px) {
-  .breadcrumbs h2 {
-    margin: 0 0 10px 0; /* Margen inferior en móviles */
-  }
-}
-
-/* Lista de migas de pan */
-.breadcrumbs ol {
-  display: flex; /* Elementos en línea */
-  flex-wrap: wrap; /* Ajuste en varias líneas */
-  list-style: none; /* Sin viñetas */
-  padding: 0; /* Sin relleno */
-  margin: 0; /* Sin margen */
-  font-size: 14px; /* Tamaño de fuente */
-}
-
-/* Espaciado entre elementos de la lista */
-.breadcrumbs ol li+li {
-  padding-left: 10px; /* Espacio a la izquierda */
-}
-
-/* Separador entre elementos de la lista */
-.breadcrumbs ol li+li::before {
-  display: inline-block; /* Se muestra en línea */
-  padding-right: 10px; /* Espacio a la derecha */
-  color: #6c757d; /* Color gris */
-  content: "/"; /* Contenido del separador */
-}
-
-@media (max-width: 768px) {
-  .breadcrumbs .d-flex {
-    display: block !important; /* Fuerza a bloque en móviles */
-  }
-
-  .breadcrumbs ol {
-    display: block; /* Muestra en bloque */
-  }
-
-  .breadcrumbs ol li {
-    display: inline-block; /* Elementos en línea */
-  }
-}
-
-/*--------------------------------------------------------------
-# About
---------------------------------------------------------------*/
-/* Estilo general para la sección Acerca de */
+/* ===================================
+   SECCIÓN ABOUT
+=================================== */
 .about {
-  background: #fffaf3; /* Fondo color crema */
+  background: #fffaf3;
+  padding-top: 100px;
+  padding-bottom: 80px;
 }
 
-/* Contenido de la sección Acerca de */
 .about .content {
-  padding: 0 80px; /* Relleno lateral */
+  padding: 0 80px;
 }
 
-/* Títulos en la sección Acerca de */
 .about .content h3 {
-  font-weight: 400; /* Peso normal */
-  font-size: 34px; /* Tamaño de fuente */
-  color: #5f5950; /* Color oscuro */
+  font-weight: 400;
+  font-size: 34px;
+  color: #5f5950;
 }
 
-/* Subtítulos en la sección Acerca de */
-.about .content h4 {
-  font-size: 20px; /* Tamaño de fuente */
-  font-weight: 700; /* Peso fuerte */
-  margin-top: 5px; /* Margen superior */
-}
-
-/* Párrafos en la sección Acerca de */
 .about .content p {
-  font-size: 15px; /* Tamaño de fuente */
-  color: #848484; /* Color gris */
+  font-size: 15px;
+  color: #848484;
 }
 
-/* Listas en la sección Acerca de */
 .about .content ul {
-  list-style: none; /* Sin viñetas */
-  padding: 0; /* Sin relleno */
+  list-style: none;
+  padding: 0;
 }
 
-/* Espaciado entre elementos de la lista */
-.about .content ul li+li {
-  margin-top: 15px; /* Margen superior */
-}
-
-/* Estilo de los elementos de la lista */
 .about .content ul li {
-  position: relative; /* Posición relativa */
-  padding-left: 26px; /* Relleno izquierdo */
+  position: relative;
+  padding-left: 26px;
+  margin-top: 15px;
 }
 
-/* Iconos en los elementos de la lista */
 .about .content ul i {
-  font-size: 20px; /* Tamaño de icono */
-  color: #ff3333; /* Color rojo */
-  position: absolute; /* Posición absoluta */
-  left: 0; /* A la izquierda */
-  top: 2px; /* Ajuste vertical */
+  font-size: 20px;
+  color: #ff3333;
+  position: absolute;
+  left: 0;
+  top: 2px;
 }
 
-/* Evita margen inferior en el último párrafo */
-.about .content p:last-child {
-  margin-bottom: 0; /* Sin margen inferior */
-}
-
-/* Estilo del video en la sección Acerca de */
 .about .video-box {
-  background-size: cover; /* Cubre todo el contenedor */
-  background-repeat: no-repeat; /* Sin repetir */
-  background-position: center center; /* Centrado */
-  min-height: 400px; /* Altura mínima */
-  position: relative; /* Posición relativa */
+  background-size: cover;
+  background-position: center;
+  min-height: 400px;
+  position: relative;
 }
 
-/* Botón de reproducción en el video */
 .about .play-btn {
-  width: 94px; /* Ancho */
-  height: 94px; /* Alto */
-  background: radial-gradient(#ff3333 50%, rgba(255, 176, 59, 0.4) 52%); /* Degradado radial */
-  border-radius: 50%; /* Forma circular */
-  display: block; /* Se muestra como bloque */
-  position: absolute; /* Posición absoluta */
-  left: calc(50% - 47px); /* Centrado */
-  top: calc(50% - 47px); /* Centrado */
-  overflow: hidden; /* Oculta desbordamiento */
+  width: 94px;
+  height: 94px;
+  background: radial-gradient(#ff3333 50%, rgba(255,176,59,0.4) 52%);
+  border-radius: 50%;
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
 }
 
-/* Efecto de pulsación en el botón de reproducción */
-.about .play-btn::after {
-  content: ""; /* Elemento vacío */
-  position: absolute; /* Posición absoluta */
-  left: 50%; /* Centrado horizontal */
-  top: 50%; /* Centrado vertical */
-  transform: translateX(-40%) translateY(-50%); /* Centrado preciso */
-  width: 0; /* Sin ancho inicial */
-  height: 0; /* Sin alto inicial */
-  border-top: 10px solid transparent; /* Bordes para formar triángulo */
-  border-bottom: 10px solid transparent;
-  border-left: 15px solid #fff; /* Color blanco */
-  z-index: 100; /* Prioridad alta */
-  transition: all 400ms cubic-bezier(0.55, 0.055, 0.675, 0.19); /* Transición suave */
+
+
+/* ===================================
+   MENÚ / GALERÍA DE PLATOS
+=================================== */
+.menu {
+  padding-top: 80px;
+  padding-bottom: 100px;
 }
 
-/* Efecto de pulsación en el fondo del botón de reproducción */
-.about .play-btn::before {
-  content: ""; /* Elemento vacío */
-  position: absolute; /* Posición absoluta */
-  width: 120px; /* Ancho */
-  height: 120px; /* Alto */
-  animation-delay: 0s; /* Sin retraso */
-  animation: pulsate-btn 2s; /* Animación de pulsación */
-  animation-direction: forwards; /* Dirección de la animación */
-  animation-iteration-count: infinite; /* Repite infinitamente */
-  animation-timing-function: steps; /* Función de tiempo en pasos */
-  opacity: 1; /* Opaco */
-  border-radius: 50%; /* Forma circular */
-  border: 5px solid rgba(255, 176, 59, 0.7); /* Borde semitransparente */
-  top: -15%; /* Ajuste superior */
-  left: -15%; /* Ajuste izquierdo */
-  background: rgba(198, 16, 0, 0); /* Fondo transparente */
+.menu .section-title h2 span {
+  color: #ff3333;
 }
 
-/* Efecto al pasar el mouse sobre el botón de reproducción */
-.about .play-btn:hover::after {
-  border-left: 15px solid #ff3333; /* Cambia el color del borde */
-  transform: scale(20); /* Aumenta el tamaño */
-}
 
-/* Efecto al pasar el mouse sobre el fondo del botón de reproducción */
-.about .play-btn:hover::before {
-  content: ""; /* Elemento vacío */
-  position: absolute; /* Posición absoluta */
-  left: 50%; /* Centrado horizontal */
-  top: 50%; /* Centrado vertical */
-  transform: translateX(-40%) translateY(-50%); /* Centrado preciso */
-  width: 0; /* Sin ancho */
-  height: 0; /* Sin alto */
-  border: none; /* Sin borde */
-  border-top: 10px solid transparent; /* Bordes para formar triángulo */
-  border-bottom: 10px solid transparent;
-  border-left: 15px solid #fff; /* Color blanco */
-  z-index: 200; /* Prioridad muy alta */
-  animation: none; /* Sin animación */
-  border-radius: 0; /* Sin bordes redondeados */
-}
 
-/* Ajustes en pantallas pequeñas */
-@media (max-width: 1024px) {
-
-  .about .content,
-  .about .accordion-list {
-    padding-left: 0; /* Sin relleno lateral */
-    padding-right: 0; /* Sin relleno lateral */
-  }
-}
-
-@media (max-width: 992px) {
-  .about .content {
-    padding-top: 30px; /* Relleno superior */
-  }
-
-  .about .accordion-list {
-    padding-bottom: 30px; /* Relleno inferior */
-  }
-}
-
-/* Animación de pulsación */
-@keyframes pulsate-btn {
-  0% {
-    transform: scale(0.6, 0.6); /* Escala inicial */
-    opacity: 1; /* Opaco */
-  }
-
-  100% {
-    transform: scale(1, 1); /* Escala final */
-    opacity: 0; /* Transparente */
-  }
-}
-
-/*--------------------------------------------------------------
-# Whu Us
---------------------------------------------------------------*/
-/* Estilo general para la sección Por qué nosotros */
-.why-us .box {
-  padding: 50px 30px; /* Relleno */
-  box-shadow: 0px 2px 15px rgba(0, 0, 0, 0.1); /* Sombra */
-  transition: all ease-in-out 0.3s; /* Transición suave */
-  height: 100%; /* Altura completa */
-}
-
-/* Resalta parte del título en la sección Por qué nosotros */
-.why-us .box span {
-  display: block; /* Se muestra como bloque */
-  font-size: 28px; /* Tamaño grande */
-  font-weight: 700; /* Peso fuerte */
-  color: #ff3333; /* Color rojo */
-}
-
-/* Títulos en la sección Por qué nosotros */
-.why-us .box h4 {
-  font-size: 24px; /* Tamaño de fuente */
-  font-weight: 600; /* Peso fuerte */
-  padding: 0; /* Sin relleno */
-  margin: 20px 0; /* Margen superior e inferior */
-  color: #6c665c; /* Color oscuro */
-}
-
-/* Párrafos en la sección Por qué nosotros */
-.why-us .box p {
-  color: #aaaaaa; /* Color gris */
-  font-size: 15px; /* Tamaño de fuente */
-  margin: 0; /* Sin margen */
-  padding: 0; /* Sin relleno */
-}
-
-/* Efecto hover en las cajas de la sección Por qué nosotros */
-.why-us .box:hover {
-  background: #ff3333; /* Fondo rojo */
-  padding: 30px 30px 70px 30px; /* Aumenta el relleno */
-  box-shadow: 10px 15px 30px rgba(0, 0, 0, 0.18); /* Sombra más intensa */
-}
-
-/* Cambia el color del texto al hacer hover */
-.why-us .box:hover span,
-.why-us .box:hover h4,
-.why-us .box:hover p {
-  color: #fff; /* Texto blanco */
-}
-
-/*--------------------------------------------------------------
-# Menu Section
---------------------------------------------------------------*/
-/* Filtros del menú */
-.menu #menu-flters {
-  padding: 0; /* Sin relleno */
-  margin: 0 auto 0 auto; /* Margen automático */
-  list-style: none; /* Sin viñetas */
-  text-align: center; /* Centrado */
-  border-radius: 50px; /* Bordes redondeados */
-}
-
-/* Elementos de los filtros del menú */
-.menu #menu-flters li {
-  cursor: pointer; /* Cursor de mano */
-  display: inline-block; /* En línea */
-  padding: 8px 16px 10px 16px; /* Relleno */
-  font-size: 14px; /* Tamaño de fuente */
-  font-weight: 500; /* Peso medio */
-  line-height: 1; /* Altura de línea */
-  color: #444444; /* Color oscuro */
-  margin: 0 3px 10px 3px; /* Margen */
-  transition: all ease-in-out 0.3s; /* Transición suave */
-  background: #fff; /* Fondo blanco */
-  border: 2px solid #ff3333; /* Borde rojo */
-  border-radius: 50px; /* Bordes redondeados */
-}
-
-/* Efecto hover y activo en los filtros del menú */
-.menu #menu-flters li:hover,
-.menu #menu-flters li.filter-active {
-  color: #fff; /* Texto blanco */
-  background: #ff3333; /* Fondo rojo */
-}
-
-/* Evita margen derecho en el último elemento */
-.menu #menu-flters li:last-child {
-  margin-right: 0; /* Sin margen derecho */
-}
-
-/* Contenido del menú */
-.menu .menu-content {
-  margin-top: 30px; /* Margen superior */
-  overflow: hidden; /* Oculta desbordamiento */
-  display: flex; /* Elementos en línea */
-  justify-content: space-between; /* Espaciado entre elementos */
-  position: relative; /* Posición relativa */
-}
-
-/* Línea decorativa en el contenido del menú */
-.menu .menu-content::after {
-  content: "......................................................................" "...................................................................." "...................................................................."; /* Línea larga */
-  position: absolute; /* Posición absoluta */
-  left: 20px; /* Separación izquierda */
-  right: 0; /* Sin separación derecha */
-  top: -4px; /* Ajuste superior */
-  z-index: 1; /* Prioridad de apilamiento */
-  color: #dad8d4; /* Color gris claro */
-  font-family: Arial, "Helvetica Neue", Helvetica, sans-serif; /* Fuente */
-}
-
-/* Enlaces en el contenido del menú */
-.menu .menu-content a {
-  padding-right: 10px; /* Relleno derecho */
-  background: #fff; /* Fondo blanco */
-  position: relative; /* Posición relativa */
-  z-index: 3; /* Prioridad de apilamiento */
-  font-weight: 700; /* Peso fuerte */
-  color: #ff3333; /* Color rojo */
-}
-
-/* Espaciado en el contenido del menú */
-.menu .menu-content span {
-  background: #fff; /* Fondo blanco */
-  position: relative; /* Posición relativa */
-  z-index: 3; /* Prioridad de apilamiento */
-  padding: 0 10px; /* Relleno lateral */
-  font-weight: 600; /* Peso medio */
-}
-
-/* Estilo de los ingredientes en el menú */
-.menu .menu-ingredients {
-  font-style: italic; /* Cursiva */
-  font-size: 14px; /* Tamaño de fuente */
-  font-family: "Comic Neue", sans-serif; /* Fuente */
-  color: #948c81; /* Color gris */
-}
-
-/*--------------------------------------------------------------
-# Specials
---------------------------------------------------------------*/
-/* Estilo general para la sección Especiales */
-.specials {
-  overflow: hidden; /* Oculta desbordamiento */
-}
-
-/* Pestañas en la sección Especiales */
-.specials .nav-tabs {
-  border: 0; /* Sin borde */
-}
-
-/* Enlaces en las pestañas de Especiales */
-.specials .nav-link {
-  border: 0; /* Sin borde */
-  padding: 12px 15px 12px 0; /* Relleno */
-  transition: 0.3s; /* Transición suave */
-  color: #433f39; /* Color oscuro */
-  border-radius: 0; /* Sin bordes redondeados */
-  border-right: 2px solid #e8e7e4; /* Borde derecho */
-  font-weight: 600; /* Peso fuerte */
-  font-size: 15px; /* Tamaño de fuente */
-}
-
-/* Efecto hover en las pestañas de Especiales */
-.specials .nav-link:hover {
-  color: #ff3333; /* Rojo */
-}
-
-/* Estilo de la pestaña activa */
-.specials .nav-link.active {
-  color: #ff3333; /* Rojo */
-  border-color: #ff3333; /* Borde rojo */
-}
-
-/* Animación en el panel activo */
-.specials .tab-pane.active {
-  animation: fadeIn 0.5s ease-out; /* Animación de desvanecimiento */
-}
-
-/* Estilo del título en los detalles especiales */
-.specials .details h3 {
-  font-size: 26px; /* Tamaño de fuente */
-  font-weight: 600; /* Peso fuerte */
-  margin-bottom: 20px; /* Margen inferior */
-  color: #433f39; /* Color oscuro */
-}
-
-/* Estilo del texto en los detalles especiales */
-.specials .details p {
-  color: #777777; /* Color gris */
-}
-
-/* Evita margen inferior en el último párrafo de detalles especiales */
-.specials .details p:last-child {
-  margin-bottom: 0; /* Sin margen inferior */
-}
-
-/*--------------------------------------------------------------
-# Events
---------------------------------------------------------------*/
-/* Estilo general para la sección Eventos */
-.events {
-  background: url(../img/events-bg.jpg) center center no-repeat; /* Fondo con imagen */
-  background-size: cover; /* Cubre todo el contenedor */
-  position: relative; /* Posición relativa */
-}
-
-/* Capa oscura sobre la sección de eventos */
-.events::before {
-  content: ""; /* Elemento vacío */
-  background-color: rgba(12, 11, 10, 0.8); /* Fondo oscuro */
-  position: absolute; /* Posición absoluta */
-  top: 0; right: 0; left: 0; bottom: 0; /* Cubre todo */
-}
-
-/* Estilo del título en la sección Eventos */
-.events .section-title h2 {
-  color: #fff; /* Blanco */
-}
-
-/* Contenedor de los eventos */
-.events .container {
-  position: relative; /* Posición relativa */
-}
-
-/* Ajuste en pantallas grandes */
-@media (min-width: 1024px) {
-  .events {
-    background-attachment: fixed; /* Fondo fijo */
-  }
-}
-
-/* Estilo del carrusel de eventos */
-.events .events-carousel {
-  background: rgba(255, 255, 255, 0.08); /* Fondo semitransparente */
-  padding: 30px; /* Relleno */
-}
-
-/* Elementos individuales en el carrusel de eventos */
-.events .event-item {
-  color: #fff; /* Blanco */
-}
-
-/* Títulos de los eventos */
-.events .event-item h3 {
-  font-weight: 600; /* Peso fuerte */
-  font-size: 26px; /* Tamaño de fuente */
-  color: #ff3333; /* Color rojo */
-}
-
-/* Precio de los eventos */
-.events .event-item .price {
-  font-size: 26px; /* Tamaño de fuente */
-  font-family: "Poppins", sans-serif; /* Fuente */
-  font-weight: 700; /* Peso fuerte */
-  margin-bottom: 15px; /* Margen inferior */
-}
-
-/* Subraya el precio de los eventos */
-.events .event-item .price span {
-  border-bottom: 2px solid #ff3333; /* Subrayado rojo */
-}
-
-/* Listas en los eventos */
-.events .event-item ul {
-  list-style: none; /* Sin viñetas */
-  padding: 0; /* Sin relleno */
-}
-
-/* Espaciado entre elementos de la lista de eventos */
-.events .event-item ul li {
-  padding-bottom: 10px; /* Espacio inferior */
-}
-
-/* Iconos en la lista de eventos */
-.events .event-item ul i {
-  font-size: 20px; /* Tamaño de icono */
-  padding-right: 4px; /* Espacio a la derecha */
-  color: #ff3333; /* Color rojo */
-}
-
-/* Evita margen inferior en el último párrafo de eventos */
-.events .event-item p:last-child {
-  margin-bottom: 0; /* Sin margen inferior */
-}
-
-/* Paginación en el carrusel de eventos */
-.events .swiper-pagination {
-  margin-top: 20px; /* Margen superior */
-  position: relative; /* Posición relativa */
-}
-
-/* Estilo de los bullets en la paginación */
-.events .swiper-pagination .swiper-pagination-bullet {
-  width: 12px; /* Ancho */
-  height: 12px; /* Alto */
-  background-color: rgba(255, 255, 255, 0.5); /* Fondo semitransparente */
-  opacity: 1; /* Opaco */
-}
-
-/* Estilo del bullet activo en la paginación */
-.events .swiper-pagination .swiper-pagination-bullet-active {
-  background-color: #ff3333; /* Fondo rojo */
-}
-
-/*--------------------------------------------------------------
-# Book A Table
---------------------------------------------------------------*/
-/* Estilo del formulario para reservar mesa */
-.book-a-table .php-email-form {
-  width: 100%; /* Ancho completo */
-  box-shadow: 0 0 24px 0 rgba(0, 0, 0, 0.12); /* Sombra */
-  padding: 30px; /* Relleno */
-  background: #fff; /* Fondo blanco */
-}
-
-/* Estilo de los grupos de formulario */
-.book-a-table .php-email-form .form-group {
-  padding-bottom: 8px; /* Espacio inferior */
-}
-
-/* Mensajes de validación */
-.book-a-table .php-email-form .validate {
-  display: none; /* Oculto por defecto */
-  color: red; /* Color rojo */
-  margin: 0 0 15px 0; /* Margen */
-  font-weight: 400; /* Peso normal */
-  font-size: 13px; /* Tamaño de fuente */
-}
-
-/* Mensajes de error */
-.book-a-table .php-email-form .error-message {
-  display: none; /* Oculto por defecto */
-  color: #fff; /* Texto blanco */
-  background: #ed3c0d; /* Fondo rojo */
-  text-align: left; /* Alineación izquierda */
-  padding: 15px; /* Relleno */
-  font-weight: 600; /* Peso fuerte */
-}
-
-/* Espacio superior en el segundo párrafo del mensaje de error */
-.book-a-table .php-email-form .error-message br+br {
-  margin-top: 25px; /* Margen superior */
-}
-
-/* Mensajes de éxito */
-.book-a-table .php-email-form .sent-message {
-  display: none; /* Oculto por defecto */
-  color: #fff; /* Texto blanco */
-  background: #18d26e; /* Fondo verde */
-  text-align: center; /* Centrado */
-  padding: 15px; /* Relleno */
-  font-weight: 600; /* Peso fuerte */
-}
-
-/* Indicador de carga */
-.book-a-table .php-email-form .loading {
-  display: none; /* Oculto por defecto */
-  background: #fff; /* Fondo blanco */
-  text-align: center; /* Centrado */
-  padding: 15px; /* Relleno */
-}
-
-/* Estilo del círculo en el indicador de carga */
-.book-a-table .php-email-form .loading:before {
-  content: ""; /* Elemento vacío */
-  display: inline-block; /* Se muestra en línea */
-  border-radius: 50%; /* Forma circular */
-  width: 24px; /* Ancho */
-  height: 24px; /* Alto */
-  margin: 0 10px -6px 0; /* Margen */
-  border: 3px solid #18d26e; /* Borde verde */
-  border-top-color: #eee; /* Borde superior gris */
-  animation: animate-loading 1s linear infinite; /* Animación de carga */
-}
-
-/* Estilo de los campos de entrada y textarea */
-.book-a-table .php-email-form input,
-.book-a-table .php-email-form textarea {
-  border-radius: 0; /* Sin bordes redondeados */
-  box-shadow: none; /* Sin sombra */
-  font-size: 14px; /* Tamaño de fuente */
-}
-
-/* Estilo del campo de entrada */
-.book-a-table .php-email-form input {
-  height: 44px; /* Alto */
-}
-
-/* Estilo del textarea */
-.book-a-table .php-email-form textarea {
-  padding: 10px 12px; /* Relleno */
-}
-
-/* Estilo del botón de envío */
-.book-a-table .php-email-form button[type=submit] {
-  background: #ff3333; /* Fondo rojo */
-  border: 0; /* Sin borde */
-  padding: 10px 24px; /* Relleno */
-  color: #fff; /* Texto blanco */
-  transition: 0.4s; /* Transición suave */
-  border-radius: 50px; /* Bordes redondeados */
-}
-
-/* Efecto hover en el botón de envío */
-.book-a-table .php-email-form button[type=submit]:hover {
-  background: #ff3333; /* Fondo rojo */
-}
-
-/*--------------------------------------------------------------
-# Gallery
---------------------------------------------------------------*/
-/* Estilo general para la galería */
+/* ===================================
+   GALERÍA GENERAL
+=================================== */
 .gallery {
-  padding-bottom: 0; /* Sin relleno inferior */
+  padding-top: 80px;
+  padding-bottom: 100px;
 }
 
-/* Elementos de la galería */
 .gallery .gallery-item {
-  overflow: hidden; /* Oculta desbordamiento */
-  border-right: 3px solid #fff; /* Borde derecho */
-  border-bottom: 3px solid #fff; /* Borde inferior */
+  overflow: hidden;
+  border-right: 3px solid #fff;
+  border-bottom: 3px solid #fff;
 }
 
-/* Imágenes en la galería */
 .gallery .gallery-item img {
-  transition: all ease-in-out 0.4s; /* Transición suave */
+  transition: all ease-in-out 0.4s;
 }
 
-/* Efecto hover en las imágenes de la galería */
 .gallery .gallery-item:hover img {
-  transform: scale(1.1); /* Aumenta el tamaño */
+  transform: scale(1.1);
 }
 
-/*--------------------------------------------------------------
-# Chefs
---------------------------------------------------------------*/
-/* Estilo general para la sección Chefs */
-.chefs {
-  background: url("../img/chefs-bg.jpg") center center no-repeat; /* Fondo con imagen */
-  background-size: cover; /* Cubre todo el contenedor */
-  padding: 60px 0; /* Relleno superior e inferior */
-  position: relative; /* Posición relativa */
+
+
+/* ===================================
+   CONTACTO
+=================================== */
+.contact {
+  padding-top: 80px;
+  padding-bottom: 80px;
 }
 
-/* Capa oscura sobre la sección de chefs */
-.chefs::before {
-  content: ""; /* Elemento vacío */
-  position: absolute; /* Posición absoluta */
-  left: 0; right: 0; top: 0; bottom: 0; /* Cubre todo */
-  background: rgba(255, 255, 255, 0.8); /* Fondo semitransparente */
-  z-index: 9; /* Prioridad de apilamiento */
-}
-
-/* Contenedor de los chefs */
-.chefs .container {
-  position: relative; /* Posición relativa */
-  z-index: 10; /* Prioridad de apilamiento */
-}
-
-/* Miembros del equipo en la sección Chefs */
-.chefs .member {
-  text-align: center; /* Centrado */
-  margin-bottom: 80px; /* Margen inferior */
-  position: relative; /* Posición relativa */
-}
-
-/* Imagen del miembro del equipo */
-.chefs .member .pic {
-  overflow: hidden; /* Oculta desbordamiento */
-}
-
-/* Información del miembro del equipo */
-.chefs .member .member-info {
-  position: absolute; /* Posición absoluta */
-  bottom: -80px; /* Fuera de vista inicialmente */
-  left: 20px; /* Separación izquierda */
-  right: 20px; /* Separación derecha */
-  background: #fff; /* Fondo blanco */
-  padding: 20px 0; /* Relleno vertical */
-  color: #433f39; /* Color oscuro */
-  box-shadow: 0px 2px 15px rgba(0, 0, 0, 0.1); /* Sombra */
-  overflow: hidden; /* Oculta desbordamiento */
-  transition: max-height 0.5s ease-in-out; /* Transición suave */
-}
-
-/* Títulos de los miembros del equipo */
-.chefs .member h4 {
-  font-weight: 500; /* Peso normal */
-  margin-bottom: 10px; /* Margen inferior */
-  font-size: 16px; /* Tamaño de fuente */
-  color: #6c665c; /* Color oscuro */
-  position: relative; /* Posición relativa */
-  padding-bottom: 10px; /* Relleno inferior */
-  font-family: "Poppins", sans-serif; /* Fuente */
-}
-
-/* Línea decorativa debajo del título del miembro */
-.chefs .member h4::after {
-  content: ""; /* Elemento vacío */
-  position: absolute; /* Posición absoluta */
-  display: block; /* Se muestra como bloque */
-  width: 50px; /* Ancho */
-  height: 1px; /* Alto */
-  background: #ffcf88; /* Color amarillo */
-  bottom: 0; /* En la parte inferior */
-  left: calc(50% - 25px); /* Centrado */
-}
-
-/* Estilo del subtítulo del miembro del equipo */
-.chefs .member span {
-  font-style: italic; /* Cursiva */
-  display: block; /* Se muestra como bloque */
-  font-size: 13px; /* Tamaño de fuente */
-}
-
-/* Redes sociales del miembro del equipo */
-.chefs .member .social {
-  margin-top: 15px; /* Margen superior */
-}
-
-/* Enlaces a redes sociales */
-.chefs .member .social a {
-  transition: color 0.3s; /* Transición suave */
-  color: #7a7368; /* Color gris */
-}
-
-/* Efecto hover en los enlaces de redes sociales */
-.chefs .member .social a:hover {
-  color: #ff3333; /* Rojo */
-}
-
-/* Tamaño de los iconos de redes sociales */
-.chefs .member .social i {
-  font-size: 16px; /* Tamaño de icono */
-  margin: 0 2px; /* Margen lateral */
-}
-
-@media (max-width: 992px) {
-  .chefs .member {
-    margin-bottom: 110px; /* Margen inferior en móviles */
-  }
-}
-
-@media (min-width: 1024px) {
-  .chefs {
-    background-attachment: fixed; /* Fondo fijo en pantallas grandes */
-  }
-}
-
-/*--------------------------------------------------------------
-# Testimonials
---------------------------------------------------------------*/
-/* Estilo general para la sección Testimonios */
-.testimonials {
-  padding: 80px 0; /* Relleno superior e inferior */
-  background: url("../img/testimonials-bg.jpg") no-repeat; /* Fondo con imagen */
-  background-position: center center; /* Centrado */
-  background-size: cover; /* Cubre todo el contenedor */
-  position: relative; /* Posición relativa */
-}
-
-/* Capa oscura sobre la sección de testimonios */
-.testimonials::before {
-  content: ""; /* Elemento vacío */
-  position: absolute; /* Posición absoluta */
-  left: 0; right: 0; top: 0; bottom: 0; /* Cubre todo */
-  background: rgba(12, 11, 10, 0.7); /* Fondo oscuro */
-}
-
-/* Espaciado inferior en el encabezado de testimonios */
-.testimonials .section-header {
-  margin-bottom: 40px; /* Margen inferior */
-}
-
-/* Carruseles de testimonios */
-.testimonials .testimonials-carousel,
-.testimonials .testimonials-slider {
-  overflow: hidden; /* Oculta desbordamiento */
-}
-
-/* Elementos individuales de testimonio */
-.testimonials .testimonial-item {
-  text-align: center; /* Centrado */
-  color: #fff; /* Blanco */
-}
-
-/* Imagen del testimonio */
-.testimonials .testimonial-item .testimonial-img {
-  width: 100px; /* Ancho */
-  border-radius: 50%; /* Forma circular */
-  border: 6px solid rgba(255, 255, 255, 0.15); /* Borde semitransparente */
-  margin: 0 auto; /* Centrado automático */
-}
-
-/* Títulos de los testimonios */
-.testimonials .testimonial-item h3 {
-  font-size: 20px; /* Tamaño de fuente */
-  font-weight: bold; /* Negrita */
-  margin: 10px 0 5px 0; /* Márgenes */
-  color: #fff; /* Blanco */
-  font-family: "Poppins", sans-serif; /* Fuente */
-}
-
-/* Subtítulos en los testimonios */
-.testimonials .testimonial-item h4 {
-  font-size: 14px; /* Tamaño de fuente */
-  color: #ddd; /* Color gris claro */
-  margin: 0 0 15px 0; /* Márgenes */
-  font-family: "Comic Neue", sans-serif; /* Fuente */
-}
-
-/* Estrellas de calificación en los testimonios */
-.testimonials .testimonial-item .stars {
-  color: #ff3333; /* Rojo */
-  margin-bottom: 10px; /* Margen inferior */
-}
-
-/* Iconos de cita en los testimonios */
-.testimonials .testimonial-item .quote-icon-left,
-.testimonials .testimonial-item .quote-icon-right {
-  color: rgba(255, 255, 255, 0.4); /* Color semitransparente */
-  font-size: 26px; /* Tamaño de icono */
-}
-
-/* Ajuste de posición para el icono de cita izquierda */
-.testimonials .testimonial-item .quote-icon-left {
-  display: inline-block; /* Se muestra en línea */
-  left: -5px; /* Desplazamiento a la izquierda */
-  position: relative; /* Posición relativa */
-}
-
-/* Ajuste de posición para el icono de cita derecha */
-.testimonials .testimonial-item .quote-icon-right {
-  display: inline-block; /* Se muestra en línea */
-  right: -5px; /* Desplazamiento a la derecha */
-  position: relative; /* Posición relativa */
-  top: 10px; /* Desplazamiento hacia abajo */
-}
-
-/* Estilo del texto del testimonio */
-.testimonials .testimonial-item p {
-  font-style: italic; /* Cursiva */
-  margin: 0 auto 15px auto; /* Márgenes automáticos */
-  color: #eee; /* Color gris claro */
-}
-
-/* Paginación en el carrusel de testimonios */
-.testimonials .swiper-pagination {
-  margin-top: 20px; /* Margen superior */
-  position: relative; /* Posición relativa */
-}
-
-/* Estilo de los bullets en la paginación de testimonios */
-.testimonials .swiper-pagination .swiper-pagination-bullet {
-  width: 12px; /* Ancho */
-  height: 12px; /* Alto */
-  background-color: rgba(255, 255, 255, 0.5); /* Fondo semitransparente */
-  opacity: 1; /* Opaco */
-}
-
-/* Estilo del bullet activo en la paginación de testimonios */
-.testimonials .swiper-pagination .swiper-pagination-bullet-active {
-  background-color: #ff3333; /* Fondo rojo */
-}
-
-@media (min-width: 992px) {
-  .testimonials .testimonial-item p {
-    width: 80%; /* Ancho mayor en pantallas grandes */
-  }
-}
-
-/*--------------------------------------------------------------
-# Contact
---------------------------------------------------------------*/
-/* Estilo general para la sección Contacto */
 .contact .info-wrap {
-  box-shadow: 0px 2px 15px rgba(0, 0, 0, 0.1); /* Sombra */
-  padding: 30px; /* Relleno */
+  box-shadow: 0 2px 15px rgba(0,0,0,0.1);
+  padding: 30px;
 }
 
-/* Fondo de la información de contacto */
-.contact .info {
-  background: #fff; /* Fondo blanco */
-}
-
-/* Iconos en la información de contacto */
 .contact .info i {
-  font-size: 20px; /* Tamaño de icono */
-  color: #ff3333; /* Color rojo */
-  float: left; /* A la izquierda */
-  width: 44px; /* Ancho */
-  height: 44px; /* Alto */
-  background: #fff6e8; /* Fondo semitransparente */
-  display: flex; /* Elementos en línea */
-  justify-content: center; /* Centrado horizontal */
-  align-items: center; /* Centrado vertical */
-  border-radius: 50px; /* Forma circular */
-  transition: all 0.3s ease-in-out; /* Transición suave */
+  font-size: 20px;
+  color: #ff3333;
+  float: left;
+  width: 44px;
+  height: 44px;
+  background: #fff6e8;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  border-radius: 50%;
+  transition: all 0.3s ease;
 }
 
-/* Títulos en la información de contacto */
 .contact .info h4 {
-  padding: 0 0 0 60px; /* Relleno izquierdo */
-  font-size: 18px; /* Tamaño de fuente */
-  font-weight: 600; /* Peso fuerte */
-  margin-bottom: 5px; /* Margen inferior */
-  color: #433f39; /* Color oscuro */
-  font-family: "Poppins", sans-serif; /* Fuente */
+  padding-left: 60px;
+  font-size: 18px;
+  font-weight: 600;
+  color: #433f39;
 }
 
-/* Texto en la información de contacto */
 .contact .info p {
-  padding: 0 0 0 60px; /* Relleno izquierdo */
-  margin-bottom: 0; /* Sin margen inferior */
-  font-size: 14px; /* Tamaño de fuente */
-  color: #7a7368; /* Color gris */
+  padding-left: 60px;
+  font-size: 14px;
+  color: #7a7368;
 }
 
-/* Efecto hover en los iconos de información de contacto */
 .contact .info:hover i {
-  background: #ff3333; /* Fondo rojo */
-  color: #fff; /* Texto blanco */
+  background: #ff3333;
+  color: #fff;
 }
 
-/* Estilo del formulario de contacto */
-.contact .php-email-form {
-  width: 100%; /* Ancho completo */
-  box-shadow: 0 0 24px 0 rgba(0, 0, 0, 0.12); /* Sombra */
-  padding: 30px; /* Relleno */
-  background: #fff; /* Fondo blanco */
-}
 
-/* Estilo de los grupos de formulario en contacto */
-.contact .php-email-form .form-group {
-  padding-bottom: 8px; /* Espacio inferior */
-}
 
-/* Mensajes de error en el formulario de contacto */
-.contact .php-email-form .error-message {
-  display: none; /* Oculto por defecto */
-  color: #fff; /* Texto blanco */
-  background: #ed3c0d; /* Fondo rojo */
-  text-align: center; /* Centrado */
-  padding: 15px; /* Relleno */
-  font-weight: 600; /* Peso fuerte */
-}
-
-/* Mensajes de éxito en el formulario de contacto */
-.contact .php-email-form .sent-message {
-  display: none; /* Oculto por defecto */
-  color: #fff; /* Texto blanco */
-  background: #18d26e; /* Fondo verde */
-  text-align: center; /* Centrado */
-  padding: 15px; /* Relleno */
-  font-weight: 600; /* Peso fuerte */
-}
-
-/* Indicador de carga en el formulario de contacto */
-.contact .php-email-form .loading {
-  display: none; /* Oculto por defecto */
-  background: #fff; /* Fondo blanco */
-  text-align: center; /* Centrado */
-  padding: 15px; /* Relleno */
-}
-
-/* Estilo del círculo en el indicador de carga del formulario de contacto */
-.contact .php-email-form .loading:before {
-  content: ""; /* Elemento vacío */
-  display: inline-block; /* Se muestra en línea */
-  border-radius: 50%; /* Forma circular */
-  width: 24px; /* Ancho */
-  height: 24px; /* Alto */
-  margin: 0 10px -6px 0; /* Margen */
-  border: 3px solid #18d26e; /* Borde verde */
-  border-top-color: #eee; /* Borde superior gris */
-  animation: animate-loading 1s linear infinite; /* Animación de carga */
-}
-
-/* Estilo de los campos de entrada y textarea en contacto */
-.contact .php-email-form input,
-.contact .php-email-form textarea {
-  border-radius: 0; /* Sin bordes redondeados */
-  box-shadow: none; /* Sin sombra */
-  font-size: 14px; /* Tamaño de fuente */
-}
-
-/* Estilo del campo de entrada en contacto */
-.contact .php-email-form input {
-  height: 44px; /* Alto */
-}
-
-/* Estilo del textarea en contacto */
-.contact .php-email-form textarea {
-  padding: 10px 12px; /* Relleno */
-}
-
-/* Estilo del botón de envío en contacto */
-.contact .php-email-form button[type=submit] {
-  background: #ff3333; /* Fondo rojo */
-  border: 0; /* Sin borde */
-  padding: 10px 24px; /* Relleno */
-  color: #fff; /* Texto blanco */
-  transition: 0.4s; /* Transición suave */
-  border-radius: 50px; /* Bordes redondeados */
-}
-
-/* Efecto hover en el botón de envío en contacto */
-.contact .php-email-form button[type=submit]:hover {
-  background: #ffa012; /* Fondo naranja */
-}
-
-/* Animación de carga */
-@keyframes animate-loading {
-  0% {
-    transform: rotate(0deg); /* Rotación inicial */
-  }
-
-  100% {
-    transform: rotate(360deg); /* Rotación final */
-  }
-}
-
-/*--------------------------------------------------------------
-# Footer
---------------------------------------------------------------*/
-/* Estilo general para el pie de página */
+/* ===================================
+   FOOTER
+=================================== */
 #footer {
-  background: #35322d; /* Fondo oscuro */
-  color: #fff; /* Texto blanco */
-  font-size: 14px; /* Tamaño de fuente */
-  text-align: center; /* Centrado */
-  padding: 30px 0; /* Relleno superior e inferior */
+  background: #35322d;
+  color: #fff;
+  font-size: 14px;
+  text-align: center;
+  padding: 40px 0;
+  margin-top: 60px;
 }
 
-/* Estilo del título en el pie de página */
 #footer h3 {
-  font-size: 36px; /* Tamaño grande */
-  font-weight: 700; /* Peso fuerte */
-  color: #ff3333; /* Color rojo */
-  position: relative; /* Posición relativa */
-  padding: 0; /* Sin relleno */
-  margin: 0 0 15px 0; /* Márgenes */
+  font-size: 36px;
+  font-weight: 700;
+  color: #ff3333;
+  margin-bottom: 15px;
 }
 
-/* Estilo del texto en el pie de página */
 #footer p {
-  font-size: 15; /* Tamaño de fuente */
-  font-style: italic; /* Cursiva */
-  padding: 0; /* Sin relleno */
-  margin: 0 0 40px 0; /* Márgenes */
+  font-size: 15px;
+  font-style: italic;
+  margin-bottom: 40px;
 }
 
-/* Enlaces de redes sociales en el pie de página */
-#footer .social-links {
-  margin: 0 0 40px 0; /* Margen inferior */
-}
-
-/* Estilo de los enlaces de redes sociales */
 #footer .social-links a {
-  font-size: 18px; /* Tamaño de fuente */
-  display: inline-block; /* En línea */
-  background: #46423b; /* Fondo oscuro */
-  color: #fff; /* Texto blanco */
-  line-height: 1; /* Altura de línea */
-  padding: 8px 0; /* Relleno */
-  margin-right: 4px; /* Margen derecho */
-  border-radius: 50%; /* Forma circular */
-  text-align: center; /* Centrado */
-  width: 36px; /* Ancho */
-  height: 36px; /* Alto */
-  transition: 0.3s; /* Transición suave */
+  font-size: 18px;
+  display: inline-block;
+  background: #46423b;
+  color: #fff;
+  line-height: 1;
+  padding: 8px 0;
+  margin-right: 4px;
+  border-radius: 50%;
+  width: 36px;
+  height: 36px;
+  transition: 0.3s;
 }
 
-/* Efecto hover en los enlaces de redes sociales */
 #footer .social-links a:hover {
-  background: #ff3333; /* Fondo rojo */
-}
-
-/* Estilo del copyright en el pie de página */
-#footer .copyright {
-  margin: 0 0 5px 0; /* Márgenes */
-}
-
-/* Estilo de los créditos en el pie de página */
-#footer .credits {
-  font-size: 13px; /* Tamaño de fuente */
+  background: #ff3333;
 }

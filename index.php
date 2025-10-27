@@ -34,42 +34,34 @@
 
 <body>
 
-  <!-- ======= Top Bar ======= -->
-  <section id="topbar" class="d-flex align-items-center fixed-top topbar-transparent topbar-scrolled">
-    <div class="container-fluid container-xl d-flex align-items-center justify-content-center justify-content-lg-start">
-      <i class="bi bi-phone d-flex align-items-center"><span>+502 30816909</span></i>
-      <i class="bi bi-clock ms-4 d-none d-lg-flex align-items-center"><span>Horario -Lunes a Domingo : 9:00 AM - 19:00 PM</span></i>
-    </div>
-  </section>
+<!-- ======= Top Bar (Fijo) ======= -->
 
-  <!-- ======= Header ======= -->
-  <header id="header" class="fixed-top d-flex align-items-center header-transparent header-scrolled">
-    <div class="container-fluid container-xl d-flex align-items-center justify-content-between">
 
-      <div class="logo me-auto">
-        <h1><a href="index.html">Marea Roja</a></h1>
-        <!-- Uncomment below if you prefer to use an image logo -->
-        <!-- <a href="index.html"><img src="assets/img/logo.png" alt="" class="img-fluid"></a>-->
-      </div>
+<!-- ======= Header ======= -->
+<header id="header" class="d-flex align-items-center">
+  <div class="container-fluid container-xl d-flex align-items-center justify-content-between">
 
-      <nav id="navbar" class="navbar order-last order-lg-0">
-        <ul>
-          <li><a class="nav-link scrollto active" href="#hero">Inicio</a></li>
-          <li><a class="nav-link scrollto" href="#about">Sobre Nosotros</a></li>
-          <li><a class="nav-link scrollto" href="#menu">Menu</a></li>
-          <li><a class="nav-link scrollto" href="#gallery">Galeria</a></li>
-          <li><a class="nav-link scrollto" href="./html/login.html">Empleados</a></li>
+    <h1 class="logo me-auto d-flex align-items-center">
+      <a href="index.php">
+        <img src="image/Logo.png" alt="Marea Roja">
+        <span>Marea Roja</span>
+      </a>
+    </h1>
 
-          
+    <nav id="navbar" class="navbar order-last order-lg-0">
+      <ul>
+        <li><a class="nav-link scrollto active" href="#hero">Inicio</a></li>
+        <li><a class="nav-link scrollto" href="#about">Sobre Nosotros</a></li>
+        <li><a class="nav-link scrollto" href="#menu">Menu</a></li>
+        <li><a class="nav-link scrollto" href="#gallery">Galeria</a></li>
+        <li><a class="nav-link scrollto" href="html/login.php">Empleados</a></li>
+      </ul>
+      <i class="bi bi-list mobile-nav-toggle"></i>
+    </nav>
 
-        </ul>
-        <i class="bi bi-list mobile-nav-toggle"></i>
-      </nav><!-- .navbar -->
-
-      
-
-    </div>
-  </header><!-- End Header -->
+  </div>
+</header>
+<!-- End Header -->
 
   <!-- ======= Hero Section ======= -->
   <section id="hero">
