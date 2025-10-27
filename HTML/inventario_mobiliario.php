@@ -10,7 +10,7 @@
         body, h1, h2, h3, h4, h5, h6, label, input, button, table, th, td {
             font-family: 'Poppins', Arial, Helvetica, sans-serif !important;
         }
-    </style>
+    </style>    <!-- Frameworks y librerías base -->
     <!-- Frameworks y librerías base -->
     <link rel="stylesheet" href="../css/bootstrap.min.css">
     <link rel="stylesheet" href="../css/animate.min.css">
