@@ -126,7 +126,7 @@
             <li>
                 <a href="#" class="submenu-toggle"><span>💰</span> Facturaciones</a>
                 <ul class="submenu">
-                    <li><a href="Facturacion_Ventas.html">Nueva Factura</a></li>
+                    <li><a href="facturacion/Facturacion_Ventas.php">Nueva Factura</a></li>
                 </ul>
             </li>
 
