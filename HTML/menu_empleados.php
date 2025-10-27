@@ -144,7 +144,9 @@
     </div>
 
     <div class="container">
-        <h2>🏢 Panel de Control - Empleados</h2>
+        <h2>🏢 Panel de Control - Empleados
+            <a class="btn-reportes" href="menu_empleados_vista.php">Ver reportes</a>
+        </h2>
         <div id="tabla-reservaciones">
             <h3>¡Bienvenido al Sistema de Gestión Marea Roja!</h3>
             <p>Selecciona una opción del menú lateral para comenzar a gestionar el restaurante</p>
