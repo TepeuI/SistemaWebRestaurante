@@ -129,16 +129,16 @@
                     <li><a href="#" class="consulta-only" data-href="Facturacion_Ventas.html">Nueva Factura</a></li>
                 </ul>
             </li>
+       
 
-            <li>
-                <a href="#" class="submenu-toggle"><span>👨🏻‍💻</span> Gestión de Cuentas</a>
+                <li>
+                <a href="#" class="submenu-toggle"><span>📦</span> Insumos</a>
                 <ul class="submenu">
-                    <li><a href="#" class="consulta-only" data-href="crear_usuario.php">Crear Cuenta</a></li>
-                    <li><a href="#" class="consulta-only" data-href="../HTML/Usuarios_Aplicaciones/Aplicaciones.php">Mantenimieno Modulos</a></li>
-                    <li><a href="#" class="consulta-only" data-href="../HTML/Usuarios_Aplicaciones/Asignación_Usuario_Aplicaciones.php">Asignacion Permisos Usuarios</a></li>
+                    <li>
+                    <a href="Reportes/lista_insumos.php">Lista de Insumos</a>
+                    </li>
                 </ul>
-            </li>
-            
+                </li>
             <li><a href="login.php"><span>🚪</span> Cerrar Sesión</a></li>
         </ul>
     </div>
