@@ -32,7 +32,7 @@
             <li>
                 <a href="#" class="submenu-toggle"><span>📅</span> Reservaciones</a>
                 <ul class="submenu">
-                    <li><a href="Reservaciones.html">Nueva Reservación</a></li>
+                    <li><a href="reservaciones.php">Nueva Reservación</a></li>
                 </ul>
             </li>
 
@@ -139,7 +139,12 @@
                     <li><a href="../HTML/Usuarios_Aplicaciones/Asignación_Usuario_Aplicaciones.php">Asignacion Permisos Usuarios</a></li>
                 </ul>
             </li>
-            
+            <li>
+                <a href="#" class="submenu-toggle"><span>📦</span> Gestion de insumos</a>
+                <ul class="submenu">
+                    <li><a href="../HTML/gestion_de_insumos/gestion_insumos.php">Gestionar Insumos</a></li>
+                </ul>
+            </li>
             <li><a href="login.php"><span>🚪</span> Cerrar Sesión</a></li>
         </ul>
     </div>
