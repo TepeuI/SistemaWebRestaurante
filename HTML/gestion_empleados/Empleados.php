@@ -356,7 +356,7 @@ function is_valid_name($s) {
             <div class="col-md-3">
                 <label class="form-label">DPI</label>
                 <input type="text" class="form-control" name="dpi" id="dpi" required>
-                <small class="form-text text-muted help-text">13 dígitos numéricos</small>
+                <small class="form-text text-muted help-text">*13 dígitos numéricos</small>
             </div>
 
             <div class="col-md-3">
