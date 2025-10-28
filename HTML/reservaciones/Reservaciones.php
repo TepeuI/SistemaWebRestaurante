@@ -16,12 +16,15 @@
     <link rel="stylesheet" href="../../css/boxicons.min.css">
     <link rel="stylesheet" href="../../css/swiper-bundle.min.css">
     <link rel="stylesheet" href="../../css/glightbox.min.css">
+    
 
     <!-- CSS global -->
     <link rel="stylesheet" href="../../css/diseñoModulos.css">
 
-    <!-- Archivo JavaScript para manejos del CRUD -->
+    <!-- Archivo JavaScript para manejos del CRUD y otro para alertas interactivas -->
     <script defer src="../../javascript/reservaciones.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    
 </head>
 
 <body>
@@ -42,59 +45,57 @@
 
         <form id="form-reservaciones" class="row g-3">
 
-            <!-- ID (solo informativo, no se envía en insertar) -->
+            <!-- id informativo -->
             <div class="col-md-2">
                 <label class="form-label" for="res-id">ID Reservación</label>
                 <input type="text" class="form-control" id="res-id" name="id_reservacion" readonly>
             </div>
 
-            <!-- CLIENTE -->
+            <!-- cliente -->
             <div class="col-md-3">
                 <label class="form-label" for="res-cliente">Cliente:</label>
                 <input type="text" class="form-control" id="res-cliente" name="id_cliente" placeholder="Seleccionar cliente">
             </div>
 
-            <!-- MESA -->
+            <!-- mesas -->
             <div class="col-md-2">
                 <label class="form-label" for="res-mesa">Mesa:</label>
                 <input type="text" class="form-control" id="res-mesa" name="id_mesa" placeholder="Seleccionar mesa">
             </div>
 
-            <!-- CANTIDAD PERSONAS -->
+            <!-- personas -->
             <div class="col-md-2">
                 <label class="form-label" for="res-personas">Cantidad Personas:</label>
                 <input type="number" class="form-control" id="res-personas" name="cantidad_personas" min="1" required>
             </div>
 
-            <!-- FECHA Y HORA -->
+            <!-- hora y fecha -->
             <div class="col-md-3">
                 <label class="form-label" for="res-fecha">Fecha y Hora:</label>
                 <input type="datetime-local" class="form-control" id="res-fecha" name="fecha_hora" required>
             </div>
 
-            <!-- ESTADO -->
+            <!-- estado reservacion -->
             <div class="col-md-2">
                 <label class="form-label" for="res-estado">Estado:</label>
                 <select class="form-control" id="res-estado" name="estado" required>
                     <option value="">Seleccionar...</option>
-                    <option value="Pendiente">Pendiente</option>
-                    <option value="Confirmada">Confirmada</option>
-                    <option value="Cancelada">Cancelada</option>
+                    <option value="PROGRAMADA">Programada</option>
+                    <option value="CANCELADA">Cancelada</option>
+                    <option value="CUMPLIDA">CUMPLIDA</option>
                 </select>
             </div>
 
-            <!-- BOTONES -->
+            <!-- botones -->
             <div class="col-12 d-flex gap-2 mt-3">
                 <button type="submit" class="btn btn-success">Insertar</button>
-                <button type="button" class="btn btn-warning">Modificar</button>
-                <button type="button" class="btn btn-secondary">Eliminar</button>
-                <button type="button" class="btn btn-danger">Actualizar</button>
+                <button type="button" class="btn btn-danger">Limpiar y Refrescar</button>
             </div>
         </form>
 
-        <!-- TABLA -->
+        <!-- tabla -->
         <div class="table-responsive mt-4">
-            <table class="table table-striped table-bordered" id="tabla-reservaciones">
+            <table class="table table-striped table-bordered table-hover align-middle text-center" id="tabla-reservaciones">
                 <thead class="table-dark">
                     <tr>
                         <th>ID</th>

@@ -95,19 +95,36 @@ h2 {
 }
 
 /* ====== Sección dinámica ====== */
-#tabla-reservaciones {
+.table-responsive {
     margin-top: 20px;
-    min-height: 150px;
-    padding: 20px;
     background: #fff;
     border-radius: 10px;
     box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: #777;
-    font-style: italic;
+    padding: 10px;
 }
+
+/* Restaurar formato de tabla normal */
+#tabla-reservaciones {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+#tabla-reservaciones th, #tabla-reservaciones td {
+    text-align: center;
+    vertical-align: middle;
+    padding: 10px;
+}
+
+#tabla-reservaciones thead th {
+    background-color: #212529;
+    color: #fff;
+    font-weight: 600;
+}
+
+#tabla-reservaciones tbody tr:hover td {
+    background-color: #f1f3f5;
+}
+
 
 /* ====== Footer ====== */
 footer {
