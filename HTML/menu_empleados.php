@@ -143,6 +143,7 @@
                 <a href="#" class="submenu-toggle"><span>📦</span> Gestion de insumos</a>
                 <ul class="submenu">
                     <li><a href="../HTML/gestion_de_insumos/gestion_insumos.php">Gestionar Insumos</a></li>
+                    <li><a href="../HTML/gestion_de_insumos/compra_insumos.php">Comprar Insumos</a></li>
                 </ul>
             </li>
             <li><a href="login.php"><span>🚪</span> Cerrar Sesión</a></li>
