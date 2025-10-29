@@ -187,7 +187,7 @@ desconectar($conn);
             <input type="hidden" name="id_telefono" id="id_telefono">
 
             <div class="col-md-4">
-                <label class="form-label">Empleado</label>
+                <label class="form-label">👤 Empleado</label>
                 <select class="form-select" name="id_empleado" id="id_empleado" required>
                     <option value="">-- Seleccione empleado --</option>
                     <?php foreach ($empleados_map as $id => $nombre): ?>
@@ -197,7 +197,7 @@ desconectar($conn);
             </div>
 
             <div class="col-md-4">
-                <label class="form-label">Número de teléfono</label>
+                <label class="form-label">📞Número de teléfono</label>
                 <input type="text" class="form-control" name="numero_telefono" id="numero_telefono" required placeholder="Ej: 1234-5678">
                 <small class="form-text text-muted help-text">*1234-5678</small>
 
