@@ -252,4 +252,33 @@ document.addEventListener('DOMContentLoaded', function () {
     console.log('[Correo_Empleados.js] DOMContentLoaded: fin');
 });
 
+    (function(){
 
+        function initFormTextToggle() {
+            var form = document.getElementById('form-correo');
+            if (!form) return;
+
+            var fields = form.querySelectorAll('input, select, textarea');
+            fields.forEach(function(f){
+                f.addEventListener('focus', function(){
+                    var container = f.closest('.col-md-1, .col-md-2, .col-md-3, .col-md-4, .col-md-6, .col, .form-group') || f.parentElement;
+                    if (!container) return;
+                    var help = container.querySelector('small.form-text.help-text');
+                    if (help) help.classList.add('visible');
+                });
+                f.addEventListener('blur', function(){
+                    var container = f.closest('.col-md-1, .col-md-2, .col-md-3, .col-md-4, .col-md-6, .col, .form-group') || f.parentElement;
+                    if (!container) return;
+                    var help = container.querySelector('small.form-text.help-text');
+                    if (help) help.classList.remove('visible');
+                });
+            });
+        }
+
+        // Inicializar cuando DOM esté listo
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initFormTextToggle);
+        } else {
+            initFormTextToggle();
+        }
+    })();

@@ -192,7 +192,9 @@ desconectar($conn);
 
             <div class="col-md-4">
                 <label class="form-label">Correo Electrónico</label>
-                <input type="email" class="form-control" name="direccion_correo" id="direccion_correo" required>
+                <input type="email" class="form-control" name="direccion_correo" id="direccion_correo" required placeholder="Ej: juanperez25@gmail.com">
+                <small class="form-text text-muted help-text">*usuario@gmail.com</small>
+            
             </div>
 
             <div class="d-flex gap-2 mt-4">

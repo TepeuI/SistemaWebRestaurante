@@ -198,8 +198,8 @@ desconectar($conn);
 
             <div class="col-md-4">
                 <label class="form-label">Número de teléfono</label>
-                <input type="text" class="form-control" name="numero_telefono" id="numero_telefono" required>
-                <small class="form-text text-muted help-text">*8 dígitos numéricos</small>
+                <input type="text" class="form-control" name="numero_telefono" id="numero_telefono" required placeholder="Ej: 1234-5678">
+                <small class="form-text text-muted help-text">*1234-5678</small>
 
             </div>
 
