@@ -150,6 +150,7 @@ a.correo-empleado {
     text-decoration: underline;
 }
 
+
 /* Texto de ayuda en formularios en color rojo para destacar reglas (sobrescribe .text-muted de Bootstrap) */
 small.form-text.text-muted,
 small.form-text {

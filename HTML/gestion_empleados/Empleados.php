@@ -258,7 +258,7 @@ function eliminarEmpleado() {
         // En caso de error revertimos la transacción
         try { $conn->rollback(); } catch (Exception $e2) {}
         // Mensaje simple y claro (sin detalles técnicos)
-        $_SESSION['mensaje'] = 'No se puede eliminar el empleado porque tiene información relacionada.';
+        $_SESSION['mensaje'] = 'No se puede eliminar el empleado porque tiene información relacionada con otros datos.';
         $_SESSION['tipo_mensaje'] = 'warning';
     }
 
@@ -394,23 +394,23 @@ function is_valid_name($s) {
             <input type="hidden" name="id_empleado" id="id_empleado">
 
             <div class="col-md-3">
-                <label class="form-label">DPI</label>
-                <input type="text" class="form-control" name="dpi" id="dpi" required>
+                <label class="form-label">🪪 DPI</label>
+                <input type="text" class="form-control" name="dpi" id="dpi" required placeholder="Ej: 1234 56356 2411">
                 <small class="form-text text-muted help-text">*13 dígitos numéricos</small>
             </div>
 
             <div class="col-md-3">
                 <label class="form-label">Nombre</label>
-                <input type="text" class="form-control" name="nombre_empleado" id="nombre_empleado" required>
+                <input type="text" class="form-control" name="nombre_empleado" id="nombre_empleado" required placeholder="Ej: Juan Alberto">
             </div>
 
             <div class="col-md-3">
                 <label class="form-label">Apellido</label>
-                <input type="text" class="form-control" name="apellido_empleado" id="apellido_empleado" required>
+                <input type="text" class="form-control" name="apellido_empleado" id="apellido_empleado" required placeholder="Ej: Pérez López">
             </div>
 
             <div class="col-md-3">
-                <label class="form-label">ID Departamento</label>
+                <label class="form-label">📍ID Departamento</label>
                 <select class="form-select" name="id_departamento" id="id_departamento" required>
                     <option value="">-- Sin departamento --</option>
                     <?php foreach ($departamentos_map as $dep_id => $dep_name): ?>
@@ -420,7 +420,7 @@ function is_valid_name($s) {
             </div>
 
             <div class="col-md-3">
-                <label class="form-label">ID Puesto</label>
+                <label class="form-label">💼 ID Puesto</label>
                 <select class="form-select" name="id_puesto" id="id_puesto" required>
                     <option value="">-- Sin puesto --</option>
                     <?php foreach ($puestos_map as $puesto_id => $puesto_nombre): ?>
