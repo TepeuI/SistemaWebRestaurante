@@ -126,7 +126,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     text: '¿Deseas guardar los cambios?',
                     icon: 'question',
                     showCancelButton: true,
-                    confirmButtonText: 'Sí, actualizar',
+                    confirmButtonText: 'Sí',
                     cancelButtonText: 'Cancelar'
                 }).then((result) => { if (result.isConfirmed) doSubmit(); });
             } else {
