@@ -1,5 +1,0 @@
-/* Texto de ayuda en formularios en color rojo para destacar reglas (sobrescribe .text-muted de Bootstrap) */
-small.form-text.text-muted,
-small.form-text {
-    color: #dc3545 !important; /* rojo bootstrap (danger) */
-}

@@ -42,6 +42,7 @@
                     <li><a href="#" class="consulta-only" data-href="gestion_empleados/Empleados.php">Empleados</a></li>
                     <li><a href="#" class="consulta-only" data-href="gestion_empleados/Telefono_empleados.php">Teléfonos</a></li>
                     <li><a href="#" class="consulta-only" data-href="gestion_empleados/Correo_empleados.php">Correos</a></li>
+                    <li><a href="#" class="consulta-only" data-href="gestion_empleados/Contactos_emergencias.php">Contactos de Emergencias</a></li>
 
                 </ul>
             </li>
@@ -101,17 +102,14 @@
             <li>
                 <a href="#" class="submenu-toggle"><span>🦞</span> Inventario Ingredientes</a>
                 <ul class="submenu">
-                    <li><a href="#" class="consulta-only" data-href="../HTML/inventario_ingredientes/Gestion_Inventario_Ingredientes.php">Gestion de Ingredientes</a></li>
-                    <li><a href="#" class="consulta-only" data-href="../HTML/inventario_ingredientes/Control_Ingrediente.php">Control de Ingredientes</a></li>
-                    <li><a href="#" class="consulta-only" data-href="../HTML/inventario_ingredientes/Perdida_Ingrediente.php">Perdida de Ingredientes</a></li>
+                     <li><a href="../HTML/Reporte_Inventario_ingredientes/Reporte_Control_Ingredientes.php">Reporte de Compras Ingredientes</a></li>
                 </ul>
             </li>
             
              <li>
                 <a href="#" class="submenu-toggle"><span>🦀🛒</span> Compra de Ingredientes</a>
                 <ul class="submenu">
-                    <li><a href="#" class="consulta-only" data-href="../HTML/inventario_ingredientes/Gestion_Compras_Inventarios_Ingredientes.php">Gestion de Compra</a></li>
-                    <li><a href="#" class="consulta-only" data-href="../HTML/inventario_ingredientes/Detalle_Compras_Ingredientes.php">Detalle de Compras</a></li>
+                    <li><a href="../HTML/Reporte_Inventario_ingredientes/Reporte_Compras_Ingrediente.php">Reporte de Compras Ingredientes</a></li>
                 </ul>
             </li>
 
@@ -129,16 +127,17 @@
                     <li><a href="#" class="consulta-only" data-href="Facturacion_Ventas.html">Nueva Factura</a></li>
                 </ul>
             </li>
+       
 
-            <li>
-                <a href="#" class="submenu-toggle"><span>👨🏻‍💻</span> Gestión de Cuentas</a>
+                <li>
+                <a href="#" class="submenu-toggle"><span>📦</span> Insumos</a>
                 <ul class="submenu">
-                    <li><a href="#" class="consulta-only" data-href="crear_usuario.php">Crear Cuenta</a></li>
-                    <li><a href="#" class="consulta-only" data-href="../HTML/Usuarios_Aplicaciones/Aplicaciones.php">Mantenimieno Modulos</a></li>
-                    <li><a href="#" class="consulta-only" data-href="../HTML/Usuarios_Aplicaciones/Asignación_Usuario_Aplicaciones.php">Asignacion Permisos Usuarios</a></li>
+                    <li>
+                    <a href="Reportes/lista_insumos.php">Lista de Insumos</a>
+                    <a href="Reportes/detalle_compras_insumos.php">Detalle de Compras de Insumos</a>
+                    </li>
                 </ul>
-            </li>
-            
+                </li>
             <li><a href="login.php"><span>🚪</span> Cerrar Sesión</a></li>
         </ul>
     </div>
@@ -146,6 +145,7 @@
     <div class="container">
         <div class="consulta-notice">Nota: Esta vista es solo para consultar datos. Las acciones y redirecciones están deshabilitadas aquí.</div>
         <h2>🏢 Panel de Control - Empleados</h2>
+        <a class="btn-reportes" href="menu_empleados.php">Ver Mantenimeintos</a>
         <div id="tabla-reservaciones">
             <h3>¡Bienvenido al Sistema de Gestión Marea Roja!</h3>
             <p>Selecciona una opción del menú lateral para comenzar a gestionar el restaurante</p>

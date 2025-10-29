@@ -31,15 +31,15 @@ function crearPerdida() {
     
     $id_ingrediente = intval($_POST['id_ingrediente'] ?? '');
     $descripcion = trim($_POST['descripcion'] ?? '');
-    $cantidad_unidades = floatval($_POST['cantidad_unidades'] ?? 0);
-    $costo_perdida_q = floatval($_POST['costo_perdida_q'] ?? 0);
-    $fecha_perdida = $_POST['fecha_perdida'] ?? '';
+    $cantidad_unitaria_perdida = floatval($_POST['cantidad_unitaria_perdida'] ?? 0);
+    $costo_perdida = floatval($_POST['costo_perdida'] ?? 0);
     
-    $sql = "INSERT INTO perdidas_inventario (id_ingrediente, descripcion, cantidad_unidades, costo_perdida_q, fecha_perdida) 
-            VALUES (?, ?, ?, ?, ?)";
+    // CORREGIDO: Usar los nombres de columna correctos
+    $sql = "INSERT INTO perdidas_inventario (id_ingrediente, descripcion, cantidad_unitaria_perdida, costo_perdida) 
+            VALUES (?, ?, ?, ?)";
     
     $stmt = $conn->prepare($sql);
-    $stmt->bind_param("isddss", $id_ingrediente, $descripcion, $cantidad_unidades, $costo_perdida_q, $fecha_perdida);
+    $stmt->bind_param("isdd", $id_ingrediente, $descripcion, $cantidad_unitaria_perdida, $costo_perdida);
     
     if ($stmt->execute()) {
         $_SESSION['mensaje'] = "Pérdida registrada exitosamente";
@@ -51,7 +51,7 @@ function crearPerdida() {
     
     $stmt->close();
     desconectar($conn);
-    header('Location: perdidas_inventario.php');
+    header('Location: Perdida_Ingrediente.php');
     exit();
 }
 
@@ -62,15 +62,15 @@ function actualizarPerdida() {
     $id_perdida = intval($_POST['id_perdida'] ?? '');
     $id_ingrediente = intval($_POST['id_ingrediente'] ?? '');
     $descripcion = trim($_POST['descripcion'] ?? '');
-    $cantidad_unidades = floatval($_POST['cantidad_unidades'] ?? 0);
-    $costo_perdida_q = floatval($_POST['costo_perdida_q'] ?? 0);
-    $fecha_perdida = $_POST['fecha_perdida'] ?? '';
+    $cantidad_unitaria_perdida = floatval($_POST['cantidad_unitaria_perdida'] ?? 0);
+    $costo_perdida = floatval($_POST['costo_perdida'] ?? 0);
     
-    $sql = "UPDATE perdidas_inventario SET id_ingrediente = ?, descripcion = ?, cantidad_unidades = ?, costo_perdida_q = ?, fecha_perdida = ? 
+    // CORREGIDO: Usar los nombres de columna correctos
+    $sql = "UPDATE perdidas_inventario SET id_ingrediente = ?, descripcion = ?, cantidad_unitaria_perdida = ?, costo_perdida = ? 
             WHERE id_perdida = ?";
     
     $stmt = $conn->prepare($sql);
-    $stmt->bind_param("isddssi", $id_ingrediente, $descripcion, $cantidad_unidades, $costo_perdida_q, $fecha_perdida, $id_perdida);
+    $stmt->bind_param("isddi", $id_ingrediente, $descripcion, $cantidad_unitaria_perdida, $costo_perdida, $id_perdida);
     
     if ($stmt->execute()) {
         $_SESSION['mensaje'] = "Pérdida actualizada exitosamente";
@@ -82,7 +82,7 @@ function actualizarPerdida() {
     
     $stmt->close();
     desconectar($conn);
-    header('Location: perdidas_inventario.php');
+    header('Location: Perdida_Ingrediente.php');
     exit();
 }
 
@@ -107,17 +107,18 @@ function eliminarPerdida() {
     
     $stmt->close();
     desconectar($conn);
-    header('Location: perdidas_inventario.php');
+    header('Location: Perdida_Ingrediente.php');
     exit();
 }
 
 // Obtener todas las pérdidas para mostrar en la tabla
 function obtenerPerdidas() {
     $conn = conectar();
+    // CORREGIDO: Usar los nombres de columna correctos
     $sql = "SELECT p.*, i.nombre_ingrediente 
             FROM perdidas_inventario p 
             LEFT JOIN ingredientes i ON p.id_ingrediente = i.id_ingrediente 
-            ORDER BY p.fecha_perdida DESC";
+            ORDER BY p.id_perdida DESC";
     $resultado = $conn->query($sql);
     $perdidas = [];
     
@@ -258,7 +259,7 @@ $ingredientes = obtenerIngredientes();
             <input type="hidden" id="operacion" name="operacion" value="crear">
             <input type="hidden" id="id_perdida" name="id_perdida" value="">
             
-            <div class="col-md-3">
+            <div class="col-md-4">
                 <label class="form-label fw-semibold" for="id_ingrediente">
                     <i class="bi bi-box-seam me-1"></i>Ingrediente: *
                 </label>
@@ -272,35 +273,28 @@ $ingredientes = obtenerIngredientes();
                 </select>
             </div>
             
-            <div class="col-md-3">
+            <div class="col-md-4">
                 <label class="form-label fw-semibold" for="descripcion">
                     <i class="bi bi-card-text me-1"></i>Descripción: *
                 </label>
                 <input type="text" class="form-control" id="descripcion" name="descripcion" 
-                       required placeholder="Ej: Pérdida por caducidad" maxlength="200">
+                       required placeholder="Ej: Pérdida por caducidad, derrame, etc." maxlength="200">
             </div>
             
             <div class="col-md-2">
-                <label class="form-label fw-semibold" for="cantidad_unidades">
-                    <i class="bi bi-box-arrow-down me-1"></i>Cantidad: *
+                <label class="form-label fw-semibold" for="cantidad_unitaria_perdida">
+                    <i class="bi bi-box-arrow-down me-1"></i>Cantidad Unitaria: *
                 </label>
-                <input type="number" class="form-control" id="cantidad_unidades" name="cantidad_unidades" 
+                <input type="number" class="form-control" id="cantidad_unitaria_perdida" name="cantidad_unitaria_perdida" 
                        required placeholder="0.000" step="0.001" min="0">
             </div>
             
             <div class="col-md-2">
-                <label class="form-label fw-semibold" for="costo_perdida_q">
+                <label class="form-label fw-semibold" for="costo_perdida">
                     <i class="bi bi-currency-dollar me-1"></i>Costo (Q): *
                 </label>
-                <input type="number" class="form-control" id="costo_perdida_q" name="costo_perdida_q" 
+                <input type="number" class="form-control" id="costo_perdida" name="costo_perdida" 
                        required placeholder="0.00" step="0.01" min="0">
-            </div>
-            
-            <div class="col-md-2">
-                <label class="form-label fw-semibold" for="fecha_perdida">
-                    <i class="bi bi-calendar-date me-1"></i>Fecha: *
-                </label>
-                <input type="date" class="form-control" id="fecha_perdida" name="fecha_perdida" required>
             </div>
         </form>
 
@@ -332,7 +326,6 @@ $ingredientes = obtenerIngredientes();
                         <th>Descripción</th>
                         <th>Cantidad</th>
                         <th>Costo (Q)</th>
-                        <th>Fecha</th>
                         <th>Acciones</th>
                     </tr>
                 </thead>
@@ -342,19 +335,17 @@ $ingredientes = obtenerIngredientes();
                         <td><?php echo htmlspecialchars($perdida['id_perdida']); ?></td>
                         <td><?php echo htmlspecialchars($perdida['nombre_ingrediente']); ?></td>
                         <td><?php echo htmlspecialchars($perdida['descripcion']); ?></td>
-                        <td><?php echo htmlspecialchars($perdida['cantidad_unidades']); ?></td>
-                        <td class="<?php echo $perdida['costo_perdida_q'] > 100 ? 'costo-alto' : ''; ?>">
-                            Q <?php echo number_format($perdida['costo_perdida_q'], 2); ?>
+                        <td><?php echo number_format($perdida['cantidad_unitaria_perdida'], 3); ?></td>
+                        <td class="<?php echo $perdida['costo_perdida'] > 100 ? 'costo-alto' : ''; ?>">
+                            Q <?php echo number_format($perdida['costo_perdida'], 2); ?>
                         </td>
-                        <td><?php echo htmlspecialchars($perdida['fecha_perdida']); ?></td>
                         <td>
                             <button class="btn btn-sm btn-primary btn-action editar-btn" 
                                     data-id="<?php echo $perdida['id_perdida']; ?>"
                                     data-ingrediente="<?php echo $perdida['id_ingrediente']; ?>"
                                     data-descripcion="<?php echo htmlspecialchars($perdida['descripcion']); ?>"
-                                    data-cantidad="<?php echo $perdida['cantidad_unidades']; ?>"
-                                    data-costo="<?php echo $perdida['costo_perdida_q']; ?>"
-                                    data-fecha="<?php echo $perdida['fecha_perdida']; ?>">
+                                    data-cantidad="<?php echo $perdida['cantidad_unitaria_perdida']; ?>"
+                                    data-costo="<?php echo $perdida['costo_perdida']; ?>">
                                 <i class="bi bi-pencil me-1"></i>Editar
                             </button>
                             <form method="post" style="display:inline;" onsubmit="return confirm('¿Estás seguro de eliminar este registro de pérdida?')">
@@ -369,7 +360,7 @@ $ingredientes = obtenerIngredientes();
                     <?php endforeach; ?>
                     <?php if (empty($perdidas)): ?>
                     <tr>
-                        <td colspan="7" class="text-center">No hay pérdidas registradas</td>
+                        <td colspan="6" class="text-center">No hay pérdidas registradas</td>
                     </tr>
                     <?php endif; ?>
                 </tbody>
@@ -387,9 +378,6 @@ $ingredientes = obtenerIngredientes();
         const btnCancelar = document.getElementById('btn-cancelar');
         const operacionInput = document.getElementById('operacion');
         const idPerdidaInput = document.getElementById('id_perdida');
-
-        // Establecer fecha actual por defecto
-        document.getElementById('fecha_perdida').valueAsDate = new Date();
 
         // Botón Nuevo
         btnNuevo.addEventListener('click', function() {
@@ -427,15 +415,13 @@ $ingredientes = obtenerIngredientes();
                 const descripcion = this.getAttribute('data-descripcion');
                 const cantidad = this.getAttribute('data-cantidad');
                 const costo = this.getAttribute('data-costo');
-                const fecha = this.getAttribute('data-fecha');
 
                 // Llenar formulario
                 idPerdidaInput.value = id;
                 document.getElementById('id_ingrediente').value = ingrediente;
                 document.getElementById('descripcion').value = descripcion;
-                document.getElementById('cantidad_unidades').value = cantidad;
-                document.getElementById('costo_perdida_q').value = costo;
-                document.getElementById('fecha_perdida').value = fecha;
+                document.getElementById('cantidad_unitaria_perdida').value = cantidad;
+                document.getElementById('costo_perdida').value = costo;
 
                 mostrarBotonesActualizar();
             });
@@ -445,8 +431,6 @@ $ingredientes = obtenerIngredientes();
             form.reset();
             idPerdidaInput.value = '';
             operacionInput.value = 'crear';
-            // Restablecer fecha actual
-            document.getElementById('fecha_perdida').valueAsDate = new Date();
         }
 
         function mostrarBotonesGuardar() {
@@ -464,9 +448,8 @@ $ingredientes = obtenerIngredientes();
         function validarFormulario() {
             const ingrediente = document.getElementById('id_ingrediente').value;
             const descripcion = document.getElementById('descripcion').value.trim();
-            const cantidad = document.getElementById('cantidad_unidades').value;
-            const costo = document.getElementById('costo_perdida_q').value;
-            const fecha = document.getElementById('fecha_perdida').value;
+            const cantidad = document.getElementById('cantidad_unitaria_perdida').value;
+            const costo = document.getElementById('costo_perdida').value;
 
             if (!ingrediente) {
                 alert('El ingrediente es requerido');
@@ -482,10 +465,6 @@ $ingredientes = obtenerIngredientes();
             }
             if (!costo || costo < 0) {
                 alert('El costo debe ser un número positivo');
-                return false;
-            }
-            if (!fecha) {
-                alert('La fecha es requerida');
                 return false;
             }
 

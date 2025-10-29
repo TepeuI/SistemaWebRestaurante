@@ -213,16 +213,24 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     // Mostrar mensajes desde server (window.__mensaje)
-    try {
-        if (window.__mensaje && typeof window.__mensaje === 'object') {
-            const m = window.__mensaje;
-            const tipo = (m.tipo === 'success') ? 'success' : (m.tipo === 'error' ? 'error' : 'info');
-            if (typeof Swal !== 'undefined') {
-                Swal.fire({ icon: tipo, title: tipo === 'success' ? 'Éxito' : 'Atención', text: m.text || '' });
-            } else {
-                alert(m.text || '');
-            }
-            try { delete window.__mensaje; } catch (e) { window.__mensaje = null; }
+
+// Mostrar mensajes (si los hay) con SweetAlert
+if (window.__mensaje && window.__mensaje.text) {
+    const tipo = window.__mensaje.tipo || 'info';
+    Swal.fire({
+        icon: (tipo === 'success' ? 'success' : (tipo === 'error' ? 'error' : 'info')),
+        title: tipo === 'success' ? 'Éxito' : (tipo === 'error' ? 'Error' : 'Aviso'),
+        text: window.__mensaje.text
+    }).then(() => {
+        // ✅ Si la compra fue registrada correctamente, limpiar formulario
+        if (tipo === 'success') {
+            const form = document.getElementById('form-compra');
+            form.reset(); // limpia todos los inputs
+            // limpiar líneas de la tabla
+            const tbody = document.querySelector('#tabla-lineas tbody');
+            if (tbody) tbody.innerHTML = '';
+            document.getElementById('total').textContent = '0.00';
         }
-    } catch (e) {}
+    });
+}
 });

@@ -126,7 +126,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     text: '¿Deseas guardar los cambios?',
                     icon: 'question',
                     showCancelButton: true,
-                    confirmButtonText: 'Sí, actualizar',
+                    confirmButtonText: 'Sí',
                     cancelButtonText: 'Cancelar'
                 }).then((result) => { if (result.isConfirmed) doSubmit(); });
             } else {
@@ -232,10 +232,12 @@ document.addEventListener('DOMContentLoaded', function () {
         };
 
     if (!dpi) { showWarning('El DPI es requerido'); if (dpiEl) dpiEl.focus(); return false; }
+
     // Comprobar que tenga 13 dígitos (ignorando espacios)
     const dpiDigits = dpi.replace(/\D/g, '');
     if (dpiDigits.length !== 13) { showWarning('El DPI debe contener 13 dígitos'); if (dpiEl) dpiEl.focus(); return false; }
-        // Validar nombre y apellido: sólo letras y espacios
+        
+    // Validar nombre y apellido: sólo letras y espacios
         const nameRegex = /^[A-Za-zÁÉÍÓÚÜÑáéíóúüñ\s]+$/;
         if (!nombre) { showWarning('El nombre es requerido'); if (nombreEl) nombreEl.focus(); return false; }
         const nombreNorm = nombre.replace(/\s+/g, ' ');
@@ -293,7 +295,6 @@ document.addEventListener('DOMContentLoaded', function () {
 
 });
 
-// form_text_toggle.js — Muestra/oculta texto de ayuda en formularios al enfocar/perder foco
     (function(){
         // Muestra el small.help-text dentro del mismo contenedor (.col-*) cuando el input/select/textarea recibe foco
         function initFormTextToggle() {
