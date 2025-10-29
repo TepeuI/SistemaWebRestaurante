@@ -32,7 +32,8 @@
             <li>
                 <a href="#" class="submenu-toggle"><span>📅</span> Reservaciones</a>
                 <ul class="submenu">
-                    <li><a href="#" class="consulta-only" data-href="Reservaciones.html">Nueva Reservación</a></li>
+                    <li><a href="#" class="consulta-only" data-href="../HTML/Mesas/mesas.php">Mesas</a></li>
+                    <li><a href="#" class="consulta-only" data-href="../HTML/Reservaciones/reservaciones.php">Nueva Reservación</a></li>
                 </ul>
             </li>
 
