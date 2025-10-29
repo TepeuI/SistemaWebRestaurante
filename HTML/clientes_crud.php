@@ -1,5 +1,7 @@
 <?php
 include("conexion.php");
+include("funciones_globales.php");
+session_start();
 $conexion = conectar();
 
 $accion = $_POST['accion'] ?? '';
@@ -54,9 +56,13 @@ switch ($accion) {
         $stmt = $conexion->prepare("INSERT INTO clientes (nombre, apellido, nit, telefono, correo) VALUES (?, ?, ?, ?, ?)");
         $stmt->bind_param("sssss", $nombre, $apellido, $nit, $telefono, $correo);
         $ok = $stmt->execute();
+        if ($ok) {
+            registrarBitacora($conexion, "clientes", "insertar", "Cliente: $nombre $apellido (NIT $nit)");
+        }
         echo json_encode(['status' => $ok ? 'ok' : 'error', 'msg' => $stmt->error]);
         $stmt->close();
         break;
+
 
     //modificar clientes
     case 'modificar':
@@ -92,9 +98,13 @@ switch ($accion) {
         $stmt = $conexion->prepare("UPDATE clientes SET nombre=?, apellido=?, nit=?, telefono=?, correo=? WHERE id_cliente=?");
         $stmt->bind_param("sssssi", $nombre, $apellido, $nit, $telefono, $correo, $id);
         $ok = $stmt->execute();
+        if ($ok) {
+            registrarBitacora($conexion, "clientes", "modificar", "Cliente ID #$id ($nombre $apellido, NIT $nit)");
+        }
         echo json_encode(['status' => $ok ? 'ok' : 'error', 'msg' => $stmt->error]);
         $stmt->close();
         break;
+
 
     // eliminar cliente
     case 'eliminar':
@@ -107,9 +117,13 @@ switch ($accion) {
         $stmt = $conexion->prepare("DELETE FROM clientes WHERE id_cliente=?");
         $stmt->bind_param("i", $id);
         $ok = $stmt->execute();
+        if ($ok) {
+            registrarBitacora($conexion, "clientes", "eliminar", "Cliente ID #$id");
+        }
         echo json_encode(['status' => $ok ? 'ok' : 'error', 'msg' => $stmt->error]);
         $stmt->close();
         break;
+
 
     //obtener siguiente ID
     case 'siguiente_id':

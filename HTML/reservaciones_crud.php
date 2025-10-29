@@ -1,6 +1,9 @@
 <?php
 include("conexion.php");
+include("funciones_globales.php");
+session_start();
 $conexion = conectar();
+
 
 $accion = $_POST['accion'] ?? '';
 
@@ -65,6 +68,10 @@ switch ($accion) {
         );
         $stmt->bind_param("iiiss", $id_cliente, $id_mesa, $cantidad_personas, $fecha_hora, $estado);
         $ok = $stmt->execute();
+        if ($ok) {
+            registrarBitacora($conexion, 'reservaciones', 'insertar', "Reservación creada (Cliente #$id_cliente, Mesa #$id_mesa, $cantidad_personas personas)");
+    }
+
 
         if ($ok) {
         //cambiar el estado de la mesa a reservada solo si la reservación esta programada
@@ -129,6 +136,10 @@ switch ($accion) {
         $ok = $stmt->execute();
 
         if ($ok) {
+        registrarBitacora($conexion, 'reservaciones', 'modificar', "Reservación #$id actualizada (Cliente #$id_cliente, Mesa #$id_mesa_nueva, Estado: $estado)");
+        }
+
+        if ($ok) {
             // Si cambió de mesa:
             if ($id_mesa_nueva !== $id_mesa_anterior) {
                 // Si la reservación queda programada reserva una nueva mesa
@@ -187,6 +198,11 @@ switch ($accion) {
         $stmt = $conexion->prepare("DELETE FROM reservaciones WHERE id_reservacion = ?");
         $stmt->bind_param("i", $id);
         $ok = $stmt->execute();
+
+        if ($ok) {
+            registrarBitacora($conexion, 'reservaciones', 'eliminar', "Reservación eliminada (ID #$id, Mesa #$id_mesa)");
+        }
+
 
         if ($ok && $id_mesa) {
             // Si ya no hay reservaciones programadas para esa mesa, liberarla
