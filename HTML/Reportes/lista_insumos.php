@@ -38,7 +38,7 @@ $insumos = obtenerInsumos();
 <header class="mb-4">
     <div class="container d-flex justify-content-between align-items-center py-3">
         <h1 class="mb-0">LISTADO DE INSUMOS</h1>
-        <a href="../menu_empleados.php" class="btn btn-outline-dark">Regresar</a>
+        <a href="../menu_empleados_vista.php" class="btn btn-outline-dark">Regresar</a>
     </div>
 </header>
 
