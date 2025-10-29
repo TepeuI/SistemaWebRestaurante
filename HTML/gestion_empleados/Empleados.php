@@ -212,16 +212,56 @@ function actualizarEmpleado() {
 
 function eliminarEmpleado() {
     $conn = conectar();
-    $id_empleado = $_POST['id_empleado'] ?? '';
-    $sql = "DELETE FROM empleados WHERE id_empleado = ?";
-    $stmt = $conn->prepare($sql);
-    $stmt->bind_param('i', $id_empleado);
-    $stmt->execute();
+    $id_empleado = isset($_POST['id_empleado']) ? (int)$_POST['id_empleado'] : 0;
 
-    $_SESSION['mensaje'] = $stmt->affected_rows > 0 ? 'Empleado eliminado exitosamente' : 'Error al eliminar empleado: ' . $stmt->error;
-    $_SESSION['tipo_mensaje'] = $stmt->affected_rows > 0 ? 'success' : 'error';
+    if ($id_empleado <= 0) {
+        $_SESSION['mensaje'] = 'ID de empleado inválido.';
+        $_SESSION['tipo_mensaje'] = 'error';
+        desconectar($conn);
+        header('Location: Empleados.php');
+        exit();
+    }
 
-    $stmt->close();
+    // Hacemos la eliminación en una transacción: primero eliminamos filas dependientes 
+    // para evitar errores por restricciones FK, luego eliminamos el empleado.
+    $conn->begin_transaction();
+    try {
+        // Eliminar correos asociados
+        $stmtChild = $conn->prepare("DELETE FROM correos_empleado WHERE id_empleado = ?");
+        if ($stmtChild) {
+            $stmtChild->bind_param('i', $id_empleado);
+            $stmtChild->execute();
+            $stmtChild->close();
+        }
+
+        // Ahora eliminar el empleado
+        $stmt = $conn->prepare("DELETE FROM empleados WHERE id_empleado = ?");
+        if (!$stmt) {
+            throw new Exception('Error preparando sentencia de eliminación: ' . $conn->error);
+        }
+        $stmt->bind_param('i', $id_empleado);
+        $stmt->execute();
+
+        $affected = $stmt->affected_rows;
+        $stmt->close();
+
+        $conn->commit();
+
+        if ($affected > 0) {
+            $_SESSION['mensaje'] = 'Empleado eliminado exitosamente.';
+            $_SESSION['tipo_mensaje'] = 'success';
+        } else {
+            $_SESSION['mensaje'] = 'No se encontró el empleado o no se pudo eliminar.';
+            $_SESSION['tipo_mensaje'] = 'error';
+        }
+    } catch (Exception $e) {
+        // En caso de error revertimos la transacción
+        try { $conn->rollback(); } catch (Exception $e2) {}
+        // Mensaje simple y claro (sin detalles técnicos)
+        $_SESSION['mensaje'] = 'No se puede eliminar el empleado porque tiene información relacionada.';
+        $_SESSION['tipo_mensaje'] = 'warning';
+    }
+
     desconectar($conn);
     header('Location: Empleados.php');
     exit();
