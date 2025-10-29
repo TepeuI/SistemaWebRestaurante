@@ -725,9 +725,6 @@ if (isset($stmt_total_control)) $stmt_total_control->close();
                                         <button onclick="verDetalleControl(<?php echo $row['id_control']; ?>)" class="btn-ver">
                                             <i class="bi bi-eye"></i>Ver
                                         </button>
-                                        <button onclick="editarControl(<?php echo $row['id_control']; ?>)" class="btn-editar">
-                                            <i class="bi bi-pencil"></i>Editar
-                                        </button>
                                     </td>
                                 </tr>
                                 <?php endwhile; ?>
@@ -780,9 +777,6 @@ if (isset($stmt_total_control)) $stmt_total_control->close();
                                     <td class="text-center">
                                         <button onclick="verDetallePerdida(<?php echo $row['id_perdida']; ?>)" class="btn-ver">
                                             <i class="bi bi-eye"></i>Ver
-                                        </button>
-                                        <button onclick="editarPerdida(<?php echo $row['id_perdida']; ?>)" class="btn-editar">
-                                            <i class="bi bi-pencil"></i>Editar
                                         </button>
                                     </td>
                                 </tr>
