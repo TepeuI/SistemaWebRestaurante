@@ -136,6 +136,7 @@
                 <ul class="submenu">
                     <li>
                     <a href="Reportes/lista_insumos.php">Lista de Insumos</a>
+                    <a href="Reportes/detalle_compras_insumos.php">Detalle de Compras de Insumos</a>
                     </li>
                 </ul>
                 </li>
