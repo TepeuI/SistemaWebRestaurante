@@ -92,20 +92,91 @@ function eliminarDetalleCompra() {
     $id_compra_mobiliario = $_POST['id_compra_mobiliario'] ?? '';
     $id_mobiliario = $_POST['id_mobiliario'] ?? '';
     
-    $sql = "DELETE FROM detalle_compra_mobiliario WHERE id_compra_mobiliario = ? AND id_mobiliario = ?";
+    // Validar que los IDs no estén vacíos
+    if (empty($id_compra_mobiliario) || empty($id_mobiliario)) {
+        $_SESSION['mensaje'] = "Error: No se proporcionaron IDs válidos para eliminar el detalle.";
+        $_SESSION['tipo_mensaje'] = "error";
+        desconectar($conn);
+        header('Location: detalle_compras_mobiliario.php');
+        exit();
+    }
     
-    $stmt = $conn->prepare($sql);
-    $stmt->bind_param("ii", $id_compra_mobiliario, $id_mobiliario);
-    
-    if ($stmt->execute()) {
-        $_SESSION['mensaje'] = "Detalle de compra eliminado exitosamente";
-        $_SESSION['tipo_mensaje'] = "success";
-    } else {
-        $_SESSION['mensaje'] = "Error al eliminar detalle de compra: " . $conn->error;
+    try {
+        // Primero verificar si el detalle existe
+        $check_detalle = $conn->prepare("SELECT * FROM detalle_compra_mobiliario WHERE id_compra_mobiliario = ? AND id_mobiliario = ?");
+        if (!$check_detalle) {
+            throw new Exception("Error al preparar la consulta: " . $conn->error);
+        }
+        
+        $check_detalle->bind_param("ii", $id_compra_mobiliario, $id_mobiliario);
+        
+        if (!$check_detalle->execute()) {
+            throw new Exception("Error al ejecutar la consulta: " . $check_detalle->error);
+        }
+        
+        $result_detalle = $check_detalle->get_result();
+        
+        if ($result_detalle->num_rows === 0) {
+            $_SESSION['mensaje'] = "Error: El detalle de compra que intenta eliminar no existe en el sistema.";
+            $_SESSION['tipo_mensaje'] = "error";
+            $check_detalle->close();
+            desconectar($conn);
+            header('Location: detalle_compras_mobiliario.php');
+            exit();
+        }
+        $check_detalle->close();
+        
+        // Proceder con la eliminación
+        $sql = "DELETE FROM detalle_compra_mobiliario WHERE id_compra_mobiliario = ? AND id_mobiliario = ?";
+        $stmt = $conn->prepare($sql);
+        
+        if (!$stmt) {
+            throw new Exception("Error al preparar la consulta de eliminación: " . $conn->error);
+        }
+        
+        $stmt->bind_param("ii", $id_compra_mobiliario, $id_mobiliario);
+        
+        if ($stmt->execute()) {
+            if ($stmt->affected_rows > 0) {
+                $_SESSION['mensaje'] = "Detalle de compra eliminado exitosamente";
+                $_SESSION['tipo_mensaje'] = "success";
+            } else {
+                $_SESSION['mensaje'] = "No se pudo eliminar el detalle de compra. Es posible que ya haya sido eliminado o no exista.";
+                $_SESSION['tipo_mensaje'] = "error";
+            }
+        } else {
+            $error = $stmt->error;
+            if (strpos($error, 'foreign key constraint') !== false) {
+                $_SESSION['mensaje'] = "No se puede eliminar el detalle de compra porque está siendo utilizado en otros registros del sistema.";
+                $_SESSION['tipo_mensaje'] = "error";
+            } else {
+                $_SESSION['mensaje'] = "Error al eliminar detalle de compra: " . $error;
+                $_SESSION['tipo_mensaje'] = "error";
+            }
+        }
+        
+        $stmt->close();
+        
+    } catch (mysqli_sql_exception $e) {
+        // Capturar excepciones específicas de MySQL
+        $error_message = $e->getMessage();
+        
+        if (strpos($error_message, 'foreign key constraint fails') !== false) {
+            $_SESSION['mensaje'] = "No se puede eliminar el detalle de compra porque está siendo utilizado en otros registros del sistema.";
+            $_SESSION['tipo_mensaje'] = "error";
+        } else if (strpos($error_message, 'Unknown column') !== false) {
+            $_SESSION['mensaje'] = "Error en la consulta a la base de datos. Por favor, contacte al administrador del sistema.";
+            $_SESSION['tipo_mensaje'] = "error";
+        } else {
+            $_SESSION['mensaje'] = "Error de base de datos: " . $error_message;
+            $_SESSION['tipo_mensaje'] = "error";
+        }
+    } catch (Exception $e) {
+        // Capturar cualquier otra excepción
+        $_SESSION['mensaje'] = "Error inesperado: " . $e->getMessage();
         $_SESSION['tipo_mensaje'] = "error";
     }
     
-    $stmt->close();
     desconectar($conn);
     header('Location: detalle_compras_mobiliario.php');
     exit();
@@ -196,53 +267,7 @@ $mobiliarios = obtenerMobiliario();
     <title>Detalle de Compras de Mobiliario - Marina Roja</title>
     <!-- Google Fonts: Poppins -->
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
-    <style>
-        body, h1, h2, h3, h4, h5, h6, label, input, button, table, th, td {
-            font-family: 'Poppins', Arial, Helvetica, sans-serif !important;
-        }
-        .mensaje {
-            padding: 10px;
-            margin: 10px 0;
-            border-radius: 5px;
-        }
-        .mensaje.success {
-            background-color: #d4edda;
-            color: #155724;
-            border: 1px solid #c3e6cb;
-        }
-        .mensaje.error {
-            background-color: #f8d7da;
-            color: #721c24;
-            border: 1px solid #f5c6cb;
-        }
-        .btn-action {
-            margin: 2px;
-        }
-        .debug-info {
-            background-color: #f8f9fa;
-            padding: 10px;
-            border-radius: 5px;
-            margin: 10px 0;
-            font-size: 12px;
-        }
-        .table-responsive {
-            max-height: 400px;
-            overflow-y: auto;
-        }
-        .monto {
-            text-align: right;
-            font-weight: bold;
-        }
-        .cantidad {
-            text-align: center;
-        }
-        .info-compra {
-            background-color: #e9ecef;
-            padding: 10px;
-            border-radius: 5px;
-            margin-bottom: 15px;
-        }
-    </style>
+    
     <!-- Frameworks y librerías base -->
     <link rel="stylesheet" href="../../css/bootstrap.min.css">
     <link rel="stylesheet" href="../../css/diseñoModulos.css">
@@ -258,26 +283,24 @@ $mobiliarios = obtenerMobiliario();
     </header>
 
     <main class="container my-4">
-        <!-- Mostrar mensajes -->
+        <!-- Mostrar mensajes con SweetAlert2 -->
         <?php if (isset($_SESSION['mensaje'])): ?>
-            <div class="mensaje <?php echo $_SESSION['tipo_mensaje']; ?>">
-                <?php 
-                echo htmlspecialchars($_SESSION['mensaje']); 
-                unset($_SESSION['mensaje']);
-                unset($_SESSION['tipo_mensaje']);
-                ?>
-            </div>
-        <?php endif; ?>
-
-        <!-- Debug info -->
-        <div class="debug-info">
-            <strong>Debug:</strong> 
+            <script>
+                window.__mensaje = {
+                    text: <?php echo json_encode($_SESSION['mensaje']); ?>,
+                    tipo: <?php echo json_encode($_SESSION['tipo_mensaje'] ?? 'error'); ?>
+                };
+            </script>
+            <noscript>
+                <div class="alert alert-<?php echo ($_SESSION['tipo_mensaje'] ?? '') === 'success' ? 'success' : 'danger'; ?>">
+                    <?php echo htmlspecialchars($_SESSION['mensaje']); ?>
+                </div>
+            </noscript>
             <?php 
-            echo "Detalles: " . count($detalles) . " | ";
-            echo "Compras: " . count($compras) . " | ";
-            echo "Mobiliarios: " . count($mobiliarios);
+            unset($_SESSION['mensaje']);
+            unset($_SESSION['tipo_mensaje']);
             ?>
-        </div>
+        <?php endif; ?>
 
         <section class="card shadow p-4">
             <h2 class="card__title text-primary mb-4">FORMULARIO - DETALLE DE COMPRAS DE MOBILIARIO</h2>
@@ -364,9 +387,9 @@ $mobiliarios = obtenerMobiliario();
                             <td><?php echo htmlspecialchars($detalle['fecha_de_compra']); ?></td>
                             <td><?php echo htmlspecialchars($detalle['nombre_mobiliario'] ?? 'N/A'); ?></td>
                             <td><?php echo htmlspecialchars($detalle['tipo_mobiliario'] ?? 'N/A'); ?></td>
-                            <td class="cantidad"><?php echo htmlspecialchars($detalle['cantidad_de_compra']); ?></td>
-                            <td class="monto">Q <?php echo number_format($detalle['costo_unitario'], 2); ?></td>
-                            <td class="monto">Q <?php echo number_format($detalle['monto_total_de_mobiliario'], 2); ?></td>
+                            <td class="text-center"><?php echo htmlspecialchars($detalle['cantidad_de_compra']); ?></td>
+                            <td class="text-end fw-bold">Q <?php echo number_format($detalle['costo_unitario'], 2); ?></td>
+                            <td class="text-end fw-bold">Q <?php echo number_format($detalle['monto_total_de_mobiliario'], 2); ?></td>
                             <td>
                                 <button class="btn btn-sm btn-primary btn-action editar-btn" 
                                         data-compra="<?php echo $detalle['id_compra_mobiliario']; ?>"
@@ -375,7 +398,7 @@ $mobiliarios = obtenerMobiliario();
                                         data-costo="<?php echo $detalle['costo_unitario']; ?>">
                                     Editar
                                 </button>
-                                <form method="post" style="display:inline;" onsubmit="return confirm('¿Estás seguro de eliminar este detalle de compra?')">
+                                <form method="post" style="display:inline;" data-eliminar="true">
                                     <input type="hidden" name="operacion" value="eliminar_detalle">
                                     <input type="hidden" name="id_compra_mobiliario" value="<?php echo $detalle['id_compra_mobiliario']; ?>">
                                     <input type="hidden" name="id_mobiliario" value="<?php echo $detalle['id_mobiliario']; ?>">
@@ -395,131 +418,7 @@ $mobiliarios = obtenerMobiliario();
         </section>
     </main>
 
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            const form = document.getElementById('form-detalle');
-            const btnNuevo = document.getElementById('btn-nuevo');
-            const btnGuardar = document.getElementById('btn-guardar');
-            const btnActualizar = document.getElementById('btn-actualizar');
-            const btnCancelar = document.getElementById('btn-cancelar');
-            const operacionInput = document.getElementById('operacion');
-            const idCompraOriginalInput = document.getElementById('id_compra_mobiliario_original');
-            const idMobiliarioOriginalInput = document.getElementById('id_mobiliario_original');
-            const cantidadInput = document.getElementById('cantidad_de_compra');
-            const costoInput = document.getElementById('costo_unitario');
-            const montoDisplay = document.getElementById('monto_total_display');
-
-            // Calcular monto total automáticamente
-            function calcularMontoTotal() {
-                const cantidad = parseFloat(cantidadInput.value) || 0;
-                const costo = parseFloat(costoInput.value) || 0;
-                const montoTotal = cantidad * costo;
-                montoDisplay.value = 'Q ' + montoTotal.toFixed(2);
-            }
-
-            cantidadInput.addEventListener('input', calcularMontoTotal);
-            costoInput.addEventListener('input', calcularMontoTotal);
-
-            // Botón Nuevo
-            btnNuevo.addEventListener('click', function() {
-                limpiarFormulario();
-                mostrarBotonesGuardar();
-            });
-
-            // Botón Guardar (Crear)
-            btnGuardar.addEventListener('click', function() {
-                if (validarFormulario()) {
-                    operacionInput.value = 'crear_detalle';
-                    form.submit();
-                }
-            });
-
-            // Botón Actualizar
-            btnActualizar.addEventListener('click', function() {
-                if (validarFormulario()) {
-                    operacionInput.value = 'actualizar_detalle';
-                    form.submit();
-                }
-            });
-
-            // Botón Cancelar
-            btnCancelar.addEventListener('click', function() {
-                limpiarFormulario();
-                mostrarBotonesGuardar();
-            });
-
-            // Eventos para botones Editar
-            document.querySelectorAll('.editar-btn').forEach(btn => {
-                btn.addEventListener('click', function() {
-                    const compra = this.getAttribute('data-compra');
-                    const mobiliario = this.getAttribute('data-mobiliario');
-                    const cantidad = this.getAttribute('data-cantidad');
-                    const costo = this.getAttribute('data-costo');
-
-                    // Llenar formulario
-                    idCompraOriginalInput.value = compra;
-                    idMobiliarioOriginalInput.value = mobiliario;
-                    document.getElementById('id_compra_mobiliario').value = compra;
-                    document.getElementById('id_mobiliario').value = mobiliario;
-                    cantidadInput.value = cantidad;
-                    costoInput.value = costo;
-                    calcularMontoTotal();
-
-                    mostrarBotonesActualizar();
-                });
-            });
-
-            function limpiarFormulario() {
-                form.reset();
-                idCompraOriginalInput.value = '';
-                idMobiliarioOriginalInput.value = '';
-                operacionInput.value = 'crear_detalle';
-                cantidadInput.value = '1';
-                costoInput.value = '';
-                calcularMontoTotal();
-            }
-
-            function mostrarBotonesGuardar() {
-                btnGuardar.style.display = 'inline-block';
-                btnActualizar.style.display = 'none';
-                btnCancelar.style.display = 'none';
-            }
-
-            function mostrarBotonesActualizar() {
-                btnGuardar.style.display = 'none';
-                btnActualizar.style.display = 'inline-block';
-                btnCancelar.style.display = 'inline-block';
-            }
-
-            function validarFormulario() {
-                const compra = document.getElementById('id_compra_mobiliario').value;
-                const mobiliario = document.getElementById('id_mobiliario').value;
-                const cantidad = cantidadInput.value;
-                const costo = costoInput.value;
-
-                if (!compra) {
-                    alert('La compra es requerida');
-                    return false;
-                }
-                if (!mobiliario) {
-                    alert('El mobiliario es requerido');
-                    return false;
-                }
-                if (!cantidad || cantidad < 1) {
-                    alert('La cantidad debe ser mayor a 0');
-                    return false;
-                }
-                if (!costo || costo <= 0) {
-                    alert('El costo unitario debe ser mayor a 0');
-                    return false;
-                }
-
-                return true;
-            }
-
-            // Inicializar
-            limpiarFormulario();
-        });
-    </script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="/SistemaWebRestaurante/javascript/detalle_compras_mobiliario.js"></script>
 </body>
 </html>

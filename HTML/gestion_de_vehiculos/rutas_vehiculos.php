@@ -90,20 +90,54 @@ function eliminarRuta() {
     
     $id_ruta = $_POST['id_ruta'] ?? '';
     
-    $sql = "DELETE FROM rutas WHERE id_ruta = ?";
-    
-    $stmt = $conn->prepare($sql);
-    $stmt->bind_param("i", $id_ruta);
-    
-    if ($stmt->execute()) {
-        $_SESSION['mensaje'] = "Ruta eliminada exitosamente";
-        $_SESSION['tipo_mensaje'] = "success";
-    } else {
-        $_SESSION['mensaje'] = "Error al eliminar ruta: " . $conn->error;
+    try {
+        // Verificar si la ruta está siendo usada en la tabla viajes
+        $check_viajes = $conn->prepare("SELECT COUNT(*) as count FROM viajes WHERE id_ruta = ?");
+        $check_viajes->bind_param("i", $id_ruta);
+        $check_viajes->execute();
+        $result_viajes = $check_viajes->get_result();
+        $row_viajes = $result_viajes->fetch_assoc();
+        $check_viajes->close();
+        
+        if ($row_viajes['count'] > 0) {
+            $_SESSION['mensaje'] = "No se puede eliminar la ruta porque está siendo utilizada en viajes registrados.";
+            $_SESSION['tipo_mensaje'] = "error";
+            desconectar($conn);
+            header('Location: rutas_vehiculos.php');
+            exit();
+        }
+        
+        // Si no hay referencias, proceder con la eliminación
+        $sql = "DELETE FROM rutas WHERE id_ruta = ?";
+        $stmt = $conn->prepare($sql);
+        $stmt->bind_param("i", $id_ruta);
+        
+        if ($stmt->execute()) {
+            $_SESSION['mensaje'] = "Ruta eliminada exitosamente";
+            $_SESSION['tipo_mensaje'] = "success";
+        } else {
+            // Capturar cualquier otro error que pueda ocurrir
+            $_SESSION['mensaje'] = "Error al eliminar ruta: " . $conn->error;
+            $_SESSION['tipo_mensaje'] = "error";
+        }
+        
+        $stmt->close();
+        
+    } catch (mysqli_sql_exception $e) {
+        // Capturar excepciones específicas de MySQL
+        if (strpos($e->getMessage(), 'foreign key constraint fails') !== false) {
+            $_SESSION['mensaje'] = "No se puede eliminar la ruta porque está siendo utilizada en otros registros del sistema.";
+            $_SESSION['tipo_mensaje'] = "error";
+        } else {
+            $_SESSION['mensaje'] = "Error al eliminar ruta: " . $e->getMessage();
+            $_SESSION['tipo_mensaje'] = "error";
+        }
+    } catch (Exception $e) {
+        // Capturar cualquier otra excepción
+        $_SESSION['mensaje'] = "Error al eliminar ruta: " . $e->getMessage();
         $_SESSION['tipo_mensaje'] = "error";
     }
     
-    $stmt->close();
     desconectar($conn);
     header('Location: rutas_vehiculos.php');
     exit();
@@ -137,56 +171,7 @@ $rutas = obtenerRutas();
     <title>Gestión de Rutas - Marina Roja</title>
     <!-- Google Fonts: Poppins -->
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
-    <style>
-        body, h1, h2, h3, h4, h5, h6, label, input, button, table, th, td {
-            font-family: 'Poppins', Arial, Helvetica, sans-serif !important;
-        }
-        .mensaje {
-            padding: 10px;
-            margin: 10px 0;
-            border-radius: 5px;
-        }
-        .mensaje.success {
-            background-color: #d4edda;
-            color: #155724;
-            border: 1px solid #c3e6cb;
-        }
-        .mensaje.error {
-            background-color: #f8d7da;
-            color: #721c24;
-            border: 1px solid #f5c6cb;
-        }
-        .btn-action {
-            margin: 2px;
-        }
-        .debug-info {
-            background-color: #f8f9fa;
-            padding: 10px;
-            border-radius: 5px;
-            margin: 10px 0;
-            font-size: 12px;
-        }
-        .table-responsive {
-            max-height: 400px;
-            overflow-y: auto;
-        }
-        .gasolina {
-            text-align: right;
-            font-weight: bold;
-        }
-        .ruta-info {
-            background-color: #e9ecef;
-            padding: 10px;
-            border-radius: 5px;
-            margin-bottom: 10px;
-        }
-        .descripcion-cell {
-            max-width: 250px;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
-        }
-    </style>
+    
     <!-- Frameworks y librerías base -->
     <link rel="stylesheet" href="../../css/bootstrap.min.css">
     <link rel="stylesheet" href="../../css/diseñoModulos.css">
@@ -202,24 +187,24 @@ $rutas = obtenerRutas();
     </header>
 
     <main class="container my-4">
-        <!-- Mostrar mensajes -->
+        <!-- Mostrar mensajes con SweetAlert2 -->
         <?php if (isset($_SESSION['mensaje'])): ?>
-            <div class="mensaje <?php echo $_SESSION['tipo_mensaje']; ?>">
-                <?php 
-                echo htmlspecialchars($_SESSION['mensaje']); 
-                unset($_SESSION['mensaje']);
-                unset($_SESSION['tipo_mensaje']);
-                ?>
-            </div>
-        <?php endif; ?>
-
-        <!-- Debug info -->
-        <div class="debug-info">
-            <strong>Debug:</strong> 
+            <script>
+                window.__mensaje = {
+                    text: <?php echo json_encode($_SESSION['mensaje']); ?>,
+                    tipo: <?php echo json_encode($_SESSION['tipo_mensaje'] ?? 'error'); ?>
+                };
+            </script>
+            <noscript>
+                <div class="alert alert-<?php echo ($_SESSION['tipo_mensaje'] ?? '') === 'success' ? 'success' : 'danger'; ?>">
+                    <?php echo htmlspecialchars($_SESSION['mensaje']); ?>
+                </div>
+            </noscript>
             <?php 
-            echo "Rutas registradas: " . count($rutas);
+            unset($_SESSION['mensaje']);
+            unset($_SESSION['tipo_mensaje']);
             ?>
-        </div>
+        <?php endif; ?>
 
         <section class="card shadow p-4">
             <h2 class="card__title text-primary mb-4">FORMULARIO - REGISTRO DE RUTAS</h2>
@@ -282,7 +267,7 @@ $rutas = obtenerRutas();
                             </td>
                             <td><?php echo htmlspecialchars($ruta['inicio_ruta'] ?? 'No especificado'); ?></td>
                             <td><?php echo htmlspecialchars($ruta['fin_ruta'] ?? 'No especificado'); ?></td>
-                            <td class="gasolina">
+                            <td class="text-end fw-bold">
                                 <?php echo $ruta['gasolina_aproximada'] ? number_format($ruta['gasolina_aproximada'], 2) . ' L' : 'No especificado'; ?>
                             </td>
                             <td>
@@ -294,7 +279,7 @@ $rutas = obtenerRutas();
                                         data-gasolina="<?php echo $ruta['gasolina_aproximada']; ?>">
                                     Editar
                                 </button>
-                                <form method="post" style="display:inline;" onsubmit="return confirm('¿Estás seguro de eliminar esta ruta?')">
+                                <form method="post" style="display:inline;" data-eliminar="true">
                                     <input type="hidden" name="operacion" value="eliminar_ruta">
                                     <input type="hidden" name="id_ruta" value="<?php echo $ruta['id_ruta']; ?>">
                                     <button type="submit" class="btn btn-sm btn-danger btn-action">Eliminar</button>
@@ -310,105 +295,10 @@ $rutas = obtenerRutas();
                     </tbody>
                 </table>
             </div>
-
         </section>
     </main>
 
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            const form = document.getElementById('form-rutas');
-            const btnNuevo = document.getElementById('btn-nuevo');
-            const btnGuardar = document.getElementById('btn-guardar');
-            const btnActualizar = document.getElementById('btn-actualizar');
-            const btnCancelar = document.getElementById('btn-cancelar');
-            const operacionInput = document.getElementById('operacion');
-            const idRutaInput = document.getElementById('id_ruta');
-
-            // Botón Nuevo
-            btnNuevo.addEventListener('click', function() {
-                limpiarFormulario();
-                mostrarBotonesGuardar();
-            });
-
-            // Botón Guardar (Crear)
-            btnGuardar.addEventListener('click', function() {
-                if (validarFormulario()) {
-                    operacionInput.value = 'crear_ruta';
-                    form.submit();
-                }
-            });
-
-            // Botón Actualizar
-            btnActualizar.addEventListener('click', function() {
-                if (validarFormulario()) {
-                    operacionInput.value = 'actualizar_ruta';
-                    form.submit();
-                }
-            });
-
-            // Botón Cancelar
-            btnCancelar.addEventListener('click', function() {
-                limpiarFormulario();
-                mostrarBotonesGuardar();
-            });
-
-            // Eventos para botones Editar
-            document.querySelectorAll('.editar-btn').forEach(btn => {
-                btn.addEventListener('click', function() {
-                    const id = this.getAttribute('data-id');
-                    const descripcion = this.getAttribute('data-descripcion');
-                    const inicio = this.getAttribute('data-inicio');
-                    const fin = this.getAttribute('data-fin');
-                    const gasolina = this.getAttribute('data-gasolina');
-
-                    // Llenar formulario
-                    idRutaInput.value = id;
-                    document.getElementById('descripcion_ruta').value = descripcion;
-                    document.getElementById('inicio_ruta').value = inicio;
-                    document.getElementById('fin_ruta').value = fin;
-                    document.getElementById('gasolina_aproximada').value = gasolina;
-
-                    mostrarBotonesActualizar();
-                });
-            });
-
-            function limpiarFormulario() {
-                form.reset();
-                idRutaInput.value = '';
-                operacionInput.value = 'crear_ruta';
-            }
-
-            function mostrarBotonesGuardar() {
-                btnGuardar.style.display = 'inline-block';
-                btnActualizar.style.display = 'none';
-                btnCancelar.style.display = 'none';
-            }
-
-            function mostrarBotonesActualizar() {
-                btnGuardar.style.display = 'none';
-                btnActualizar.style.display = 'inline-block';
-                btnCancelar.style.display = 'inline-block';
-            }
-
-            function validarFormulario() {
-                const descripcion = document.getElementById('descripcion_ruta').value.trim();
-                const gasolina = document.getElementById('gasolina_aproximada').value;
-
-                if (!descripcion) {
-                    alert('La descripción de la ruta es requerida');
-                    return false;
-                }
-                if (gasolina && gasolina < 0) {
-                    alert('La gasolina aproximada no puede ser negativa');
-                    return false;
-                }
-
-                return true;
-            }
-
-            // Inicializar
-            limpiarFormulario();
-        });
-    </script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="/SistemaWebRestaurante/javascript/rutas_vehiculos.js"></script>
 </body>
 </html>

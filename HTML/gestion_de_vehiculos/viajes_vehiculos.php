@@ -194,20 +194,55 @@ function eliminarViaje() {
     
     $id_viaje = $_POST['id_viaje'] ?? '';
     
-    $sql = "DELETE FROM viajes WHERE id_viaje = ?";
-    
-    $stmt = $conn->prepare($sql);
-    $stmt->bind_param("i", $id_viaje);
-    
-    if ($stmt->execute()) {
-        $_SESSION['mensaje'] = "Viaje eliminado exitosamente";
-        $_SESSION['tipo_mensaje'] = "success";
-    } else {
-        $_SESSION['mensaje'] = "Error al eliminar viaje: " . $conn->error;
+    try {
+        // Verificar si el viaje está siendo referenciado en otras tablas
+        // Por ejemplo, si hay una tabla de facturas o reportes que referencien viajes
+        // $check_facturas = $conn->prepare("SELECT COUNT(*) as count FROM facturas WHERE id_viaje = ?");
+        // $check_facturas->bind_param("i", $id_viaje);
+        // $check_facturas->execute();
+        // $result_facturas = $check_facturas->get_result();
+        // $row_facturas = $result_facturas->fetch_assoc();
+        // $check_facturas->close();
+        
+        // if ($row_facturas['count'] > 0) {
+        //     $_SESSION['mensaje'] = "No se puede eliminar el viaje porque está siendo utilizado en facturas registradas.";
+        //     $_SESSION['tipo_mensaje'] = "error";
+        //     desconectar($conn);
+        //     header('Location: viajes_vehiculos.php');
+        //     exit();
+        // }
+        
+        // Si no hay referencias, proceder con la eliminación
+        $sql = "DELETE FROM viajes WHERE id_viaje = ?";
+        $stmt = $conn->prepare($sql);
+        $stmt->bind_param("i", $id_viaje);
+        
+        if ($stmt->execute()) {
+            $_SESSION['mensaje'] = "Viaje eliminado exitosamente";
+            $_SESSION['tipo_mensaje'] = "success";
+        } else {
+            // Capturar cualquier otro error que pueda ocurrir
+            $_SESSION['mensaje'] = "Error al eliminar viaje: " . $conn->error;
+            $_SESSION['tipo_mensaje'] = "error";
+        }
+        
+        $stmt->close();
+        
+    } catch (mysqli_sql_exception $e) {
+        // Capturar excepciones específicas de MySQL
+        if (strpos($e->getMessage(), 'foreign key constraint fails') !== false) {
+            $_SESSION['mensaje'] = "No se puede eliminar el viaje porque está siendo utilizado en otros registros del sistema.";
+            $_SESSION['tipo_mensaje'] = "error";
+        } else {
+            $_SESSION['mensaje'] = "Error al eliminar viaje: " . $e->getMessage();
+            $_SESSION['tipo_mensaje'] = "error";
+        }
+    } catch (Exception $e) {
+        // Capturar cualquier otra excepción
+        $_SESSION['mensaje'] = "Error al eliminar viaje: " . $e->getMessage();
         $_SESSION['tipo_mensaje'] = "error";
     }
     
-    $stmt->close();
     desconectar($conn);
     header('Location: viajes_vehiculos.php');
     exit();
@@ -318,9 +353,13 @@ function obtenerRutas() {
     return $rutas;
 }
 
+// MODIFICADO: Solo vehículos con estado ACTIVO
 function obtenerVehiculos() {
     $conn = conectar();
-    $sql = "SELECT id_vehiculo, no_placa, marca_vehiculo, modelo_vehiculo FROM vehiculos ORDER BY no_placa";
+    $sql = "SELECT id_vehiculo, no_placa, marca_vehiculo, modelo_vehiculo 
+            FROM vehiculos 
+            WHERE estado = 'ACTIVO' 
+            ORDER BY no_placa";
     $resultado = $conn->query($sql);
     $vehiculos = [];
     
@@ -388,40 +427,7 @@ $viajes = obtenerViajes();
     <title>Gestión de Viajes - Marina Roja</title>
     <!-- Google Fonts: Poppins -->
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
-    <style>
-        body, h1, h2, h3, h4, h5, h6, label, input, button, table, th, td {
-            font-family: 'Poppins', Arial, Helvetica, sans-serif !important;
-        }
-        .mensaje {
-            padding: 10px;
-            margin: 10px 0;
-            border-radius: 5px;
-        }
-        .mensaje.success {
-            background-color: #d4edda;
-            color: #155724;
-            border: 1px solid #c3e6cb;
-        }
-        .mensaje.error {
-            background-color: #f8d7da;
-            color: #721c24;
-            border: 1px solid #f5c6cb;
-        }
-        .btn-action {
-            margin: 2px;
-        }
-        .debug-info {
-            background-color: #f8f9fa;
-            padding: 10px;
-            border-radius: 5px;
-            margin: 10px 0;
-            font-size: 12px;
-        }
-        .table-responsive {
-            max-height: 600px;
-            overflow-y: auto;
-        }
-    </style>
+    
     <!-- Frameworks y librerías base -->
     <link rel="stylesheet" href="../../css/bootstrap.min.css">
     <link rel="stylesheet" href="../../css/diseñoModulos.css">
@@ -437,38 +443,43 @@ $viajes = obtenerViajes();
     </header>
 
     <main class="container my-4">
-        <!-- Mostrar mensajes -->
+        <!-- Mostrar mensajes con SweetAlert2 -->
         <?php if (isset($_SESSION['mensaje'])): ?>
-            <div class="mensaje <?php echo $_SESSION['tipo_mensaje']; ?>">
-                <?php 
-                echo htmlspecialchars($_SESSION['mensaje']); 
-                unset($_SESSION['mensaje']);
-                unset($_SESSION['tipo_mensaje']);
-                ?>
-            </div>
+            <script>
+                window.__mensaje = {
+                    text: <?php echo json_encode($_SESSION['mensaje']); ?>,
+                    tipo: <?php echo json_encode($_SESSION['tipo_mensaje'] ?? 'error'); ?>
+                };
+            </script>
+            <noscript>
+                <div class="alert alert-<?php echo ($_SESSION['tipo_mensaje'] ?? '') === 'success' ? 'success' : 'danger'; ?>">
+                    <?php echo htmlspecialchars($_SESSION['mensaje']); ?>
+                </div>
+            </noscript>
+            <?php 
+            unset($_SESSION['mensaje']);
+            unset($_SESSION['tipo_mensaje']);
+            ?>
         <?php endif; ?>
 
-        <!-- Debug info -->
-        <div class="debug-info">
-            <strong>Debug:</strong> 
-            <?php 
-            echo "Rutas: " . count($rutas) . " | ";
-            echo "Vehículos: " . count($vehiculos) . " | ";
-            echo "Empleados: " . count($empleados) . " | ";
-            echo "Viajes: " . count($viajes);
-            ?>
-        </div>
+        <!-- Mensaje si no hay vehículos activos -->
+        <?php if (empty($vehiculos)): ?>
+            <div class="alert alert-warning">
+                <strong>⚠️ No hay vehículos disponibles</strong>
+                <p class="mb-0">No hay vehículos activos disponibles para asignar viajes. Active un vehículo en el módulo de Gestión de Vehículos.</p>
+            </div>
+        <?php endif; ?>
 
         <section class="card shadow p-4">
             <h2 class="card__title text-primary mb-4">FORMULARIO - Viajes de Vehículos</h2>
 
-            <form id="form-viaje" method="post" class="row g-3">
+            <form id="form-viaje" method="post" class="row g-3" <?php echo empty($vehiculos) ? 'style="opacity: 0.5; pointer-events: none;"' : ''; ?>>
                 <input type="hidden" id="operacion" name="operacion" value="crear">
                 <input type="hidden" id="id_viaje" name="id_viaje" value="">
                 
                 <div class="col-md-6">
                     <label class="form-label" for="id_ruta">Ruta:</label>
-                    <select class="form-control" id="id_ruta" name="id_ruta" required>
+                    <select class="form-control" id="id_ruta" name="id_ruta" required <?php echo empty($vehiculos) ? 'disabled' : ''; ?>>
                         <option value="">Seleccione una ruta</option>
                         <?php foreach($rutas as $ruta): ?>
                             <option value="<?php echo $ruta['id_ruta']; ?>">
@@ -480,7 +491,7 @@ $viajes = obtenerViajes();
                 
                 <div class="col-md-6">
                     <label class="form-label" for="id_vehiculo">Vehículo:</label>
-                    <select class="form-control" id="id_vehiculo" name="id_vehiculo" required>
+                    <select class="form-control" id="id_vehiculo" name="id_vehiculo" required <?php echo empty($vehiculos) ? 'disabled' : ''; ?>>
                         <option value="">Seleccione un vehículo</option>
                         <?php foreach($vehiculos as $vehiculo): ?>
                             <option value="<?php echo $vehiculo['id_vehiculo']; ?>">
@@ -488,11 +499,14 @@ $viajes = obtenerViajes();
                             </option>
                         <?php endforeach; ?>
                     </select>
+                    <?php if (empty($vehiculos)): ?>
+                        <small class="text-danger">No hay vehículos activos disponibles</small>
+                    <?php endif; ?>
                 </div>
                 
                 <div class="col-md-6">
                     <label class="form-label" for="id_empleado_piloto">Empleado Piloto:</label>
-                    <select class="form-control" id="id_empleado_piloto" name="id_empleado_piloto" required>
+                    <select class="form-control" id="id_empleado_piloto" name="id_empleado_piloto" required <?php echo empty($vehiculos) ? 'disabled' : ''; ?>>
                         <option value="">Seleccione un piloto</option>
                         <?php foreach($empleados as $empleado): ?>
                             <option value="<?php echo $empleado['id_empleado']; ?>">
@@ -504,7 +518,7 @@ $viajes = obtenerViajes();
                 
                 <div class="col-md-6">
                     <label class="form-label" for="id_empleado_acompanante">Empleado Acompañante:</label>
-                    <select class="form-control" id="id_empleado_acompanante" name="id_empleado_acompanante">
+                    <select class="form-control" id="id_empleado_acompanante" name="id_empleado_acompanante" <?php echo empty($vehiculos) ? 'disabled' : ''; ?>>
                         <option value="">Sin acompañante</option>
                         <?php foreach($empleados as $empleado): ?>
                             <option value="<?php echo $empleado['id_empleado']; ?>">
@@ -516,25 +530,25 @@ $viajes = obtenerViajes();
                 
                 <div class="col-md-6">
                     <label class="form-label" for="fecha_hora_salida">Fecha y Hora de Salida:</label>
-                    <input type="datetime-local" class="form-control" id="fecha_hora_salida" name="fecha_hora_salida" required>
+                    <input type="datetime-local" class="form-control" id="fecha_hora_salida" name="fecha_hora_salida" required <?php echo empty($vehiculos) ? 'disabled' : ''; ?>>
                 </div>
                 
                 <div class="col-md-6">
                     <label class="form-label" for="tiempo_aproximado_min">Tiempo Aproximado (minutos):</label>
                     <input type="number" class="form-control" id="tiempo_aproximado_min" name="tiempo_aproximado_min" 
-                           min="1" placeholder="Ej. 120">
+                           min="1" placeholder="Ej. 120" <?php echo empty($vehiculos) ? 'disabled' : ''; ?>>
                 </div>
                 
                 <div class="col-12">
                     <label class="form-label" for="descripcion_viaje">Descripción del Viaje:</label>
                     <textarea class="form-control" id="descripcion_viaje" name="descripcion_viaje" 
-                              rows="3" placeholder="Ej. Viaje para entrega de ingredientes, recolección de suministros, etc."></textarea>
+                              rows="3" placeholder="Ej. Viaje para entrega de ingredientes, recolección de suministros, etc." <?php echo empty($vehiculos) ? 'disabled' : ''; ?>></textarea>
                 </div>
             </form>
 
             <div class="d-flex gap-2 mt-4">
-                <button id="btn-nuevo" type="button" class="btn btn-secondary">Nuevo</button>
-                <button id="btn-guardar" type="button" class="btn btn-success">Guardar</button>
+                <button id="btn-nuevo" type="button" class="btn btn-secondary" <?php echo empty($vehiculos) ? 'disabled' : ''; ?>>Nuevo</button>
+                <button id="btn-guardar" type="button" class="btn btn-success" <?php echo empty($vehiculos) ? 'disabled' : ''; ?>>Guardar</button>
                 <button id="btn-actualizar" type="button" class="btn btn-warning" style="display:none;">Actualizar</button>
                 <button id="btn-cancelar" type="button" class="btn btn-danger" style="display:none;">Cancelar</button>
             </div>
@@ -578,7 +592,7 @@ $viajes = obtenerViajes();
                                         data-descripcion="<?php echo htmlspecialchars($viaje['descripcion_viaje']); ?>">
                                     Editar
                                 </button>
-                                <form method="post" style="display:inline;" onsubmit="return confirm('¿Estás seguro de eliminar este viaje?')">
+                                <form method="post" style="display:inline;" data-eliminar="true">
                                     <input type="hidden" name="operacion" value="eliminar">
                                     <input type="hidden" name="id_viaje" value="<?php echo $viaje['id_viaje']; ?>">
                                     <button type="submit" class="btn btn-sm btn-danger btn-action">Eliminar</button>
@@ -597,122 +611,7 @@ $viajes = obtenerViajes();
         </section>
     </main>
 
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            const form = document.getElementById('form-viaje');
-            const btnNuevo = document.getElementById('btn-nuevo');
-            const btnGuardar = document.getElementById('btn-guardar');
-            const btnActualizar = document.getElementById('btn-actualizar');
-            const btnCancelar = document.getElementById('btn-cancelar');
-            const operacionInput = document.getElementById('operacion');
-            const idViajeInput = document.getElementById('id_viaje');
-
-            // Botón Nuevo
-            btnNuevo.addEventListener('click', function() {
-                limpiarFormulario();
-                mostrarBotonesGuardar();
-            });
-
-            // Botón Guardar (Crear)
-            btnGuardar.addEventListener('click', function() {
-                if (validarFormulario()) {
-                    operacionInput.value = 'crear';
-                    form.submit();
-                }
-            });
-
-            // Botón Actualizar
-            btnActualizar.addEventListener('click', function() {
-                if (validarFormulario()) {
-                    operacionInput.value = 'actualizar';
-                    form.submit();
-                }
-            });
-
-            // Botón Cancelar
-            btnCancelar.addEventListener('click', function() {
-                limpiarFormulario();
-                mostrarBotonesGuardar();
-            });
-
-            // Eventos para botones Editar
-            document.querySelectorAll('.editar-btn').forEach(btn => {
-                btn.addEventListener('click', function() {
-                    const id = this.getAttribute('data-id');
-                    const ruta = this.getAttribute('data-ruta');
-                    const vehiculo = this.getAttribute('data-vehiculo');
-                    const piloto = this.getAttribute('data-piloto');
-                    const acompanante = this.getAttribute('data-acompanante');
-                    const fecha = this.getAttribute('data-fecha');
-                    const tiempo = this.getAttribute('data-tiempo');
-                    const descripcion = this.getAttribute('data-descripcion');
-
-                    // Llenar formulario
-                    idViajeInput.value = id;
-                    document.getElementById('id_ruta').value = ruta;
-                    document.getElementById('id_vehiculo').value = vehiculo;
-                    document.getElementById('id_empleado_piloto').value = piloto;
-                    document.getElementById('id_empleado_acompanante').value = acompanante;
-                    document.getElementById('fecha_hora_salida').value = fecha;
-                    document.getElementById('tiempo_aproximado_min').value = tiempo;
-                    document.getElementById('descripcion_viaje').value = descripcion;
-
-                    mostrarBotonesActualizar();
-                });
-            });
-
-            function limpiarFormulario() {
-                form.reset();
-                idViajeInput.value = '';
-                operacionInput.value = 'crear';
-                // Establecer fecha y hora actual por defecto
-                const now = new Date();
-                // Ajustar a la zona horaria local
-                now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
-                document.getElementById('fecha_hora_salida').value = now.toISOString().slice(0, 16);
-            }
-
-            function mostrarBotonesGuardar() {
-                btnGuardar.style.display = 'inline-block';
-                btnActualizar.style.display = 'none';
-                btnCancelar.style.display = 'none';
-            }
-
-            function mostrarBotonesActualizar() {
-                btnGuardar.style.display = 'none';
-                btnActualizar.style.display = 'inline-block';
-                btnCancelar.style.display = 'inline-block';
-            }
-
-            function validarFormulario() {
-                const ruta = document.getElementById('id_ruta').value;
-                const vehiculo = document.getElementById('id_vehiculo').value;
-                const piloto = document.getElementById('id_empleado_piloto').value;
-                const fecha = document.getElementById('fecha_hora_salida').value;
-
-                if (!ruta) {
-                    alert('Seleccione una ruta');
-                    return false;
-                }
-                if (!vehiculo) {
-                    alert('Seleccione un vehículo');
-                    return false;
-                }
-                if (!piloto) {
-                    alert('Seleccione un empleado piloto');
-                    return false;
-                }
-                if (!fecha) {
-                    alert('La fecha y hora de salida son requeridas');
-                    return false;
-                }
-
-                return true;
-            }
-
-            // Establecer fecha y hora actual por defecto al cargar la página
-            limpiarFormulario();
-        });
-    </script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="/SistemaWebRestaurante/javascript/viajes_vehiculos.js"></script>
 </body>
 </html>
