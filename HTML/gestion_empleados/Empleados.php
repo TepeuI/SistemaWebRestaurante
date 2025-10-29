@@ -400,12 +400,12 @@ function is_valid_name($s) {
             </div>
 
             <div class="col-md-3">
-                <label class="form-label">Nombre</label>
+                <label class="form-label">👤 Nombre</label>
                 <input type="text" class="form-control" name="nombre_empleado" id="nombre_empleado" required placeholder="Ej: Juan Alberto">
             </div>
 
             <div class="col-md-3">
-                <label class="form-label">Apellido</label>
+                <label class="form-label">👤 Apellido</label>
                 <input type="text" class="form-control" name="apellido_empleado" id="apellido_empleado" required placeholder="Ej: Pérez López">
             </div>
 

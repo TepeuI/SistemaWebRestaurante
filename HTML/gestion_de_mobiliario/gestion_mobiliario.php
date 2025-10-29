@@ -90,20 +90,129 @@ function eliminarMobiliario() {
     
     $id_mobiliario = $_POST['id_mobiliario'] ?? '';
     
-    $sql = "DELETE FROM inventario_mobiliario WHERE id_mobiliario = ?";
+    // Validar que el ID no esté vacío
+    if (empty($id_mobiliario)) {
+        $_SESSION['mensaje'] = "Error: No se proporcionó un ID de mobiliario válido.";
+        $_SESSION['tipo_mensaje'] = "error";
+        desconectar($conn);
+        header('Location: gestion_mobiliario.php');
+        exit();
+    }
     
-    $stmt = $conn->prepare($sql);
-    $stmt->bind_param("i", $id_mobiliario);
-    
-    if ($stmt->execute()) {
-        $_SESSION['mensaje'] = "Mobiliario eliminado exitosamente";
-        $_SESSION['tipo_mensaje'] = "success";
-    } else {
-        $_SESSION['mensaje'] = "Error al eliminar mobiliario: " . $conn->error;
+    try {
+        // Primero verificar si el mobiliario existe
+        $check_mobiliario = $conn->prepare("SELECT id_mobiliario FROM inventario_mobiliario WHERE id_mobiliario = ?");
+        if (!$check_mobiliario) {
+            throw new Exception("Error al preparar la consulta: " . $conn->error);
+        }
+        
+        $check_mobiliario->bind_param("i", $id_mobiliario);
+        
+        if (!$check_mobiliario->execute()) {
+            throw new Exception("Error al ejecutar la consulta: " . $check_mobiliario->error);
+        }
+        
+        $result_mobiliario = $check_mobiliario->get_result();
+        
+        if ($result_mobiliario->num_rows === 0) {
+            $_SESSION['mensaje'] = "Error: El mobiliario que intenta eliminar no existe en el sistema.";
+            $_SESSION['tipo_mensaje'] = "error";
+            $check_mobiliario->close();
+            desconectar($conn);
+            header('Location: gestion_mobiliario.php');
+            exit();
+        }
+        $check_mobiliario->close();
+        
+        // Verificar si existe la tabla detalle_compra_mobiliario y si tiene relación con inventario_mobiliario
+        $check_tabla_detalle = $conn->query("SHOW TABLES LIKE 'detalle_compra_mobiliario'");
+        if ($check_tabla_detalle && $check_tabla_detalle->num_rows > 0) {
+            // La tabla existe, verificar si hay columnas que referencien inventario_mobiliario
+            $check_columnas = $conn->query("SHOW COLUMNS FROM detalle_compra_mobiliario");
+            $tiene_relacion = false;
+            $columna_relacion = '';
+            
+            while ($columna = $check_columnas->fetch_assoc()) {
+                if (strpos($columna['Field'], 'mobiliario') !== false || 
+                    strpos($columna['Field'], 'id_mobiliario') !== false) {
+                    $tiene_relacion = true;
+                    $columna_relacion = $columna['Field'];
+                    break;
+                }
+            }
+            
+            if ($tiene_relacion && !empty($columna_relacion)) {
+                // Verificar si hay registros relacionados
+                $check_relacion = $conn->prepare("SELECT COUNT(*) as count FROM detalle_compra_mobiliario WHERE {$columna_relacion} = ?");
+                if ($check_relacion) {
+                    $check_relacion->bind_param("i", $id_mobiliario);
+                    $check_relacion->execute();
+                    $result_relacion = $check_relacion->get_result();
+                    $row_relacion = $result_relacion->fetch_assoc();
+                    $check_relacion->close();
+                    
+                    if ($row_relacion['count'] > 0) {
+                        $_SESSION['mensaje'] = "No se puede eliminar el mobiliario porque está siendo utilizado en detalles de compra (" . $row_relacion['count'] . " registros relacionados). Primero debe eliminar o modificar los registros relacionados en los detalles de compra.";
+                        $_SESSION['tipo_mensaje'] = "error";
+                        desconectar($conn);
+                        header('Location: gestion_mobiliario.php');
+                        exit();
+                    }
+                }
+            }
+        }
+        
+        // Si no hay referencias, proceder con la eliminación
+        $sql = "DELETE FROM inventario_mobiliario WHERE id_mobiliario = ?";
+        $stmt = $conn->prepare($sql);
+        
+        if (!$stmt) {
+            throw new Exception("Error al preparar la consulta de eliminación: " . $conn->error);
+        }
+        
+        $stmt->bind_param("i", $id_mobiliario);
+        
+        if ($stmt->execute()) {
+            if ($stmt->affected_rows > 0) {
+                $_SESSION['mensaje'] = "Mobiliario eliminado exitosamente";
+                $_SESSION['tipo_mensaje'] = "success";
+            } else {
+                $_SESSION['mensaje'] = "No se pudo eliminar el mobiliario. Es posible que ya haya sido eliminado o no exista.";
+                $_SESSION['tipo_mensaje'] = "error";
+            }
+        } else {
+            $error = $stmt->error;
+            if (strpos($error, 'foreign key constraint') !== false) {
+                $_SESSION['mensaje'] = "No se puede eliminar el mobiliario porque está siendo utilizado en otros registros del sistema. Verifique que no existan registros relacionados en los detalles de compra.";
+                $_SESSION['tipo_mensaje'] = "error";
+            } else {
+                $_SESSION['mensaje'] = "Error al eliminar mobiliario: " . $error;
+                $_SESSION['tipo_mensaje'] = "error";
+            }
+        }
+        
+        $stmt->close();
+        
+    } catch (mysqli_sql_exception $e) {
+        // Capturar excepciones específicas de MySQL
+        $error_message = $e->getMessage();
+        
+        if (strpos($error_message, 'foreign key constraint fails') !== false) {
+            $_SESSION['mensaje'] = "No se puede eliminar el mobiliario porque está siendo utilizado en otros registros del sistema. Verifique que no existan registros relacionados en los detalles de compra.";
+            $_SESSION['tipo_mensaje'] = "error";
+        } else if (strpos($error_message, 'Unknown column') !== false) {
+            $_SESSION['mensaje'] = "Error en la consulta a la base de datos. Por favor, contacte al administrador del sistema.";
+            $_SESSION['tipo_mensaje'] = "error";
+        } else {
+            $_SESSION['mensaje'] = "Error de base de datos: " . $error_message;
+            $_SESSION['tipo_mensaje'] = "error";
+        }
+    } catch (Exception $e) {
+        // Capturar cualquier otra excepción
+        $_SESSION['mensaje'] = "Error inesperado: " . $e->getMessage();
         $_SESSION['tipo_mensaje'] = "error";
     }
     
-    $stmt->close();
     desconectar($conn);
     header('Location: gestion_mobiliario.php');
     exit();
@@ -157,46 +266,7 @@ $mobiliarios = obtenerMobiliarios();
     <title>Gestión de Mobiliario - Marina Roja</title>
     <!-- Google Fonts: Poppins -->
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
-    <style>
-        body, h1, h2, h3, h4, h5, h6, label, input, button, table, th, td {
-            font-family: 'Poppins', Arial, Helvetica, sans-serif !important;
-        }
-        .mensaje {
-            padding: 10px;
-            margin: 10px 0;
-            border-radius: 5px;
-        }
-        .mensaje.success {
-            background-color: #d4edda;
-            color: #155724;
-            border: 1px solid #c3e6cb;
-        }
-        .mensaje.error {
-            background-color: #f8d7da;
-            color: #721c24;
-            border: 1px solid #f5c6cb;
-        }
-        .btn-action {
-            margin: 2px;
-        }
-        .debug-info {
-            background-color: #f8f9fa;
-            padding: 10px;
-            border-radius: 5px;
-            margin: 10px 0;
-            font-size: 12px;
-        }
-        .descripcion-cell {
-            max-width: 200px;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
-        }
-        .table-responsive {
-            max-height: 400px;
-            overflow-y: auto;
-        }
-    </style>
+    
     <!-- Frameworks y librerías base -->
     <link rel="stylesheet" href="../../css/bootstrap.min.css">
     <link rel="stylesheet" href="../../css/diseñoModulos.css">
@@ -212,25 +282,24 @@ $mobiliarios = obtenerMobiliarios();
     </header>
 
     <main class="container my-4">
-        <!-- Mostrar mensajes -->
+        <!-- Mostrar mensajes con SweetAlert2 -->
         <?php if (isset($_SESSION['mensaje'])): ?>
-            <div class="mensaje <?php echo $_SESSION['tipo_mensaje']; ?>">
-                <?php 
-                echo htmlspecialchars($_SESSION['mensaje']); 
-                unset($_SESSION['mensaje']);
-                unset($_SESSION['tipo_mensaje']);
-                ?>
-            </div>
-        <?php endif; ?>
-
-        <!-- Debug info -->
-        <div class="debug-info">
-            <strong>Debug:</strong> 
+            <script>
+                window.__mensaje = {
+                    text: <?php echo json_encode($_SESSION['mensaje']); ?>,
+                    tipo: <?php echo json_encode($_SESSION['tipo_mensaje'] ?? 'error'); ?>
+                };
+            </script>
+            <noscript>
+                <div class="alert alert-<?php echo ($_SESSION['tipo_mensaje'] ?? '') === 'success' ? 'success' : 'danger'; ?>">
+                    <?php echo htmlspecialchars($_SESSION['mensaje']); ?>
+                </div>
+            </noscript>
             <?php 
-            echo "Tipos Mobiliario: " . count($tipos_mobiliario) . " | ";
-            echo "Mobiliarios (inventario): " . count($mobiliarios);
+            unset($_SESSION['mensaje']);
+            unset($_SESSION['tipo_mensaje']);
             ?>
-        </div>
+        <?php endif; ?>
 
         <section class="card shadow p-4">
             <h2 class="card__title text-primary mb-4">FORMULARIO - CONTROL DE MOBILIARIO</h2>
@@ -306,7 +375,7 @@ $mobiliarios = obtenerMobiliarios();
                                         data-cantidad="<?php echo $mobiliario['cantidad_en_stock']; ?>">
                                     Editar
                                 </button>
-                                <form method="post" style="display:inline;" onsubmit="return confirm('¿Estás seguro de eliminar este mobiliario?')">
+                                <form method="post" style="display:inline;" data-eliminar="true">
                                     <input type="hidden" name="operacion" value="eliminar">
                                     <input type="hidden" name="id_mobiliario" value="<?php echo $mobiliario['id_mobiliario']; ?>">
                                     <button type="submit" class="btn btn-sm btn-danger btn-action">Eliminar</button>
@@ -325,107 +394,7 @@ $mobiliarios = obtenerMobiliarios();
         </section>
     </main>
 
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            const form = document.getElementById('form-mobiliario');
-            const btnNuevo = document.getElementById('btn-nuevo');
-            const btnGuardar = document.getElementById('btn-guardar');
-            const btnActualizar = document.getElementById('btn-actualizar');
-            const btnCancelar = document.getElementById('btn-cancelar');
-            const operacionInput = document.getElementById('operacion');
-            const idMobiliarioInput = document.getElementById('id_mobiliario');
-
-            // Botón Nuevo
-            btnNuevo.addEventListener('click', function() {
-                limpiarFormulario();
-                mostrarBotonesGuardar();
-            });
-
-            // Botón Guardar (Crear)
-            btnGuardar.addEventListener('click', function() {
-                if (validarFormulario()) {
-                    operacionInput.value = 'crear';
-                    form.submit();
-                }
-            });
-
-            // Botón Actualizar
-            btnActualizar.addEventListener('click', function() {
-                if (validarFormulario()) {
-                    operacionInput.value = 'actualizar';
-                    form.submit();
-                }
-            });
-
-            // Botón Cancelar
-            btnCancelar.addEventListener('click', function() {
-                limpiarFormulario();
-                mostrarBotonesGuardar();
-            });
-
-            // Eventos para botones Editar
-            document.querySelectorAll('.editar-btn').forEach(btn => {
-                btn.addEventListener('click', function() {
-                    const id = this.getAttribute('data-id');
-                    const nombre = this.getAttribute('data-nombre');
-                    const tipo = this.getAttribute('data-tipo');
-                    const descripcion = this.getAttribute('data-descripcion');
-                    const cantidad = this.getAttribute('data-cantidad');
-
-                    // Llenar formulario
-                    idMobiliarioInput.value = id;
-                    document.getElementById('nombre_mobiliario').value = nombre;
-                    document.getElementById('id_tipo_mobiliario').value = tipo;
-                    document.getElementById('descripcion').value = descripcion;
-                    document.getElementById('cantidad_en_stock').value = cantidad;
-
-                    mostrarBotonesActualizar();
-                });
-            });
-
-            function limpiarFormulario() {
-                form.reset();
-                idMobiliarioInput.value = '';
-                operacionInput.value = 'crear';
-                document.getElementById('cantidad_en_stock').value = '0';
-            }
-
-            function mostrarBotonesGuardar() {
-                btnGuardar.style.display = 'inline-block';
-                btnActualizar.style.display = 'none';
-                btnCancelar.style.display = 'none';
-            }
-
-            function mostrarBotonesActualizar() {
-                btnGuardar.style.display = 'none';
-                btnActualizar.style.display = 'inline-block';
-                btnCancelar.style.display = 'inline-block';
-            }
-
-            function validarFormulario() {
-                const nombre = document.getElementById('nombre_mobiliario').value.trim();
-                const tipo = document.getElementById('id_tipo_mobiliario').value;
-                const cantidad = document.getElementById('cantidad_en_stock').value;
-
-                if (!nombre) {
-                    alert('El nombre del mobiliario es requerido');
-                    return false;
-                }
-                if (!tipo) {
-                    alert('El tipo de mobiliario es requerido');
-                    return false;
-                }
-                if (!cantidad || cantidad < 0) {
-                    alert('La cantidad debe ser mayor o igual a 0');
-                    return false;
-                }
-
-                return true;
-            }
-
-            // Inicializar
-            limpiarFormulario();
-        });
-    </script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="/SistemaWebRestaurante/javascript/gestion_mobiliario.js"></script>
 </body>
 </html>

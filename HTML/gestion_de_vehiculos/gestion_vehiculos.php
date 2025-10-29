@@ -106,20 +106,59 @@ function eliminarVehiculo() {
     
     $id_vehiculo = $_POST['id_placa'] ?? '';
     
-    $sql = "DELETE FROM vehiculos WHERE id_vehiculo = ?";
-    
-    $stmt = $conn->prepare($sql);
-    $stmt->bind_param("i", $id_vehiculo);
-    
-    if ($stmt->execute()) {
-        $_SESSION['mensaje'] = "Vehículo eliminado exitosamente";
-        $_SESSION['tipo_mensaje'] = "success";
-    } else {
-        $_SESSION['mensaje'] = "Error al eliminar vehículo: " . $conn->error;
+    try {
+        // Verificar si el vehículo está siendo usado en otras tablas
+        $check_viajes = $conn->prepare("SELECT COUNT(*) as count FROM viajes WHERE id_vehiculo = ?");
+        $check_viajes->bind_param("i", $id_vehiculo);
+        $check_viajes->execute();
+        $result_viajes = $check_viajes->get_result();
+        $row_viajes = $result_viajes->fetch_assoc();
+        $check_viajes->close();
+        
+        if ($row_viajes['count'] > 0) {
+            $_SESSION['mensaje'] = "No se puede eliminar el vehículo porque está siendo utilizado en viajes registrados.";
+            $_SESSION['tipo_mensaje'] = "error";
+            desconectar($conn);
+            header('Location: gestion_vehiculos.php');
+            exit();
+        }
+        
+        // Puedes agregar más verificaciones para otras tablas aquí si es necesario
+        // Por ejemplo:
+        // $check_mantenimiento = $conn->prepare("SELECT COUNT(*) as count FROM mantenimientos WHERE id_vehiculo = ?");
+        // ...
+        
+        // Si no hay referencias, proceder con la eliminación
+        $sql = "DELETE FROM vehiculos WHERE id_vehiculo = ?";
+        $stmt = $conn->prepare($sql);
+        $stmt->bind_param("i", $id_vehiculo);
+        
+        if ($stmt->execute()) {
+            $_SESSION['mensaje'] = "Vehículo eliminado exitosamente";
+            $_SESSION['tipo_mensaje'] = "success";
+        } else {
+            // Capturar cualquier otro error que pueda ocurrir
+            $_SESSION['mensaje'] = "Error al eliminar vehículo: " . $conn->error;
+            $_SESSION['tipo_mensaje'] = "error";
+        }
+        
+        $stmt->close();
+        
+    } catch (mysqli_sql_exception $e) {
+        // Capturar excepciones específicas de MySQL
+        if (strpos($e->getMessage(), 'foreign key constraint fails') !== false) {
+            $_SESSION['mensaje'] = "No se puede eliminar el vehículo porque está siendo utilizado en otros registros del sistema.";
+            $_SESSION['tipo_mensaje'] = "error";
+        } else {
+            $_SESSION['mensaje'] = "Error al eliminar vehículo: " . $e->getMessage();
+            $_SESSION['tipo_mensaje'] = "error";
+        }
+    } catch (Exception $e) {
+        // Capturar cualquier otra excepción
+        $_SESSION['mensaje'] = "Error al eliminar vehículo: " . $e->getMessage();
         $_SESSION['tipo_mensaje'] = "error";
     }
     
-    $stmt->close();
     desconectar($conn);
     header('Location: gestion_vehiculos.php');
     exit();
@@ -190,54 +229,7 @@ $mobiliarios = obtenerMobiliario();
     <title>Gestión de Vehículos - Marina Roja</title>
     <!-- Google Fonts: Poppins -->
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
-    <style>
-        body, h1, h2, h3, h4, h5, h6, label, input, button, table, th, td {
-            font-family: 'Poppins', Arial, Helvetica, sans-serif !important;
-        }
-        .mensaje {
-            padding: 10px;
-            margin: 10px 0;
-            border-radius: 5px;
-        }
-        .mensaje.success {
-            background-color: #d4edda;
-            color: #155724;
-            border: 1px solid #c3e6cb;
-        }
-        .mensaje.error {
-            background-color: #f8d7da;
-            color: #721c24;
-            border: 1px solid #f5c6cb;
-        }
-        .btn-action {
-            margin: 2px;
-        }
-        .debug-info {
-            background-color: #f8f9fa;
-            padding: 10px;
-            border-radius: 5px;
-            margin: 10px 0;
-            font-size: 12px;
-        }
-        .descripcion-cell {
-            max-width: 200px;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
-        }
-        .badge-activo {
-            background-color: #28a745;
-            color: white;
-        }
-        .badge-taller {
-            background-color: #ffc107;
-            color: black;
-        }
-        .badge-baja {
-            background-color: #dc3545;
-            color: white;
-        }
-    </style>
+    
     <!-- Frameworks y librerías base -->
     <link rel="stylesheet" href="../../css/bootstrap.min.css">
     <link rel="stylesheet" href="../../css/diseñoModulos.css">
@@ -253,25 +245,24 @@ $mobiliarios = obtenerMobiliario();
     </header>
 
     <main class="container my-4">
-        <!-- Mostrar mensajes -->
+        <!-- Mostrar mensajes con SweetAlert2 -->
         <?php if (isset($_SESSION['mensaje'])): ?>
-            <div class="mensaje <?php echo $_SESSION['tipo_mensaje']; ?>">
-                <?php 
-                echo htmlspecialchars($_SESSION['mensaje']); 
-                unset($_SESSION['mensaje']);
-                unset($_SESSION['tipo_mensaje']);
-                ?>
-            </div>
-        <?php endif; ?>
-
-        <!-- Debug info -->
-        <div class="debug-info">
-            <strong>Debug:</strong> 
+            <script>
+                window.__mensaje = {
+                    text: <?php echo json_encode($_SESSION['mensaje']); ?>,
+                    tipo: <?php echo json_encode($_SESSION['tipo_mensaje'] ?? 'error'); ?>
+                };
+            </script>
+            <noscript>
+                <div class="alert alert-<?php echo ($_SESSION['tipo_mensaje'] ?? '') === 'success' ? 'success' : 'danger'; ?>">
+                    <?php echo htmlspecialchars($_SESSION['mensaje']); ?>
+                </div>
+            </noscript>
             <?php 
-            echo "Vehículos: " . count($vehiculos) . " | ";
-            echo "Mobiliarios (inventario): " . count($mobiliarios);
+            unset($_SESSION['mensaje']);
+            unset($_SESSION['tipo_mensaje']);
             ?>
-        </div>
+        <?php endif; ?>
 
         <section class="card shadow p-4">
             <h2 class="card__title text-primary mb-4">FORMULARIO - Vehículos</h2>
@@ -372,19 +363,19 @@ $mobiliarios = obtenerMobiliario();
                                 $badge_class = '';
                                 switch($estado) {
                                     case 'ACTIVO':
-                                        $badge_class = 'badge-activo';
+                                        $badge_class = 'badge bg-success';
                                         break;
                                     case 'EN_TALLER':
-                                        $badge_class = 'badge-taller';
+                                        $badge_class = 'badge bg-warning text-dark';
                                         break;
                                     case 'BAJA':
-                                        $badge_class = 'badge-baja';
+                                        $badge_class = 'badge bg-danger';
                                         break;
                                     default:
-                                        $badge_class = 'badge-activo';
+                                        $badge_class = 'badge bg-success';
                                 }
                                 ?>
-                                <span class="badge <?php echo $badge_class; ?>">
+                                <span class="<?php echo $badge_class; ?>">
                                     <?php echo htmlspecialchars($estado); ?>
                                 </span>
                             </td>
@@ -401,7 +392,7 @@ $mobiliarios = obtenerMobiliario();
                                         data-mobiliario="<?php echo $vehiculo['id_mobiliario'] ?? ''; ?>">
                                     Editar
                                 </button>
-                                <form method="post" style="display:inline;" onsubmit="return confirm('¿Estás seguro de eliminar este vehículo?')">
+                                <form method="post" style="display:inline;" data-eliminar="true">
                                     <input type="hidden" name="operacion" value="eliminar">
                                     <input type="hidden" name="id_placa" value="<?php echo $vehiculo['id_vehiculo'] ?? ''; ?>">
                                     <button type="submit" class="btn btn-sm btn-danger btn-action">Eliminar</button>
@@ -420,121 +411,7 @@ $mobiliarios = obtenerMobiliario();
         </section>
     </main>
 
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            const form = document.getElementById('form-vehiculo');
-            const btnNuevo = document.getElementById('btn-nuevo');
-            const btnGuardar = document.getElementById('btn-guardar');
-            const btnActualizar = document.getElementById('btn-actualizar');
-            const btnCancelar = document.getElementById('btn-cancelar');
-            const operacionInput = document.getElementById('operacion');
-            const idPlacaInput = document.getElementById('id_placa');
-
-            // Botón Nuevo
-            btnNuevo.addEventListener('click', function() {
-                limpiarFormulario();
-                mostrarBotonesGuardar();
-            });
-
-            // Botón Guardar (Crear)
-            btnGuardar.addEventListener('click', function() {
-                if (validarFormulario()) {
-                    operacionInput.value = 'crear';
-                    form.submit();
-                }
-            });
-
-            // Botón Actualizar
-            btnActualizar.addEventListener('click', function() {
-                if (validarFormulario()) {
-                    operacionInput.value = 'actualizar';
-                    form.submit();
-                }
-            });
-
-            // Botón Cancelar
-            btnCancelar.addEventListener('click', function() {
-                limpiarFormulario();
-                mostrarBotonesGuardar();
-            });
-
-            // Eventos para botones Editar
-            document.querySelectorAll('.editar-btn').forEach(btn => {
-                btn.addEventListener('click', function() {
-                    const id = this.getAttribute('data-id');
-                    const placas = this.getAttribute('data-placas');
-                    const marca = this.getAttribute('data-marca');
-                    const modelo = this.getAttribute('data-modelo');
-                    const anio = this.getAttribute('data-anio');
-                    const descripcion = this.getAttribute('data-descripcion');
-                    const estado = this.getAttribute('data-estado');
-                    const mobiliario = this.getAttribute('data-mobiliario');
-
-                    // Llenar formulario
-                    idPlacaInput.value = id;
-                    document.getElementById('no_placas').value = placas;
-                    document.getElementById('marca').value = marca;
-                    document.getElementById('modelo').value = modelo;
-                    document.getElementById('anio_vehiculo').value = anio;
-                    document.getElementById('descripcion').value = descripcion;
-                    document.getElementById('estado').value = estado;
-                    document.getElementById('id_mobiliario').value = mobiliario;
-
-                    mostrarBotonesActualizar();
-                });
-            });
-
-            function limpiarFormulario() {
-                form.reset();
-                idPlacaInput.value = '';
-                operacionInput.value = 'crear';
-                document.getElementById('estado').value = 'ACTIVO';
-                document.getElementById('id_mobiliario').value = '';
-            }
-
-            function mostrarBotonesGuardar() {
-                btnGuardar.style.display = 'inline-block';
-                btnActualizar.style.display = 'none';
-                btnCancelar.style.display = 'none';
-            }
-
-            function mostrarBotonesActualizar() {
-                btnGuardar.style.display = 'none';
-                btnActualizar.style.display = 'inline-block';
-                btnCancelar.style.display = 'inline-block';
-            }
-
-            function validarFormulario() {
-                const placas = document.getElementById('no_placas').value.trim();
-                const marca = document.getElementById('marca').value.trim();
-                const modelo = document.getElementById('modelo').value.trim();
-                const anio = document.getElementById('anio_vehiculo').value;
-                const estado = document.getElementById('estado').value;
-
-                if (!placas) {
-                    alert('La placa es requerida');
-                    return false;
-                }
-                if (!marca) {
-                    alert('La marca es requerida');
-                    return false;
-                }
-                if (!modelo) {
-                    alert('El modelo es requerido');
-                    return false;
-                }
-                if (!anio) {
-                    alert('El año es requerido');
-                    return false;
-                }
-                if (!estado) {
-                    alert('El estado es requerido');
-                    return false;
-                }
-
-                return true;
-            }
-        });
-    </script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="/SistemaWebRestaurante/javascript/gestion_vehiculos.js"></script>
 </body>
 </html>

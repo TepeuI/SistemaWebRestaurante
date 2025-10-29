@@ -90,20 +90,55 @@ function eliminarAccidente() {
     
     $id_accidente = $_POST['id_accidente'] ?? '';
     
-    $sql = "DELETE FROM reportes_accidentes WHERE id_accidente = ?";
-    
-    $stmt = $conn->prepare($sql);
-    $stmt->bind_param("i", $id_accidente);
-    
-    if ($stmt->execute()) {
-        $_SESSION['mensaje'] = "Reporte de accidente eliminado exitosamente";
-        $_SESSION['tipo_mensaje'] = "success";
-    } else {
-        $_SESSION['mensaje'] = "Error al eliminar accidente: " . $conn->error;
+    try {
+        // Verificar si el reporte de accidente está siendo referenciado en otras tablas
+        // Por ejemplo, si hay una tabla de seguimiento o investigaciones
+        // $check_seguimiento = $conn->prepare("SELECT COUNT(*) as count FROM seguimiento_accidentes WHERE id_accidente = ?");
+        // $check_seguimiento->bind_param("i", $id_accidente);
+        // $check_seguimiento->execute();
+        // $result_seguimiento = $check_seguimiento->get_result();
+        // $row_seguimiento = $result_seguimiento->fetch_assoc();
+        // $check_seguimiento->close();
+        
+        // if ($row_seguimiento['count'] > 0) {
+        //     $_SESSION['mensaje'] = "No se puede eliminar el reporte de accidente porque tiene seguimientos registrados.";
+        //     $_SESSION['tipo_mensaje'] = "error";
+        //     desconectar($conn);
+        //     header('Location: reportes_accidentes.php');
+        //     exit();
+        // }
+        
+        // Si no hay referencias, proceder con la eliminación
+        $sql = "DELETE FROM reportes_accidentes WHERE id_accidente = ?";
+        $stmt = $conn->prepare($sql);
+        $stmt->bind_param("i", $id_accidente);
+        
+        if ($stmt->execute()) {
+            $_SESSION['mensaje'] = "Reporte de accidente eliminado exitosamente";
+            $_SESSION['tipo_mensaje'] = "success";
+        } else {
+            // Capturar cualquier otro error que pueda ocurrir
+            $_SESSION['mensaje'] = "Error al eliminar accidente: " . $conn->error;
+            $_SESSION['tipo_mensaje'] = "error";
+        }
+        
+        $stmt->close();
+        
+    } catch (mysqli_sql_exception $e) {
+        // Capturar excepciones específicas de MySQL
+        if (strpos($e->getMessage(), 'foreign key constraint fails') !== false) {
+            $_SESSION['mensaje'] = "No se puede eliminar el reporte de accidente porque está siendo utilizado en otros registros del sistema.";
+            $_SESSION['tipo_mensaje'] = "error";
+        } else {
+            $_SESSION['mensaje'] = "Error al eliminar accidente: " . $e->getMessage();
+            $_SESSION['tipo_mensaje'] = "error";
+        }
+    } catch (Exception $e) {
+        // Capturar cualquier otra excepción
+        $_SESSION['mensaje'] = "Error al eliminar accidente: " . $e->getMessage();
         $_SESSION['tipo_mensaje'] = "error";
     }
     
-    $stmt->close();
     desconectar($conn);
     header('Location: reportes_accidentes.php');
     exit();
@@ -198,63 +233,7 @@ $empleados = obtenerEmpleados();
     <title>Reportes de Accidentes - Marina Roja</title>
     <!-- Google Fonts: Poppins -->
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
-    <style>
-        body, h1, h2, h3, h4, h5, h6, label, input, button, table, th, td {
-            font-family: 'Poppins', Arial, Helvetica, sans-serif !important;
-        }
-        .mensaje {
-            padding: 10px;
-            margin: 10px 0;
-            border-radius: 5px;
-        }
-        .mensaje.success {
-            background-color: #d4edda;
-            color: #155724;
-            border: 1px solid #c3e6cb;
-        }
-        .mensaje.error {
-            background-color: #f8d7da;
-            color: #721c24;
-            border: 1px solid #f5c6cb;
-        }
-        .btn-action {
-            margin: 2px;
-        }
-        .debug-info {
-            background-color: #f8f9fa;
-            padding: 10px;
-            border-radius: 5px;
-            margin: 10px 0;
-            font-size: 12px;
-        }
-        .table-responsive {
-            max-height: 500px;
-            overflow-y: auto;
-        }
-        .descripcion-cell {
-            max-width: 250px;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
-        }
-        .fecha-cell {
-            white-space: nowrap;
-        }
-        .badge-accidente {
-            background-color: #dc3545;
-            color: white;
-            padding: 4px 8px;
-            border-radius: 4px;
-            font-size: 12px;
-        }
-        .info-accidente {
-            background-color: #fff3cd;
-            border: 1px solid #ffeaa7;
-            padding: 15px;
-            border-radius: 5px;
-            margin-bottom: 20px;
-        }
-    </style>
+    
     <!-- Frameworks y librerías base -->
     <link rel="stylesheet" href="../../css/bootstrap.min.css">
     <link rel="stylesheet" href="../../css/diseñoModulos.css">
@@ -270,32 +249,30 @@ $empleados = obtenerEmpleados();
     </header>
 
     <main class="container my-4">
-        <!-- Mostrar mensajes -->
+        <!-- Mostrar mensajes con SweetAlert2 -->
         <?php if (isset($_SESSION['mensaje'])): ?>
-            <div class="mensaje <?php echo $_SESSION['tipo_mensaje']; ?>">
-                <?php 
-                echo htmlspecialchars($_SESSION['mensaje']); 
-                unset($_SESSION['mensaje']);
-                unset($_SESSION['tipo_mensaje']);
-                ?>
-            </div>
-        <?php endif; ?>
-
-        <!-- Debug info -->
-        <div class="debug-info">
-            <strong>Debug:</strong> 
+            <script>
+                window.__mensaje = {
+                    text: <?php echo json_encode($_SESSION['mensaje']); ?>,
+                    tipo: <?php echo json_encode($_SESSION['tipo_mensaje'] ?? 'error'); ?>
+                };
+            </script>
+            <noscript>
+                <div class="alert alert-<?php echo ($_SESSION['tipo_mensaje'] ?? '') === 'success' ? 'success' : 'danger'; ?>">
+                    <?php echo htmlspecialchars($_SESSION['mensaje']); ?>
+                </div>
+            </noscript>
             <?php 
-            echo "Accidentes: " . count($accidentes) . " | ";
-            echo "Viajes: " . count($viajes) . " | ";
-            echo "Empleados: " . count($empleados);
+            unset($_SESSION['mensaje']);
+            unset($_SESSION['tipo_mensaje']);
             ?>
-        </div>
+        <?php endif; ?>
 
         <section class="card shadow p-4">
             <h2 class="card__title text-primary mb-4">FORMULARIO - REPORTE DE ACCIDENTES</h2>
 
-            <div class="info-accidente">
-                <h5 class="text-warning">⚠️ Importante</h5>
+            <div class="alert alert-warning">
+                <h5 class="alert-heading">⚠️ Importante</h5>
                 <p class="mb-0">Este formulario es para reportar accidentes ocurridos durante los viajes. 
                 Asegúrese de proporcionar una descripción detallada del incidente.</p>
             </div>
@@ -369,11 +346,11 @@ $empleados = obtenerEmpleados();
                         <?php foreach($accidentes as $accidente): ?>
                         <tr>
                             <td>
-                                <span class="badge-accidente">#<?php echo htmlspecialchars($accidente['id_accidente']); ?></span>
+                                <span class="badge bg-danger">#<?php echo htmlspecialchars($accidente['id_accidente']); ?></span>
                             </td>
                             <td>
                                 Viaje #<?php echo htmlspecialchars($accidente['id_viaje']); ?><br>
-                                <small><?php echo htmlspecialchars($accidente['descripcion_viaje'] ?? 'N/A'); ?></small>
+                                <small class="text-muted"><?php echo htmlspecialchars($accidente['descripcion_viaje'] ?? 'N/A'); ?></small>
                             </td>
                             <td><?php echo htmlspecialchars($accidente['no_placa'] ?? 'N/A'); ?></td>
                             <td>
@@ -394,10 +371,10 @@ $empleados = obtenerEmpleados();
                                         data-viaje="<?php echo $accidente['id_viaje']; ?>"
                                         data-empleado="<?php echo $accidente['id_empleado']; ?>"
                                         data-descripcion="<?php echo htmlspecialchars($accidente['descripcion_accidente']); ?>"
-                                        data-fecha="<?php echo $accidente['fecha_hora']; ?>">
+                                        data-fecha="<?php echo str_replace(' ', 'T', substr($accidente['fecha_hora'], 0, 16)); ?>">
                                     Editar
                                 </button>
-                                <form method="post" style="display:inline;" onsubmit="return confirm('¿Estás seguro de eliminar este reporte de accidente?')">
+                                <form method="post" style="display:inline;" data-eliminar="true">
                                     <input type="hidden" name="operacion" value="eliminar_accidente">
                                     <input type="hidden" name="id_accidente" value="<?php echo $accidente['id_accidente']; ?>">
                                     <button type="submit" class="btn btn-sm btn-danger btn-action">Eliminar</button>
@@ -416,123 +393,7 @@ $empleados = obtenerEmpleados();
         </section>
     </main>
 
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            const form = document.getElementById('form-accidentes');
-            const btnNuevo = document.getElementById('btn-nuevo');
-            const btnGuardar = document.getElementById('btn-guardar');
-            const btnActualizar = document.getElementById('btn-actualizar');
-            const btnCancelar = document.getElementById('btn-cancelar');
-            const operacionInput = document.getElementById('operacion');
-            const idAccidenteInput = document.getElementById('id_accidente');
-            const descripcionInput = document.getElementById('descripcion_accidente');
-            const fechaHoraInput = document.getElementById('fecha_hora');
-
-            // Botón Nuevo
-            btnNuevo.addEventListener('click', function() {
-                limpiarFormulario();
-                mostrarBotonesGuardar();
-            });
-
-            // Botón Guardar (Crear)
-            btnGuardar.addEventListener('click', function() {
-                if (validarFormulario()) {
-                    operacionInput.value = 'crear_accidente';
-                    form.submit();
-                }
-            });
-
-            // Botón Actualizar
-            btnActualizar.addEventListener('click', function() {
-                if (validarFormulario()) {
-                    operacionInput.value = 'actualizar_accidente';
-                    form.submit();
-                }
-            });
-
-            // Botón Cancelar
-            btnCancelar.addEventListener('click', function() {
-                limpiarFormulario();
-                mostrarBotonesGuardar();
-            });
-
-            // Eventos para botones Editar
-            document.querySelectorAll('.editar-btn').forEach(btn => {
-                btn.addEventListener('click', function() {
-                    const id = this.getAttribute('data-id');
-                    const viaje = this.getAttribute('data-viaje');
-                    const empleado = this.getAttribute('data-empleado');
-                    const descripcion = this.getAttribute('data-descripcion');
-                    const fecha = this.getAttribute('data-fecha');
-
-                    // Llenar formulario
-                    idAccidenteInput.value = id;
-                    document.getElementById('id_viaje').value = viaje;
-                    document.getElementById('id_empleado').value = empleado;
-                    descripcionInput.value = descripcion;
-                    
-                    // Formatear fecha para el input datetime-local
-                    const fechaObj = new Date(fecha);
-                    const fechaFormateada = fechaObj.toISOString().slice(0, 16);
-                    fechaHoraInput.value = fechaFormateada;
-
-                    mostrarBotonesActualizar();
-                });
-            });
-
-            function limpiarFormulario() {
-                form.reset();
-                idAccidenteInput.value = '';
-                operacionInput.value = 'crear_accidente';
-                // Establecer fecha y hora actual por defecto
-                fechaHoraInput.valueAsDate = new Date();
-            }
-
-            function mostrarBotonesGuardar() {
-                btnGuardar.style.display = 'inline-block';
-                btnActualizar.style.display = 'none';
-                btnCancelar.style.display = 'none';
-            }
-
-            function mostrarBotonesActualizar() {
-                btnGuardar.style.display = 'none';
-                btnActualizar.style.display = 'inline-block';
-                btnCancelar.style.display = 'inline-block';
-            }
-
-            function validarFormulario() {
-                const viaje = document.getElementById('id_viaje').value;
-                const empleado = document.getElementById('id_empleado').value;
-                const descripcion = descripcionInput.value.trim();
-                const fecha = fechaHoraInput.value;
-
-                if (!viaje) {
-                    alert('El viaje relacionado es requerido');
-                    return false;
-                }
-                if (!empleado) {
-                    alert('El empleado que reporta es requerido');
-                    return false;
-                }
-                if (!descripcion) {
-                    alert('La descripción del accidente es requerida');
-                    return false;
-                }
-                if (descripcion.length < 50) {
-                    alert('La descripción debe tener al menos 50 caracteres');
-                    return false;
-                }
-                if (!fecha) {
-                    alert('La fecha y hora del accidente son requeridas');
-                    return false;
-                }
-
-                return true;
-            }
-
-            // Inicializar - establecer fecha y hora actual
-            limpiarFormulario();
-        });
-    </script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="/SistemaWebRestaurante/javascript/reportes_accidentes.js"></script>
 </body>
 </html>

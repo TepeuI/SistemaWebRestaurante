@@ -104,20 +104,91 @@ function eliminarMantenimiento() {
     
     $id_mantenimiento_muebles = $_POST['id_mantenimiento_muebles'] ?? '';
     
-    $sql = "DELETE FROM mantenimiento_muebles WHERE id_mantenimiento_muebles = ?";
+    // Validar que el ID no esté vacío
+    if (empty($id_mantenimiento_muebles)) {
+        $_SESSION['mensaje'] = "Error: No se proporcionó un ID de mantenimiento válido.";
+        $_SESSION['tipo_mensaje'] = "error";
+        desconectar($conn);
+        header('Location: mantenimiento_muebles.php');
+        exit();
+    }
     
-    $stmt = $conn->prepare($sql);
-    $stmt->bind_param("i", $id_mantenimiento_muebles);
-    
-    if ($stmt->execute()) {
-        $_SESSION['mensaje'] = "Mantenimiento eliminado exitosamente";
-        $_SESSION['tipo_mensaje'] = "success";
-    } else {
-        $_SESSION['mensaje'] = "Error al eliminar mantenimiento: " . $conn->error;
+    try {
+        // Primero verificar si el mantenimiento existe
+        $check_mantenimiento = $conn->prepare("SELECT id_mantenimiento_muebles FROM mantenimiento_muebles WHERE id_mantenimiento_muebles = ?");
+        if (!$check_mantenimiento) {
+            throw new Exception("Error al preparar la consulta: " . $conn->error);
+        }
+        
+        $check_mantenimiento->bind_param("i", $id_mantenimiento_muebles);
+        
+        if (!$check_mantenimiento->execute()) {
+            throw new Exception("Error al ejecutar la consulta: " . $check_mantenimiento->error);
+        }
+        
+        $result_mantenimiento = $check_mantenimiento->get_result();
+        
+        if ($result_mantenimiento->num_rows === 0) {
+            $_SESSION['mensaje'] = "Error: El mantenimiento que intenta eliminar no existe en el sistema.";
+            $_SESSION['tipo_mensaje'] = "error";
+            $check_mantenimiento->close();
+            desconectar($conn);
+            header('Location: mantenimiento_muebles.php');
+            exit();
+        }
+        $check_mantenimiento->close();
+        
+        // Proceder con la eliminación
+        $sql = "DELETE FROM mantenimiento_muebles WHERE id_mantenimiento_muebles = ?";
+        $stmt = $conn->prepare($sql);
+        
+        if (!$stmt) {
+            throw new Exception("Error al preparar la consulta de eliminación: " . $conn->error);
+        }
+        
+        $stmt->bind_param("i", $id_mantenimiento_muebles);
+        
+        if ($stmt->execute()) {
+            if ($stmt->affected_rows > 0) {
+                $_SESSION['mensaje'] = "Mantenimiento eliminado exitosamente";
+                $_SESSION['tipo_mensaje'] = "success";
+            } else {
+                $_SESSION['mensaje'] = "No se pudo eliminar el mantenimiento. Es posible que ya haya sido eliminado o no exista.";
+                $_SESSION['tipo_mensaje'] = "error";
+            }
+        } else {
+            $error = $stmt->error;
+            if (strpos($error, 'foreign key constraint') !== false) {
+                $_SESSION['mensaje'] = "No se puede eliminar el mantenimiento porque está siendo utilizado en otros registros del sistema.";
+                $_SESSION['tipo_mensaje'] = "error";
+            } else {
+                $_SESSION['mensaje'] = "Error al eliminar mantenimiento: " . $error;
+                $_SESSION['tipo_mensaje'] = "error";
+            }
+        }
+        
+        $stmt->close();
+        
+    } catch (mysqli_sql_exception $e) {
+        // Capturar excepciones específicas de MySQL
+        $error_message = $e->getMessage();
+        
+        if (strpos($error_message, 'foreign key constraint fails') !== false) {
+            $_SESSION['mensaje'] = "No se puede eliminar el mantenimiento porque está siendo utilizado en otros registros del sistema.";
+            $_SESSION['tipo_mensaje'] = "error";
+        } else if (strpos($error_message, 'Unknown column') !== false) {
+            $_SESSION['mensaje'] = "Error en la consulta a la base de datos. Por favor, contacte al administrador del sistema.";
+            $_SESSION['tipo_mensaje'] = "error";
+        } else {
+            $_SESSION['mensaje'] = "Error de base de datos: " . $error_message;
+            $_SESSION['tipo_mensaje'] = "error";
+        }
+    } catch (Exception $e) {
+        // Capturar cualquier otra excepción
+        $_SESSION['mensaje'] = "Error inesperado: " . $e->getMessage();
         $_SESSION['tipo_mensaje'] = "error";
     }
     
-    $stmt->close();
     desconectar($conn);
     header('Location: mantenimiento_muebles.php');
     exit();
@@ -215,74 +286,7 @@ $talleres = obtenerTalleres();
     <title>Mantenimiento de Muebles - Marina Roja</title>
     <!-- Google Fonts: Poppins -->
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
-    <style>
-        body, h1, h2, h3, h4, h5, h6, label, input, button, table, th, td {
-            font-family: 'Poppins', Arial, Helvetica, sans-serif !important;
-        }
-        .mensaje {
-            padding: 10px;
-            margin: 10px 0;
-            border-radius: 5px;
-        }
-        .mensaje.success {
-            background-color: #d4edda;
-            color: #155724;
-            border: 1px solid #c3e6cb;
-        }
-        .mensaje.error {
-            background-color: #f8d7da;
-            color: #721c24;
-            border: 1px solid #f5c6cb;
-        }
-        .btn-action {
-            margin: 2px;
-        }
-        .debug-info {
-            background-color: #f8f9fa;
-            padding: 10px;
-            border-radius: 5px;
-            margin: 10px 0;
-            font-size: 12px;
-        }
-        .table-responsive {
-            max-height: 500px;
-            overflow-y: auto;
-        }
-        .descripcion-cell {
-            max-width: 200px;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
-        }
-        .fecha-cell {
-            white-space: nowrap;
-        }
-        .costo {
-            text-align: right;
-            font-weight: bold;
-        }
-        .info-mantenimiento {
-            background-color: #d1ecf1;
-            border: 1px solid #bee5eb;
-            padding: 15px;
-            border-radius: 5px;
-            margin-bottom: 20px;
-        }
-        .codigo-serie {
-            font-family: 'Courier New', monospace;
-            background-color: #f8f9fa;
-            padding: 2px 6px;
-            border-radius: 3px;
-            border: 1px solid #dee2e6;
-        }
-        .badge-mantenimiento {
-            background-color: #17a2b8;
-            color: white;
-            padding: 4px 8px;
-            border-radius: 4px;
-            font-size: 12px;
-        }
-    </style>
+    
     <!-- Frameworks y librerías base -->
     <link rel="stylesheet" href="../../css/bootstrap.min.css">
     <link rel="stylesheet" href="../../css/diseñoModulos.css">
@@ -298,26 +302,24 @@ $talleres = obtenerTalleres();
     </header>
 
     <main class="container my-4">
-        <!-- Mostrar mensajes -->
+        <!-- Mostrar mensajes con SweetAlert2 -->
         <?php if (isset($_SESSION['mensaje'])): ?>
-            <div class="mensaje <?php echo $_SESSION['tipo_mensaje']; ?>">
-                <?php 
-                echo htmlspecialchars($_SESSION['mensaje']); 
-                unset($_SESSION['mensaje']);
-                unset($_SESSION['tipo_mensaje']);
-                ?>
-            </div>
-        <?php endif; ?>
-
-        <!-- Debug info -->
-        <div class="debug-info">
-            <strong>Debug:</strong> 
+            <script>
+                window.__mensaje = {
+                    text: <?php echo json_encode($_SESSION['mensaje']); ?>,
+                    tipo: <?php echo json_encode($_SESSION['tipo_mensaje'] ?? 'error'); ?>
+                };
+            </script>
+            <noscript>
+                <div class="alert alert-<?php echo ($_SESSION['tipo_mensaje'] ?? '') === 'success' ? 'success' : 'danger'; ?>">
+                    <?php echo htmlspecialchars($_SESSION['mensaje']); ?>
+                </div>
+            </noscript>
             <?php 
-            echo "Mantenimientos: " . count($mantenimientos) . " | ";
-            echo "Mobiliarios (sin vehículos): " . count($mobiliarios) . " | ";
-            echo "Talleres (sin vehículos): " . count($talleres);
+            unset($_SESSION['mensaje']);
+            unset($_SESSION['tipo_mensaje']);
             ?>
-        </div>
+        <?php endif; ?>
 
         <section class="card shadow p-4">
             <h2 class="card__title text-primary mb-4">FORMULARIO - REGISTRO DE MANTENIMIENTO</h2>
@@ -418,7 +420,7 @@ $talleres = obtenerTalleres();
                             <td>
                                 <span class="codigo-serie"><?php echo htmlspecialchars($mantenimiento['codigo_serie']); ?></span>
                             </td>
-                            <td class="costo">Q <?php echo number_format($mantenimiento['costo_mantenimiento'], 2); ?></td>
+                            <td class="text-end fw-bold">Q <?php echo number_format($mantenimiento['costo_mantenimiento'], 2); ?></td>
                             <td>
                                 <button class="btn btn-sm btn-primary btn-action editar-btn" 
                                         data-id="<?php echo $mantenimiento['id_mantenimiento_muebles']; ?>"
@@ -430,7 +432,7 @@ $talleres = obtenerTalleres();
                                         data-costo="<?php echo $mantenimiento['costo_mantenimiento']; ?>">
                                     Editar
                                 </button>
-                                <form method="post" style="display:inline;" onsubmit="return confirm('¿Estás seguro de eliminar este mantenimiento?')">
+                                <form method="post" style="display:inline;" data-eliminar="true">
                                     <input type="hidden" name="operacion" value="eliminar_mantenimiento">
                                     <input type="hidden" name="id_mantenimiento_muebles" value="<?php echo $mantenimiento['id_mantenimiento_muebles']; ?>">
                                     <button type="submit" class="btn btn-sm btn-danger btn-action">Eliminar</button>
@@ -449,123 +451,7 @@ $talleres = obtenerTalleres();
         </section>
     </main>
 
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            const form = document.getElementById('form-mantenimiento');
-            const btnNuevo = document.getElementById('btn-nuevo');
-            const btnGuardar = document.getElementById('btn-guardar');
-            const btnActualizar = document.getElementById('btn-actualizar');
-            const btnCancelar = document.getElementById('btn-cancelar');
-            const operacionInput = document.getElementById('operacion');
-            const idMantenimientoInput = document.getElementById('id_mantenimiento_muebles');
-            const fechaInput = document.getElementById('fecha_mantenimiento');
-
-            // Botón Nuevo
-            btnNuevo.addEventListener('click', function() {
-                limpiarFormulario();
-                mostrarBotonesGuardar();
-            });
-
-            // Botón Guardar (Crear)
-            btnGuardar.addEventListener('click', function() {
-                if (validarFormulario()) {
-                    operacionInput.value = 'crear_mantenimiento';
-                    form.submit();
-                }
-            });
-
-            // Botón Actualizar
-            btnActualizar.addEventListener('click', function() {
-                if (validarFormulario()) {
-                    operacionInput.value = 'actualizar_mantenimiento';
-                    form.submit();
-                }
-            });
-
-            // Botón Cancelar
-            btnCancelar.addEventListener('click', function() {
-                limpiarFormulario();
-                mostrarBotonesGuardar();
-            });
-
-            // Eventos para botones Editar
-            document.querySelectorAll('.editar-btn').forEach(btn => {
-                btn.addEventListener('click', function() {
-                    const id = this.getAttribute('data-id');
-                    const mobiliario = this.getAttribute('data-mobiliario');
-                    const taller = this.getAttribute('data-taller');
-                    const descripcion = this.getAttribute('data-descripcion');
-                    const fecha = this.getAttribute('data-fecha');
-                    const codigo = this.getAttribute('data-codigo');
-                    const costo = this.getAttribute('data-costo');
-
-                    // Llenar formulario
-                    idMantenimientoInput.value = id;
-                    document.getElementById('id_mobiliario').value = mobiliario;
-                    document.getElementById('id_taller').value = taller;
-                    document.getElementById('descripcion_mantenimiento').value = descripcion;
-                    document.getElementById('fecha_mantenimiento').value = fecha;
-                    document.getElementById('codigo_serie').value = codigo;
-                    document.getElementById('costo_mantenimiento').value = costo;
-
-                    mostrarBotonesActualizar();
-                });
-            });
-
-            function limpiarFormulario() {
-                form.reset();
-                idMantenimientoInput.value = '';
-                operacionInput.value = 'crear_mantenimiento';
-                // Establecer fecha actual por defecto
-                fechaInput.valueAsDate = new Date();
-            }
-
-            function mostrarBotonesGuardar() {
-                btnGuardar.style.display = 'inline-block';
-                btnActualizar.style.display = 'none';
-                btnCancelar.style.display = 'none';
-            }
-
-            function mostrarBotonesActualizar() {
-                btnGuardar.style.display = 'none';
-                btnActualizar.style.display = 'inline-block';
-                btnCancelar.style.display = 'inline-block';
-            }
-
-            function validarFormulario() {
-                const mobiliario = document.getElementById('id_mobiliario').value;
-                const descripcion = document.getElementById('descripcion_mantenimiento').value.trim();
-                const fecha = fechaInput.value;
-                const codigo = document.getElementById('codigo_serie').value.trim();
-                const costo = document.getElementById('costo_mantenimiento').value;
-
-                if (!mobiliario) {
-                    alert('El mobiliario es requerido');
-                    return false;
-                }
-                if (!descripcion) {
-                    alert('La descripción del mantenimiento es requerida');
-                    return false;
-                }
-                if (!fecha) {
-                    alert('La fecha de mantenimiento es requerida');
-                    return false;
-                }
-                if (!codigo) {
-                    alert('El código de serie es requerido');
-                    return false;
-                }
-                if (!costo || costo < 0) {
-                    alert('El costo debe ser mayor o igual a 0');
-                    return false;
-                }
-
-                return true;
-            }
-
-            // Inicializar - establecer fecha actual
-            limpiarFormulario();
-        });
-    </script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="/SistemaWebRestaurante/javascript/mantenimiento_muebles.js"></script>
 </body>
 </html>

@@ -88,20 +88,129 @@ function eliminarCompra() {
     
     $id_compra_mobiliario = $_POST['id_compra_mobiliario'] ?? '';
     
-    $sql = "DELETE FROM compras_mobiliario WHERE id_compra_mobiliario = ?";
+    // Validar que el ID no esté vacío
+    if (empty($id_compra_mobiliario)) {
+        $_SESSION['mensaje'] = "Error: No se proporcionó un ID de compra válido.";
+        $_SESSION['tipo_mensaje'] = "error";
+        desconectar($conn);
+        header('Location: compras_mobiliario.php');
+        exit();
+    }
     
-    $stmt = $conn->prepare($sql);
-    $stmt->bind_param("i", $id_compra_mobiliario);
-    
-    if ($stmt->execute()) {
-        $_SESSION['mensaje'] = "Compra eliminada exitosamente";
-        $_SESSION['tipo_mensaje'] = "success";
-    } else {
-        $_SESSION['mensaje'] = "Error al eliminar compra: " . $conn->error;
+    try {
+        // Primero verificar si la compra existe
+        $check_compra = $conn->prepare("SELECT id_compra_mobiliario FROM compras_mobiliario WHERE id_compra_mobiliario = ?");
+        if (!$check_compra) {
+            throw new Exception("Error al preparar la consulta: " . $conn->error);
+        }
+        
+        $check_compra->bind_param("i", $id_compra_mobiliario);
+        
+        if (!$check_compra->execute()) {
+            throw new Exception("Error al ejecutar la consulta: " . $check_compra->error);
+        }
+        
+        $result_compra = $check_compra->get_result();
+        
+        if ($result_compra->num_rows === 0) {
+            $_SESSION['mensaje'] = "Error: La compra que intenta eliminar no existe en el sistema.";
+            $_SESSION['tipo_mensaje'] = "error";
+            $check_compra->close();
+            desconectar($conn);
+            header('Location: compras_mobiliario.php');
+            exit();
+        }
+        $check_compra->close();
+        
+        // Verificar si existe la tabla inventario_mobiliario y si tiene relación con compras
+        $check_tabla_inventario = $conn->query("SHOW TABLES LIKE 'inventario_mobiliario'");
+        if ($check_tabla_inventario && $check_tabla_inventario->num_rows > 0) {
+            // La tabla existe, verificar si hay columnas que referencien compras_mobiliario
+            $check_columnas = $conn->query("SHOW COLUMNS FROM inventario_mobiliario");
+            $tiene_relacion = false;
+            $columna_relacion = '';
+            
+            while ($columna = $check_columnas->fetch_assoc()) {
+                if (strpos($columna['Field'], 'compra') !== false || 
+                    strpos($columna['Field'], 'id_compra') !== false) {
+                    $tiene_relacion = true;
+                    $columna_relacion = $columna['Field'];
+                    break;
+                }
+            }
+            
+            if ($tiene_relacion && !empty($columna_relacion)) {
+                // Verificar si hay registros relacionados
+                $check_relacion = $conn->prepare("SELECT COUNT(*) as count FROM inventario_mobiliario WHERE {$columna_relacion} = ?");
+                if ($check_relacion) {
+                    $check_relacion->bind_param("i", $id_compra_mobiliario);
+                    $check_relacion->execute();
+                    $result_relacion = $check_relacion->get_result();
+                    $row_relacion = $result_relacion->fetch_assoc();
+                    $check_relacion->close();
+                    
+                    if ($row_relacion['count'] > 0) {
+                        $_SESSION['mensaje'] = "No se puede eliminar la compra porque está siendo utilizada en el inventario de mobiliario (" . $row_relacion['count'] . " registros relacionados). Primero debe eliminar o modificar los registros relacionados en el inventario.";
+                        $_SESSION['tipo_mensaje'] = "error";
+                        desconectar($conn);
+                        header('Location: compras_mobiliario.php');
+                        exit();
+                    }
+                }
+            }
+        }
+        
+        // Si no hay referencias, proceder con la eliminación
+        $sql = "DELETE FROM compras_mobiliario WHERE id_compra_mobiliario = ?";
+        $stmt = $conn->prepare($sql);
+        
+        if (!$stmt) {
+            throw new Exception("Error al preparar la consulta de eliminación: " . $conn->error);
+        }
+        
+        $stmt->bind_param("i", $id_compra_mobiliario);
+        
+        if ($stmt->execute()) {
+            if ($stmt->affected_rows > 0) {
+                $_SESSION['mensaje'] = "Compra eliminada exitosamente";
+                $_SESSION['tipo_mensaje'] = "success";
+            } else {
+                $_SESSION['mensaje'] = "No se pudo eliminar la compra. Es posible que ya haya sido eliminada o no exista.";
+                $_SESSION['tipo_mensaje'] = "error";
+            }
+        } else {
+            $error = $stmt->error;
+            if (strpos($error, 'foreign key constraint') !== false) {
+                $_SESSION['mensaje'] = "No se puede eliminar la compra porque está siendo utilizada en otros registros del sistema. Verifique que no existan registros relacionados en el inventario.";
+                $_SESSION['tipo_mensaje'] = "error";
+            } else {
+                $_SESSION['mensaje'] = "Error al eliminar compra: " . $error;
+                $_SESSION['tipo_mensaje'] = "error";
+            }
+        }
+        
+        $stmt->close();
+        
+    } catch (mysqli_sql_exception $e) {
+        // Capturar excepciones específicas de MySQL
+        $error_message = $e->getMessage();
+        
+        if (strpos($error_message, 'foreign key constraint fails') !== false) {
+            $_SESSION['mensaje'] = "No se puede eliminar la compra porque está siendo utilizada en otros registros del sistema. Verifique que no existan registros relacionados en el inventario.";
+            $_SESSION['tipo_mensaje'] = "error";
+        } else if (strpos($error_message, 'Unknown column') !== false) {
+            $_SESSION['mensaje'] = "Error en la consulta a la base de datos. Por favor, contacte al administrador del sistema.";
+            $_SESSION['tipo_mensaje'] = "error";
+        } else {
+            $_SESSION['mensaje'] = "Error de base de datos: " . $error_message;
+            $_SESSION['tipo_mensaje'] = "error";
+        }
+    } catch (Exception $e) {
+        // Capturar cualquier otra excepción
+        $_SESSION['mensaje'] = "Error inesperado: " . $e->getMessage();
         $_SESSION['tipo_mensaje'] = "error";
     }
     
-    $stmt->close();
     desconectar($conn);
     header('Location: compras_mobiliario.php');
     exit();
@@ -158,44 +267,7 @@ $proveedores = obtenerProveedores();
     <title>Compras de Mobiliario - Marina Roja</title>
     <!-- Google Fonts: Poppins -->
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
-    <style>
-        body, h1, h2, h3, h4, h5, h6, label, input, button, table, th, td {
-            font-family: 'Poppins', Arial, Helvetica, sans-serif !important;
-        }
-        .mensaje {
-            padding: 10px;
-            margin: 10px 0;
-            border-radius: 5px;
-        }
-        .mensaje.success {
-            background-color: #d4edda;
-            color: #155724;
-            border: 1px solid #c3e6cb;
-        }
-        .mensaje.error {
-            background-color: #f8d7da;
-            color: #721c24;
-            border: 1px solid #f5c6cb;
-        }
-        .btn-action {
-            margin: 2px;
-        }
-        .debug-info {
-            background-color: #f8f9fa;
-            padding: 10px;
-            border-radius: 5px;
-            margin: 10px 0;
-            font-size: 12px;
-        }
-        .table-responsive {
-            max-height: 400px;
-            overflow-y: auto;
-        }
-        .monto {
-            text-align: right;
-            font-weight: bold;
-        }
-    </style>
+    
     <!-- Frameworks y librerías base - RUTAS CORREGIDAS -->
     <link rel="stylesheet" href="../../css/bootstrap.min.css">
     <link rel="stylesheet" href="../../css/diseñoModulos.css">
@@ -211,25 +283,24 @@ $proveedores = obtenerProveedores();
     </header>
 
     <main class="container my-4">
-        <!-- Mostrar mensajes -->
+        <!-- Mostrar mensajes con SweetAlert2 -->
         <?php if (isset($_SESSION['mensaje'])): ?>
-            <div class="mensaje <?php echo $_SESSION['tipo_mensaje']; ?>">
-                <?php 
-                echo htmlspecialchars($_SESSION['mensaje']); 
-                unset($_SESSION['mensaje']);
-                unset($_SESSION['tipo_mensaje']);
-                ?>
-            </div>
-        <?php endif; ?>
-
-        <!-- Debug info -->
-        <div class="debug-info">
-            <strong>Debug:</strong> 
+            <script>
+                window.__mensaje = {
+                    text: <?php echo json_encode($_SESSION['mensaje']); ?>,
+                    tipo: <?php echo json_encode($_SESSION['tipo_mensaje'] ?? 'error'); ?>
+                };
+            </script>
+            <noscript>
+                <div class="alert alert-<?php echo ($_SESSION['tipo_mensaje'] ?? '') === 'success' ? 'success' : 'danger'; ?>">
+                    <?php echo htmlspecialchars($_SESSION['mensaje']); ?>
+                </div>
+            </noscript>
             <?php 
-            echo "Compras: " . count($compras) . " | ";
-            echo "Proveedores: " . count($proveedores);
+            unset($_SESSION['mensaje']);
+            unset($_SESSION['tipo_mensaje']);
             ?>
-        </div>
+        <?php endif; ?>
 
         <section class="card shadow p-4">
             <h2 class="card__title text-primary mb-4">FORMULARIO - REGISTRO DE COMPRAS DE MOBILIARIO</h2>
@@ -287,7 +358,7 @@ $proveedores = obtenerProveedores();
                             <td><?php echo htmlspecialchars($compra['id_compra_mobiliario']); ?></td>
                             <td><?php echo htmlspecialchars($compra['nombre_proveedor'] ?? 'N/A'); ?></td>
                             <td><?php echo htmlspecialchars($compra['fecha_de_compra']); ?></td>
-                            <td class="monto">Q <?php echo number_format($compra['monto_total_compra_q'], 2); ?></td>
+                            <td class="text-end fw-bold">Q <?php echo number_format($compra['monto_total_compra_q'], 2); ?></td>
                             <td>
                                 <button class="btn btn-sm btn-primary btn-action editar-btn" 
                                         data-id="<?php echo $compra['id_compra_mobiliario']; ?>"
@@ -296,7 +367,7 @@ $proveedores = obtenerProveedores();
                                         data-monto="<?php echo $compra['monto_total_compra_q']; ?>">
                                     Editar
                                 </button>
-                                <form method="post" style="display:inline;" onsubmit="return confirm('¿Estás seguro de eliminar esta compra?')">
+                                <form method="post" style="display:inline;" data-eliminar="true">
                                     <input type="hidden" name="operacion" value="eliminar_compra">
                                     <input type="hidden" name="id_compra_mobiliario" value="<?php echo $compra['id_compra_mobiliario']; ?>">
                                     <button type="submit" class="btn btn-sm btn-danger btn-action">Eliminar</button>
@@ -315,106 +386,7 @@ $proveedores = obtenerProveedores();
         </section>
     </main>
 
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            const form = document.getElementById('form-compras');
-            const btnNuevo = document.getElementById('btn-nuevo');
-            const btnGuardar = document.getElementById('btn-guardar');
-            const btnActualizar = document.getElementById('btn-actualizar');
-            const btnCancelar = document.getElementById('btn-cancelar');
-            const operacionInput = document.getElementById('operacion');
-            const idCompraInput = document.getElementById('id_compra_mobiliario');
-
-            // Botón Nuevo
-            btnNuevo.addEventListener('click', function() {
-                limpiarFormulario();
-                mostrarBotonesGuardar();
-            });
-
-            // Botón Guardar (Crear)
-            btnGuardar.addEventListener('click', function() {
-                if (validarFormulario()) {
-                    operacionInput.value = 'crear_compra';
-                    form.submit();
-                }
-            });
-
-            // Botón Actualizar
-            btnActualizar.addEventListener('click', function() {
-                if (validarFormulario()) {
-                    operacionInput.value = 'actualizar_compra';
-                    form.submit();
-                }
-            });
-
-            // Botón Cancelar
-            btnCancelar.addEventListener('click', function() {
-                limpiarFormulario();
-                mostrarBotonesGuardar();
-            });
-
-            // Eventos para botones Editar
-            document.querySelectorAll('.editar-btn').forEach(btn => {
-                btn.addEventListener('click', function() {
-                    const id = this.getAttribute('data-id');
-                    const proveedor = this.getAttribute('data-proveedor');
-                    const fecha = this.getAttribute('data-fecha');
-                    const monto = this.getAttribute('data-monto');
-
-                    // Llenar formulario
-                    idCompraInput.value = id;
-                    document.getElementById('id_proveedor').value = proveedor;
-                    document.getElementById('fecha_de_compra').value = fecha;
-                    document.getElementById('monto_total_compra_q').value = monto;
-
-                    mostrarBotonesActualizar();
-                });
-            });
-
-            function limpiarFormulario() {
-                form.reset();
-                idCompraInput.value = '';
-                operacionInput.value = 'crear_compra';
-                // Establecer fecha actual por defecto
-                document.getElementById('fecha_de_compra').valueAsDate = new Date();
-            }
-
-            function mostrarBotonesGuardar() {
-                btnGuardar.style.display = 'inline-block';
-                btnActualizar.style.display = 'none';
-                btnCancelar.style.display = 'none';
-            }
-
-            function mostrarBotonesActualizar() {
-                btnGuardar.style.display = 'none';
-                btnActualizar.style.display = 'inline-block';
-                btnCancelar.style.display = 'inline-block';
-            }
-
-            function validarFormulario() {
-                const proveedor = document.getElementById('id_proveedor').value;
-                const fecha = document.getElementById('fecha_de_compra').value;
-                const monto = document.getElementById('monto_total_compra_q').value;
-
-                if (!proveedor) {
-                    alert('El proveedor es requerido');
-                    return false;
-                }
-                if (!fecha) {
-                    alert('La fecha de compra es requerida');
-                    return false;
-                }
-                if (!monto || monto <= 0) {
-                    alert('El monto total debe ser mayor a 0');
-                    return false;
-                }
-
-                return true;
-            }
-
-            // Inicializar - establecer fecha actual
-            limpiarFormulario();
-        });
-    </script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="/SistemaWebRestaurante/javascript/compras_mobiliario.js"></script>
 </body>
 </html>

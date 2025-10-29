@@ -91,20 +91,54 @@ function eliminarTaller() {
     
     $id_taller = $_POST['id_taller'] ?? '';
     
-    $sql = "DELETE FROM talleres WHERE id_taller = ?";
-    
-    $stmt = $conn->prepare($sql);
-    $stmt->bind_param("i", $id_taller);
-    
-    if ($stmt->execute()) {
-        $_SESSION['mensaje'] = "Taller eliminado exitosamente";
-        $_SESSION['tipo_mensaje'] = "success";
-    } else {
-        $_SESSION['mensaje'] = "Error al eliminar taller: " . $conn->error;
+    try {
+        // Verificar si el taller está siendo usado en la tabla mantenimiento_vehiculo
+        $check_mantenimientos = $conn->prepare("SELECT COUNT(*) as count FROM mantenimiento_vehiculo WHERE id_taller = ?");
+        $check_mantenimientos->bind_param("i", $id_taller);
+        $check_mantenimientos->execute();
+        $result_mantenimientos = $check_mantenimientos->get_result();
+        $row_mantenimientos = $result_mantenimientos->fetch_assoc();
+        $check_mantenimientos->close();
+        
+        if ($row_mantenimientos['count'] > 0) {
+            $_SESSION['mensaje'] = "No se puede eliminar el taller porque está siendo utilizado en mantenimientos registrados.";
+            $_SESSION['tipo_mensaje'] = "error";
+            desconectar($conn);
+            header('Location: taller_vehiculos.php');
+            exit();
+        }
+        
+        // Si no hay referencias, proceder con la eliminación
+        $sql = "DELETE FROM talleres WHERE id_taller = ?";
+        $stmt = $conn->prepare($sql);
+        $stmt->bind_param("i", $id_taller);
+        
+        if ($stmt->execute()) {
+            $_SESSION['mensaje'] = "Taller eliminado exitosamente";
+            $_SESSION['tipo_mensaje'] = "success";
+        } else {
+            // Capturar cualquier otro error que pueda ocurrir
+            $_SESSION['mensaje'] = "Error al eliminar taller: " . $conn->error;
+            $_SESSION['tipo_mensaje'] = "error";
+        }
+        
+        $stmt->close();
+        
+    } catch (mysqli_sql_exception $e) {
+        // Capturar excepciones específicas de MySQL
+        if (strpos($e->getMessage(), 'foreign key constraint fails') !== false) {
+            $_SESSION['mensaje'] = "No se puede eliminar el taller porque está siendo utilizado en otros registros del sistema.";
+            $_SESSION['tipo_mensaje'] = "error";
+        } else {
+            $_SESSION['mensaje'] = "Error al eliminar taller: " . $e->getMessage();
+            $_SESSION['tipo_mensaje'] = "error";
+        }
+    } catch (Exception $e) {
+        // Capturar cualquier otra excepción
+        $_SESSION['mensaje'] = "Error al eliminar taller: " . $e->getMessage();
         $_SESSION['tipo_mensaje'] = "error";
     }
     
-    $stmt->close();
     desconectar($conn);
     header('Location: taller_vehiculos.php');
     exit();
@@ -159,29 +193,7 @@ $talleres = obtenerTalleres();
     <title>Gestión de Talleres - Marina Roja</title>
     <!-- Google Fonts: Poppins -->
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
-    <style>
-        body, h1, h2, h3, h4, h5, h6, label, input, button, table, th, td {
-            font-family: 'Poppins', Arial, Helvetica, sans-serif !important;
-        }
-        .mensaje {
-            padding: 10px;
-            margin: 10px 0;
-            border-radius: 5px;
-        }
-        .mensaje.success {
-            background-color: #d4edda;
-            color: #155724;
-            border: 1px solid #c3e6cb;
-        }
-        .mensaje.error {
-            background-color: #f8d7da;
-            color: #721c24;
-            border: 1px solid #f5c6cb;
-        }
-        .btn-action {
-            margin: 2px;
-        }
-    </style>
+    
     <!-- Frameworks y librerías base -->
     <link rel="stylesheet" href="../../css/bootstrap.min.css">
     <link rel="stylesheet" href="../../css/diseñoModulos.css">
@@ -197,15 +209,23 @@ $talleres = obtenerTalleres();
     </header>
 
     <main class="container my-4">
-        <!-- Mostrar mensajes -->
+        <!-- Mostrar mensajes con SweetAlert2 -->
         <?php if (isset($_SESSION['mensaje'])): ?>
-            <div class="mensaje <?php echo $_SESSION['tipo_mensaje']; ?>">
-                <?php 
-                echo htmlspecialchars($_SESSION['mensaje']); 
-                unset($_SESSION['mensaje']);
-                unset($_SESSION['tipo_mensaje']);
-                ?>
-            </div>
+            <script>
+                window.__mensaje = {
+                    text: <?php echo json_encode($_SESSION['mensaje']); ?>,
+                    tipo: <?php echo json_encode($_SESSION['tipo_mensaje'] ?? 'error'); ?>
+                };
+            </script>
+            <noscript>
+                <div class="alert alert-<?php echo ($_SESSION['tipo_mensaje'] ?? '') === 'success' ? 'success' : 'danger'; ?>">
+                    <?php echo htmlspecialchars($_SESSION['mensaje']); ?>
+                </div>
+            </noscript>
+            <?php 
+            unset($_SESSION['mensaje']);
+            unset($_SESSION['tipo_mensaje']);
+            ?>
         <?php endif; ?>
 
         <section class="card shadow p-4">
@@ -283,7 +303,7 @@ $talleres = obtenerTalleres();
                                         data-especialidad="<?php echo $taller['id_especialidad']; ?>">
                                     Editar
                                 </button>
-                                <form method="post" style="display:inline;" onsubmit="return confirm('¿Estás seguro de eliminar este taller?')">
+                                <form method="post" style="display:inline;" data-eliminar="true">
                                     <input type="hidden" name="operacion" value="eliminar">
                                     <input type="hidden" name="id_taller" value="<?php echo $taller['id_taller']; ?>">
                                     <button type="submit" class="btn btn-sm btn-danger btn-action">Eliminar</button>
@@ -302,93 +322,7 @@ $talleres = obtenerTalleres();
         </section>
     </main>
 
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            const form = document.getElementById('form-taller');
-            const btnNuevo = document.getElementById('btn-nuevo');
-            const btnGuardar = document.getElementById('btn-guardar');
-            const btnActualizar = document.getElementById('btn-actualizar');
-            const btnCancelar = document.getElementById('btn-cancelar');
-            const operacionInput = document.getElementById('operacion');
-            const idTallerInput = document.getElementById('id_taller');
-
-            // Botón Nuevo
-            btnNuevo.addEventListener('click', function() {
-                limpiarFormulario();
-                mostrarBotonesGuardar();
-            });
-
-            // Botón Guardar (Crear)
-            btnGuardar.addEventListener('click', function() {
-                if (validarFormulario()) {
-                    operacionInput.value = 'crear';
-                    form.submit();
-                }
-            });
-
-            // Botón Actualizar
-            btnActualizar.addEventListener('click', function() {
-                if (validarFormulario()) {
-                    operacionInput.value = 'actualizar';
-                    form.submit();
-                }
-            });
-
-            // Botón Cancelar
-            btnCancelar.addEventListener('click', function() {
-                limpiarFormulario();
-                mostrarBotonesGuardar();
-            });
-
-            // Eventos para botones Editar
-            document.querySelectorAll('.editar-btn').forEach(btn => {
-                btn.addEventListener('click', function() {
-                    const id = this.getAttribute('data-id');
-                    const nombre = this.getAttribute('data-nombre');
-                    const telefono = this.getAttribute('data-telefono');
-                    const correo = this.getAttribute('data-correo');
-                    const especialidad = this.getAttribute('data-especialidad');
-
-                    // Llenar formulario
-                    idTallerInput.value = id;
-                    document.getElementById('nombre_taller').value = nombre;
-                    document.getElementById('telefono').value = telefono;
-                    document.getElementById('correo').value = correo;
-                    document.getElementById('id_especialidad').value = especialidad;
-
-                    mostrarBotonesActualizar();
-                });
-            });
-
-            function limpiarFormulario() {
-                form.reset();
-                idTallerInput.value = '';
-                operacionInput.value = 'crear';
-            }
-
-            function mostrarBotonesGuardar() {
-                btnGuardar.style.display = 'inline-block';
-                btnActualizar.style.display = 'none';
-                btnCancelar.style.display = 'none';
-            }
-
-            function mostrarBotonesActualizar() {
-                btnGuardar.style.display = 'none';
-                btnActualizar.style.display = 'inline-block';
-                btnCancelar.style.display = 'inline-block';
-            }
-
-            function validarFormulario() {
-                const nombre = document.getElementById('nombre_taller').value.trim();
-
-                if (!nombre) {
-                    alert('El nombre del taller es requerido');
-                    return false;
-                }
-
-                return true;
-            }
-        });
-    </script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="/SistemaWebRestaurante/javascript/talleres_vehiculos.js"></script>
 </body>
 </html>

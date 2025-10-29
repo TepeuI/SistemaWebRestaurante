@@ -42,6 +42,7 @@
                     <li><a href="#" class="consulta-only" data-href="gestion_empleados/Empleados.php">Empleados</a></li>
                     <li><a href="#" class="consulta-only" data-href="gestion_empleados/Telefono_empleados.php">Teléfonos</a></li>
                     <li><a href="#" class="consulta-only" data-href="gestion_empleados/Correo_empleados.php">Correos</a></li>
+                    <li><a href="#" class="consulta-only" data-href="gestion_empleados/Contactos_emergencias.php">Contactos de Emergencias</a></li>
 
                 </ul>
             </li>
