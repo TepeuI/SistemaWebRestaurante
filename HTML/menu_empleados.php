@@ -125,9 +125,10 @@
             </li>
 
             <li>
-                <a href="#" class="submenu-toggle"><span>💰</span> Facturaciones</a>
+                <a href="#" class="submenu-toggle"><span>💰</span> Ordenes y Facturaciones</a>
                 <ul class="submenu">
-                    <li><a href="facturacion/Facturacion_Ventas.php">Nueva Factura</a></li>
+                    <li><a href="Ordenes_y_Facturaciones/Facturacion_Ventas.php">Nueva Factura</a></li>
+                    <li><a href="Ordenes_y_Facturaciones/Ordenes.php">Nueva Orden</a></li>
                 </ul>
             </li>
 
