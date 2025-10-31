@@ -1,0 +1,86 @@
+/* ESTILOS PARA EL MÓDULO DE INVENTARIO DE INGREDIENTES */
+.mensaje {
+    padding: 12px;
+    margin: 10px 0;
+    border-radius: 8px;
+    font-weight: 500;
+}
+
+.mensaje.success {
+    background-color: #d1fae5;
+    color: #065f46;
+    border: 1px solid #a7f3d0;
+}
+
+.mensaje.error {
+    background-color: #fee2e2;
+    color: #991b1b;
+    border: 1px solid #fecaca;
+}
+
+.btn-action {
+    margin: 1px;
+    font-size: 0.875rem;
+}
+
+.card {
+    border: none;
+    border-radius: 12px;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
+
+.table th {
+    background-color: #1e40af;
+    color: white;
+    font-weight: 600;
+}
+
+.badge-estado {
+    font-size: 0.75rem;
+    padding: 4px 8px;
+    border-radius: 6px;
+}
+
+.form-control:focus {
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 0.2rem rgba(59, 130, 246, 0.25);
+}
+
+/* Estilos específicos para la tabla de ingredientes */
+#tabla-ingredientes {
+    font-size: 0.9rem;
+}
+
+#tabla-ingredientes td {
+    vertical-align: middle;
+}
+
+/* Estilos para los botones de acción */
+.btn-action {
+    transition: all 0.2s ease-in-out;
+}
+
+.btn-action:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* Estilos responsivos */
+@media (max-width: 768px) {
+    .container {
+        padding: 0 10px;
+    }
+    
+    .card {
+        padding: 1rem;
+    }
+    
+    .table-responsive {
+        font-size: 0.8rem;
+    }
+    
+    .btn-action {
+        font-size: 0.8rem;
+        padding: 0.25rem 0.5rem;
+    }
+}

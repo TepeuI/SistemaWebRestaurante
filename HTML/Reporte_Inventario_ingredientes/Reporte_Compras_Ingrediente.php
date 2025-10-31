@@ -437,10 +437,6 @@ if (isset($stmt_monto)) $stmt_monto->close();
             color: white;
         }
 
-        .btn-pdf {
-            background: linear-gradient(135deg, #ef4444, #dc2626);
-        }
-
         .btn-pdf:hover {
             background: linear-gradient(135deg, #dc2626, #b91c1c);
         }
@@ -535,6 +531,35 @@ if (isset($stmt_monto)) $stmt_monto->close();
             .resumen-grid {
                 grid-template-columns: 1fr;
             }
+
+            .export-buttons {
+    margin-bottom: 25px;
+    text-align: center; /* Cambiado a center para un solo botón */
+}
+
+.btn-export {
+    background: #059669;
+    color: white;
+    border: none;
+    padding: 12px 25px;
+    border-radius: 8px;
+    cursor: pointer;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 600;
+    font-size: 14px;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.btn-export:hover {
+    background: #047857;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+    color: white;
+}
         }
     </style>
 </head>
@@ -615,15 +640,13 @@ if (isset($stmt_monto)) $stmt_monto->close();
             </div>
         </div>
 
-        <!-- Botones de exportación -->
-        <div class="export-buttons">
-            <a href="#" class="btn-export btn-pdf" onclick="exportarPDF()">
-                <i class="bi bi-file-earmark-pdf"></i>Exportar PDF
-            </a>
-            <a href="#" class="btn-export btn-excel" onclick="exportarExcel()">
-                <i class="bi bi-file-earmark-excel"></i>Exportar Excel
-            </a>
-        </div>
+       <!-- Botones de exportación -->
+<div class="export-buttons">
+    <a href="exportar_excel_compras.php?<?php echo http_build_query($_GET); ?>" 
+       class="btn-export btn-excel">
+        <i class="bi bi-file-earmark-excel"></i>Exportar Excel
+    </a>
+</div>
 
         <!-- Tabla de compras y detalles -->
         <div class="tabla-compras">

@@ -32,7 +32,8 @@
             <li>
                 <a href="#" class="submenu-toggle"><span>📅</span> Reservaciones</a>
                 <ul class="submenu">
-                    <li><a href="#" class="consulta-only" data-href="Reservaciones.html">Nueva Reservación</a></li>
+                    <li><a href="#" class="consulta-only" data-href="../HTML/Mesas/mesas.php">Mesas</a></li>
+                    <li><a href="#" class="consulta-only" data-href="../HTML/Reservaciones/reservaciones.php">Nueva Reservación</a></li>
                 </ul>
             </li>
 
@@ -93,9 +94,7 @@
              <li>
                 <a href="#" class="submenu-toggle"><span>🍺🍽️</span> Platos Y Bebidas</a>
                 <ul class="submenu">
-                    <li><a href="#" class="consulta-only" data-href="../HTML/Recetas_platos_Bebida_Orden/platos.php">Platos</a></li>
-                    <li><a href="#" class="consulta-only" data-href="../HTML/Recetas_platos_Bebida_Orden/bebidas.php">Bebidas</a></li>
-                    <li><a href="#" class="consulta-only" data-href="../HTML/Recetas_platos_Bebida_Orden/recetas.php">Recetas</a></li>
+                    <li><a href="../HTML/Reporte_Receta_Bebidas_Platos/Consulta_Plato/Consultas_Platos.php">Reporte de Bebidas,Platos y Recetas</a></li>
                 </ul>
             </li>
 

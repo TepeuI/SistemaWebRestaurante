@@ -1,15 +1,16 @@
-=<?php
-session_start();
+<?php
+if (session_status() === PHP_SESSION_NONE) session_start();
 require_once 'conexion.php';
+require_once 'funciones_globales.php';
 
-function validarLogin($usuario, $contrasenia) {
-    $conn = conectar();
+function validarLogin($usuario, $contrasenia, $conn) {
     // Buscar el usuario por nombre de usuario
-    $sql = "SELECT id_usuario, id_empleado, usuario, contrasenia_hash, activo FROM usuarios WHERE usuario = ? LIMIT 1";
+    $sql = "SELECT id_usuario, id_empleado, usuario, contrasenia_hash, activo 
+            FROM usuarios 
+            WHERE usuario = ? 
+            LIMIT 1";
 
     if (!($stmt = $conn->prepare($sql))) {
-        // Preparación fallida
-        desconectar($conn);
         return false;
     }
 
@@ -18,46 +19,36 @@ function validarLogin($usuario, $contrasenia) {
     $resultado = $stmt->get_result();
 
     if ($resultado->num_rows !== 1) {
-        // Usuario no encontrado
         $stmt->close();
-        desconectar($conn);
         return false;
     }
 
     $usuario_data = $resultado->fetch_assoc();
 
-    // El campo 'activo' debe ser 1
+    //el campo activo siempre debe de ser 1
     if (empty($usuario_data['activo']) || $usuario_data['activo'] != 1) {
         $stmt->close();
-        desconectar($conn);
         return false;
     }
 
     $hash = $usuario_data['contrasenia_hash'];
-    // Verificar la contraseña usando password_verify (asume contrasenias hasheadas con password_hash)
     $password_ok = false;
+
+    //verificar hash seguro
     if (!empty($hash) && password_verify($contrasenia, $hash)) {
         $password_ok = true;
     } else {
-        // Fallback para formatos legados: plaintext, md5, sha1, sha256
-        // Comprobar igualdad directa (si la DB tenía contraseñas en texto plano)
-        if (!empty($hash) && hash_equals($hash, $contrasenia)) {
-            $password_ok = true;
-        }
-        // md5
-        if (!$password_ok && !empty($hash) && hash_equals($hash, md5($contrasenia))) {
-            $password_ok = true;
-        }
-        // sha1
-        if (!$password_ok && !empty($hash) && hash_equals($hash, sha1($contrasenia))) {
-            $password_ok = true;
-        }
-        // sha256
-        if (!$password_ok && !empty($hash) && hash_equals($hash, hash('sha256', $contrasenia))) {
+        //fallback para contraseñas antiguas
+        if (!empty($hash) && (
+            hash_equals($hash, $contrasenia) ||
+            hash_equals($hash, md5($contrasenia)) ||
+            hash_equals($hash, sha1($contrasenia)) ||
+            hash_equals($hash, hash('sha256', $contrasenia))
+        )) {
             $password_ok = true;
         }
 
-        // Si entró por un método legado, migramos el hash a password_hash() para seguridad
+        //si fue un formato viejo, actualizar el hash
         if ($password_ok) {
             $newHash = password_hash($contrasenia, PASSWORD_DEFAULT);
             $updSql = "UPDATE usuarios SET contrasenia_hash = ? WHERE id_usuario = ?";
@@ -71,11 +62,10 @@ function validarLogin($usuario, $contrasenia) {
 
     if (!$password_ok) {
         $stmt->close();
-        desconectar($conn);
         return false;
     }
 
-    // Si existe un empleado relacionado, verificar que esté ACTIVO
+    //verificar empleado activo
     $id_empleado = $usuario_data['id_empleado'];
     $nombre_completo = '';
     if (!empty($id_empleado)) {
@@ -87,10 +77,8 @@ function validarLogin($usuario, $contrasenia) {
             if ($res2 && $res2->num_rows === 1) {
                 $emp = $res2->fetch_assoc();
                 if ($emp['estado'] !== 'ACTIVO') {
-                    // Empleado inactivo
                     $stmt2->close();
                     $stmt->close();
-                    desconectar($conn);
                     return false;
                 }
                 $nombre_completo = trim($emp['nombre'] . ' ' . $emp['apellido']);
@@ -99,7 +87,7 @@ function validarLogin($usuario, $contrasenia) {
         }
     }
 
-    // Guardar datos en sesión de forma segura
+    //guardar id usuario, empleado y nombre usuario
     session_regenerate_id(true);
     $_SESSION['id_usuario'] = $usuario_data['id_usuario'];
     $_SESSION['id_empleado'] = $id_empleado;
@@ -109,28 +97,32 @@ function validarLogin($usuario, $contrasenia) {
     }
 
     $stmt->close();
-    desconectar($conn);
     return true;
 }
 
-// Procesar el formulario
+
+//procesar formulario
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $usuario = trim($_POST['usuario']);
     $contrasenia = $_POST['clave'];
-    
-    if (validarLogin($usuario, $contrasenia)) {
-        // Login exitoso - redirigir al menú principal (PHP)
-        header('Location: menu_empleados.php');  // ← CORREGIDO
+    $conn = conectar();
+
+    if (validarLogin($usuario, $contrasenia, $conn)) {
+        if (isset($_SESSION['id_usuario'])) {
+            registrarBitacora($conn, 'usuarios', 'login', 'Inicio de sesión exitoso');
+        }
+        header('Location: menu_empleados.php');
         exit();
     } else {
-        // Login fallido - redirigir de vuelta al login con error (PHP)
+        registrarBitacora($conn, 'usuarios', 'login', "Intento fallido de inicio con usuario: $usuario");
         $error = "Usuario o contraseña incorrectos";
-        header('Location: login.php?error=' . urlencode($error));  // ← CORREGIDO
+        header('Location: login.php?error=' . urlencode($error));
         exit();
     }
+
+    desconectar($conn);
 } else {
-    // Si alguien intenta acceder directamente sin POST
-    header('Location: login.php');  // ← CORREGIDO
-    exit();
+    header('Location: login.php');
+    exit();
 }
 ?>
