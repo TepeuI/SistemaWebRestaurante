@@ -140,6 +140,124 @@ $ingredientes = $conexion->query("SELECT id_ingrediente, nombre_ingrediente FROM
 
 // Cerrar statements si existen
 if (isset($stmt_total_control)) $stmt_total_control->close();
+
+// FUNCIÓN PARA EXPORTAR A EXCEL
+if (isset($_GET['exportar_excel'])) {
+    exportarExcel($result_control, $result_perdidas, $fecha_desde, $fecha_hasta, $estado_ingrediente, $ingrediente_id);
+}
+
+function exportarExcel($result_control, $result_perdidas, $fecha_desde, $fecha_hasta, $estado_ingrediente, $ingrediente_id) {
+    // Configurar headers para descarga de Excel
+    header('Content-Type: application/vnd.ms-excel');
+    header('Content-Disposition: attachment;filename="control_inventarios_' . date('Y-m-d') . '.xls"');
+    header('Cache-Control: max-age=0');
+    
+    // Crear contenido Excel
+    echo "<html>";
+    echo "<head>";
+    echo "<meta charset='UTF-8'>";
+    echo "<style>";
+    echo "table { border-collapse: collapse; width: 100%; }";
+    echo "th, td { border: 1px solid black; padding: 8px; text-align: left; }";
+    echo "th { background-color: #f2f2f2; font-weight: bold; }";
+    echo ".titulo { font-size: 18px; font-weight: bold; margin-bottom: 10px; }";
+    echo ".subtitulo { font-size: 14px; margin-bottom: 5px; }";
+    echo ".filtros { margin-bottom: 15px; font-size: 12px; }";
+    echo "</style>";
+    echo "</head>";
+    echo "<body>";
+    
+    // Título y información
+    echo "<div class='titulo'>Reporte de Control de Inventarios y Pérdidas</div>";
+    echo "<div class='subtitulo'>Marea Roja - " . date('d/m/Y H:i:s') . "</div>";
+    
+    // Mostrar filtros aplicados
+    echo "<div class='filtros'>";
+    echo "<strong>Filtros aplicados:</strong><br>";
+    if (!empty($fecha_desde)) echo "Fecha desde: " . $fecha_desde . "<br>";
+    if (!empty($fecha_hasta)) echo "Fecha hasta: " . $fecha_hasta . "<br>";
+    if (!empty($estado_ingrediente)) echo "Estado: " . $estado_ingrediente . "<br>";
+    if (!empty($ingrediente_id)) echo "ID Ingrediente: " . $ingrediente_id . "<br>";
+    echo "</div>";
+    
+    // CONTROL DE INGREDIENTES
+    echo "<div class='subtitulo'>CONTROL DE INGREDIENTES</div>";
+    if ($result_control->num_rows > 0) {
+        echo "<table>";
+        echo "<tr>";
+        echo "<th>ID Control</th>";
+        echo "<th>ID Ingrediente</th>";
+        echo "<th>Ingrediente</th>";
+        echo "<th>Descripción</th>";
+        echo "<th>Estado</th>";
+        echo "<th>Fecha Entrada</th>";
+        echo "<th>Fecha Caducidad</th>";
+        echo "<th>Días Restantes</th>";
+        echo "<th>Stock Actual</th>";
+        echo "<th>Unidad</th>";
+        echo "</tr>";
+        
+        // Reiniciar el puntero del resultado
+        $result_control->data_seek(0);
+        
+        while ($row = $result_control->fetch_assoc()) {
+            echo "<tr>";
+            echo "<td>" . $row['id_control'] . "</td>";
+            echo "<td>" . $row['id_ingrediente'] . "</td>";
+            echo "<td>" . htmlspecialchars($row['nombre_ingrediente']) . "</td>";
+            echo "<td>" . htmlspecialchars($row['descripcion']) . "</td>";
+            echo "<td>" . $row['estado'] . "</td>";
+            echo "<td>" . date('d/m/Y', strtotime($row['fecha_entrada'])) . "</td>";
+            echo "<td>" . date('d/m/Y', strtotime($row['fecha_caducidad'])) . "</td>";
+            echo "<td>" . $row['dias_restantes'] . " días</td>";
+            echo "<td>" . number_format($row['cantidad_stock'], 2) . "</td>";
+            echo "<td>" . htmlspecialchars($row['abreviatura']) . "</td>";
+            echo "</tr>";
+        }
+        echo "</table>";
+    } else {
+        echo "<p>No hay datos de control de ingredientes</p>";
+    }
+    
+    echo "<br><br>";
+    
+    // PÉRDIDAS DE INVENTARIO
+    echo "<div class='subtitulo'>PÉRDIDAS DE INVENTARIO</div>";
+    if ($result_perdidas->num_rows > 0) {
+        echo "<table>";
+        echo "<tr>";
+        echo "<th>ID Pérdida</th>";
+        echo "<th>ID Ingrediente</th>";
+        echo "<th>Ingrediente</th>";
+        echo "<th>Descripción</th>";
+        echo "<th>Cantidad Perdida</th>";
+        echo "<th>Costo Pérdida</th>";
+        echo "<th>Unidad</th>";
+        echo "</tr>";
+        
+        // Reiniciar el puntero del resultado
+        $result_perdidas->data_seek(0);
+        
+        while ($row = $result_perdidas->fetch_assoc()) {
+            echo "<tr>";
+            echo "<td>" . $row['id_perdida'] . "</td>";
+            echo "<td>" . $row['id_ingrediente'] . "</td>";
+            echo "<td>" . htmlspecialchars($row['nombre_ingrediente']) . "</td>";
+            echo "<td>" . htmlspecialchars($row['descripcion']) . "</td>";
+            echo "<td>" . number_format($row['cantidad_unitaria_perdida'], 2) . "</td>";
+            echo "<td>Q " . number_format($row['costo_perdida'], 2) . "</td>";
+            echo "<td>" . htmlspecialchars($row['abreviatura']) . "</td>";
+            echo "</tr>";
+        }
+        echo "</table>";
+    } else {
+        echo "<p>No hay datos de pérdidas de inventario</p>";
+    }
+    
+    echo "</body>";
+    echo "</html>";
+    exit();
+}
 ?>
 
 <!DOCTYPE html>
@@ -652,17 +770,19 @@ if (isset($stmt_total_control)) $stmt_total_control->close();
                 </div>
                 <div class="resumen-item">
                     <h3>Costo Total Pérdidas</h3>
-                    <div class="valor text-danger">$<?php echo number_format($total_costo_perdidas, 2); ?></div>
+                    <div class="valor text-danger">Q<?php echo number_format($total_costo_perdidas, 2); ?></div>
                 </div>
             </div>
         </div>
 
         <!-- Botones de exportación -->
         <div class="export-buttons">
-            <a href="#" class="btn-export btn-pdf" onclick="exportarPDF()">
+            <!-- <a href="#" class="btn-export btn-pdf" onclick="exportarPDF()">
                 <i class="bi bi-file-earmark-pdf"></i>Exportar PDF
-            </a>
-            <a href="#" class="btn-export btn-excel" onclick="exportarExcel()">
+            </a> -->
+            <a href="?<?php 
+                echo http_build_query(array_merge($_GET, ['exportar_excel' => '1']));
+            ?>" class="btn-export btn-excel">
                 <i class="bi bi-file-earmark-excel"></i>Exportar Excel
             </a>
         </div>
@@ -772,7 +892,7 @@ if (isset($stmt_total_control)) $stmt_total_control->close();
                                         <?php echo number_format($row['cantidad_unitaria_perdida'], 2) . ' ' . htmlspecialchars($row['abreviatura']); ?>
                                     </td>
                                     <td class="text-right text-danger">
-                                        $<?php echo number_format($row['costo_perdida'], 2); ?>
+                                        Q<?php echo number_format($row['costo_perdida'], 2); ?>
                                     </td>
                                     <td class="text-center">
                                         <button onclick="verDetallePerdida(<?php echo $row['id_perdida']; ?>)" class="btn-ver">
@@ -823,11 +943,6 @@ if (isset($stmt_total_control)) $stmt_total_control->close();
         function exportarPDF() {
             alert('Funcionalidad de exportar PDF en desarrollo');
             // window.location.href = 'exportar_pdf.php?' + window.location.search;
-        }
-
-        function exportarExcel() {
-            alert('Funcionalidad de exportar Excel en desarrollo');
-            // window.location.href = 'exportar_excel.php?' + window.location.search;
         }
 
         // Establecer fechas por defecto (últimos 30 días) si no hay filtros aplicados

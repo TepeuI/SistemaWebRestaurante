@@ -101,7 +101,8 @@
             <li>
                 <a href="#" class="submenu-toggle"><span>🦞</span> Inventario Ingredientes</a>
                 <ul class="submenu">
-                     <li><a href="../HTML/Reporte_Inventario_ingredientes/Reporte_Control_Ingredientes.php">Reporte de Compras Ingredientes</a></li>
+                     <li><a href="../HTML/Reporte_Inventario_ingredientes/Reporte_Control_Ingredientes.php">Reporte de Control Ingredientes</a></li>
+                     <li><a href="../HTML/Reporte_Inventario_ingredientes/Reporte_Bodega_Ingredientes.php">Reporte de Inventario Ingredientes</a></li>
                 </ul>
             </li>
             
