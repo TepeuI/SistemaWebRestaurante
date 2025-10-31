@@ -76,6 +76,8 @@ document.addEventListener('DOMContentLoaded', function () {
         const detallesCobroContainer = document.getElementById('detalles-cobro-container');
         const clienteInfoDisplay = document.getElementById('cliente-info-display');
         const nitDisplay = document.getElementById('nit-display');
+        const detallesOrdenContainer = document.getElementById('detalles-orden-container');
+        const detallesOrdenContent = document.getElementById('detalles-orden-content');
 
         let contadorDetallesCobro = 0;
 
@@ -100,10 +102,16 @@ document.addEventListener('DOMContentLoaded', function () {
             // Ocultar info cliente
             clienteInfoDisplay.classList.add('d-none');
             
+            // Ocultar detalles de orden
+            detallesOrdenContainer.style.display = 'none';
+            
             // Actualizar monto display
             actualizarMontoDisplay();
             
             document.querySelectorAll('#tabla-facturas tbody tr').forEach(r => r.classList.remove('table-primary'));
+            
+            // Agregar un detalle de cobro vacío por defecto
+            agregarDetalleCobro();
         }
 
         function actualizarInfoCliente() {
@@ -114,6 +122,31 @@ document.addEventListener('DOMContentLoaded', function () {
                 clienteInfoDisplay.classList.remove('d-none');
             } else {
                 clienteInfoDisplay.classList.add('d-none');
+            }
+        }
+
+        function mostrarDetallesOrden(idOrden) {
+            const orden = window.ordenesDisponibles.find(o => o.id_orden == idOrden);
+            if (orden) {
+                // En una implementación real, aquí harías una petición AJAX para obtener los detalles
+                // Por ahora, mostramos información básica
+                detallesOrdenContent.innerHTML = `
+                    <div class="detalle-orden-item">
+                        <strong>Orden #${orden.id_orden}</strong> - Mesa ${orden.numero_mesa}
+                    </div>
+                    <div class="detalle-orden-item">
+                        <strong>Total:</strong> Q${parseFloat(orden.total).toFixed(2)}
+                    </div>
+                    <div class="detalle-orden-item">
+                        <strong>Fecha:</strong> ${new Date(orden.fecha_orden).toLocaleString()}
+                    </div>
+                    <div class="detalle-orden-item">
+                        <em>Los detalles completos de la orden se cargarán al guardar la factura</em>
+                    </div>
+                `;
+                detallesOrdenContainer.style.display = 'block';
+            } else {
+                detallesOrdenContainer.style.display = 'none';
             }
         }
 
@@ -163,6 +196,13 @@ document.addEventListener('DOMContentLoaded', function () {
             const selectedOption = idOrdenSelect.selectedOptions[0];
             const monto = selectedOption ? parseFloat(selectedOption.dataset.total || 0) : 0;
             montoOrdenDisplay.textContent = `Q${monto.toFixed(2)}`;
+            
+            // Mostrar detalles de la orden si hay una seleccionada
+            if (selectedOption && selectedOption.value) {
+                mostrarDetallesOrden(selectedOption.value);
+            } else {
+                detallesOrdenContainer.style.display = 'none';
+            }
         }
 
         function agregarDetalleCobro(detalle = null) {

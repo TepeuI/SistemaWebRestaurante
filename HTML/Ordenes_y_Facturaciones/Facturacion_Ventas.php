@@ -213,7 +213,7 @@ function obtenerNitCliente($conn, $id_cliente): string {
 }
 
 function calcularMontoOrden($conn, $id_orden): float {
-    $sql = "SELECT SUM(total) as total_orden FROM orden WHERE id_orden = ?";
+    $sql = "SELECT total FROM orden WHERE id_orden = ?";
     $stmt = $conn->prepare($sql);
     $stmt->bind_param("i", $id_orden);
     $stmt->execute();
@@ -221,7 +221,7 @@ function calcularMontoOrden($conn, $id_orden): float {
     $row = $result->fetch_assoc();
     $stmt->close();
     
-    return (float)($row['total_orden'] ?? 0);
+    return (float)($row['total'] ?? 0);
 }
 
 // --- Funciones para obtener datos ---
@@ -238,14 +238,17 @@ function obtenerClientes(): array {
 
 function obtenerFacturas(): array {
     $conn = conectar();
-    $sql = "SELECT f.*, o.id_mesa, c.nombre, c.apellido,
-                   GROUP_CONCAT(DISTINCT p.nombre_plato SEPARATOR ', ') as platos,
-                   GROUP_CONCAT(DISTINCT b.descripcion SEPARATOR ', ') as bebidas
+    $sql = "SELECT f.*, o.id_mesa, o.total as total_orden, m.descripcion as descripcion_mesa,
+                   c.nombre, c.apellido,
+                   (SELECT GROUP_CONCAT(CONCAT(do.cantidad, 'x ', COALESCE(p.nombre_plato, b.descripcion)) SEPARATOR ', ')
+                    FROM detalle_orden do
+                    LEFT JOIN platos p ON do.id_plato = p.id_plato
+                    LEFT JOIN bebidas b ON do.id_bebida = b.id_bebida
+                    WHERE do.id_orden = f.id_orden) as detalles_orden
             FROM facturas f
             LEFT JOIN orden o ON f.id_orden = o.id_orden
+            LEFT JOIN mesas m ON o.id_mesa = m.id_mesa
             LEFT JOIN clientes c ON f.id_cliente = c.id_cliente
-            LEFT JOIN platos p ON o.id_plato = p.id_plato
-            LEFT JOIN bebidas b ON o.id_bebida = b.id_bebida
             GROUP BY f.id_factura
             ORDER BY f.fecha_emision DESC";
     $res = $conn->query($sql);
@@ -265,12 +268,10 @@ function obtenerTiposCobro(): array {
 
 function obtenerOrdenesDisponibles(): array {
     $conn = conectar();
-    $sql = "SELECT o.id_orden, o.id_mesa, o.fecha_orden, 
-                   p.nombre_plato, b.descripcion as bebida, o.total,
+    $sql = "SELECT o.id_orden, o.id_mesa, o.total, o.fecha_orden, m.descripcion as descripcion_mesa,
                    (SELECT COUNT(*) FROM facturas f WHERE f.id_orden = o.id_orden) as tiene_factura
             FROM orden o
-            LEFT JOIN platos p ON o.id_plato = p.id_plato
-            LEFT JOIN bebidas b ON o.id_bebida = b.id_bebida
+            LEFT JOIN mesas m ON o.id_mesa = m.id_mesa
             HAVING tiene_factura = 0
             ORDER BY o.fecha_orden DESC";
     $res = $conn->query($sql);
@@ -296,6 +297,24 @@ function obtenerDetallesCobro($id_factura): array {
     return $rows;
 }
 
+function obtenerDetallesOrdenParaFactura($id_orden): array {
+    $conn = conectar();
+    $sql = "SELECT do.*, p.nombre_plato, b.descripcion as nombre_bebida
+            FROM detalle_orden do
+            LEFT JOIN platos p ON do.id_plato = p.id_plato
+            LEFT JOIN bebidas b ON do.id_bebida = b.id_bebida
+            WHERE do.id_orden = ?
+            ORDER BY do.id_detalle_orden ASC";
+    $stmt = $conn->prepare($sql);
+    $stmt->bind_param("i", $id_orden);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    $detalles = $result ? $result->fetch_all(MYSQLI_ASSOC) : [];
+    $stmt->close();
+    desconectar($conn);
+    return $detalles;
+}
+
 $clientes = obtenerClientes();
 $facturas = obtenerFacturas();
 $tipos_cobro = obtenerTiposCobro();
@@ -319,6 +338,9 @@ $ordenes_disponibles = obtenerOrdenesDisponibles();
         .monto-total { font-size: 1.2em; font-weight: bold; color: #28a745; }
         .orden-info { background: #f8f9fa; padding: 10px; border-radius: 5px; margin: 10px 0; }
         .cliente-info { background: #e9ecef; padding: 8px; border-radius: 5px; margin-top: 5px; }
+        .detalles-orden { background: #f0f8ff; padding: 10px; border-radius: 5px; margin: 10px 0; }
+        .detalle-orden-item { padding: 5px 0; border-bottom: 1px solid #e0e0e0; }
+        .detalle-orden-item:last-child { border-bottom: none; }
     </style>
 </head>
 <body>
@@ -381,7 +403,7 @@ $ordenes_disponibles = obtenerOrdenesDisponibles();
                     <?php foreach($ordenes_disponibles as $orden): ?>
                         <option value="<?= $orden['id_orden'] ?>" 
                                 data-total="<?= $orden['total'] ?>"
-                                data-info="Mesa: <?= $orden['id_mesa'] ?> - <?= $orden['nombre_plato'] ? $orden['nombre_plato'] : $orden['bebida'] ?>">
+                                data-info="Mesa <?= $orden['id_mesa'] ?> - Total: Q<?= number_format($orden['total'], 2) ?>">
                             Orden #<?= $orden['id_orden'] ?> - Mesa <?= $orden['id_mesa'] ?> - Q<?= number_format($orden['total'], 2) ?>
                         </option>
                     <?php endforeach; ?>
@@ -392,6 +414,14 @@ $ordenes_disponibles = obtenerOrdenesDisponibles();
                 <label class="form-label">Monto Total de la Orden</label>
                 <div class="orden-info">
                     <span id="monto_orden_display" class="monto-total">Q0.00</span>
+                </div>
+            </div>
+
+            <!-- Sección para mostrar detalles de la orden -->
+            <div class="col-12" id="detalles-orden-container" style="display: none;">
+                <h5 class="mt-3 mb-2">Detalles de la Orden Seleccionada</h5>
+                <div class="detalles-orden" id="detalles-orden-content">
+                    <!-- Los detalles de la orden se mostrarán aquí -->
                 </div>
             </div>
 
@@ -427,7 +457,7 @@ $ordenes_disponibles = obtenerOrdenesDisponibles();
                         <th>NIT</th>
                         <th>Monto Total</th>
                         <th>Orden</th>
-                        <th>Detalles</th>
+                        <th>Detalles Orden</th>
                         <th>Acciones</th>
                     </tr>
                 </thead>
@@ -435,6 +465,7 @@ $ordenes_disponibles = obtenerOrdenesDisponibles();
                     <?php if ($facturas): ?>
                         <?php foreach($facturas as $factura): 
                             $detalles_cobro = obtenerDetallesCobro($factura['id_factura']);
+                            $detalles_orden = obtenerDetallesOrdenParaFactura($factura['id_orden']);
                         ?>
                         <tr>
                             <td><?= htmlspecialchars($factura['id_factura']); ?></td>
@@ -443,11 +474,20 @@ $ordenes_disponibles = obtenerOrdenesDisponibles();
                             <td><?= htmlspecialchars($factura['nombre'] . ' ' . $factura['apellido']); ?></td>
                             <td><?= htmlspecialchars($factura['nit_cliente']); ?></td>
                             <td>Q<?= number_format($factura['monto_total_q'], 2); ?></td>
-                            <td>#<?= htmlspecialchars($factura['id_orden']); ?></td>
+                            <td>#<?= htmlspecialchars($factura['id_orden']); ?> (Mesa <?= htmlspecialchars($factura['id_mesa']); ?>)</td>
                             <td>
                                 <small>
-                                    <?= $factura['platos'] ? 'Platos: ' . htmlspecialchars($factura['platos']) : ''; ?>
-                                    <?= $factura['bebidas'] ? 'Bebidas: ' . htmlspecialchars($factura['bebidas']) : ''; ?>
+                                    <?php if ($factura['detalles_orden']): ?>
+                                        <?= htmlspecialchars($factura['detalles_orden']); ?>
+                                    <?php else: ?>
+                                        <?php foreach($detalles_orden as $detalle): ?>
+                                            <?php if ($detalle['nombre_plato']): ?>
+                                                <?= $detalle['cantidad'] ?>x <?= htmlspecialchars($detalle['nombre_plato']) ?><br>
+                                            <?php elseif ($detalle['nombre_bebida']): ?>
+                                                <?= $detalle['cantidad'] ?>x <?= htmlspecialchars($detalle['nombre_bebida']) ?><br>
+                                            <?php endif; ?>
+                                        <?php endforeach; ?>
+                                    <?php endif; ?>
                                 </small>
                             </td>
                             <td>
@@ -483,6 +523,7 @@ $ordenes_disponibles = obtenerOrdenesDisponibles();
     // Datos disponibles para JS
     window.tiposCobro = <?= json_encode($tipos_cobro); ?>;
     window.clientes = <?= json_encode($clientes); ?>;
+    window.ordenesDisponibles = <?= json_encode($ordenes_disponibles); ?>;
 </script>
 <script src="../../javascript/facturacion.js"></script>
 </body>
