@@ -28,20 +28,49 @@ function crearOrden(): void {
         $conn->begin_transaction();
         
         $id_mesa = (int)($_POST['id_mesa'] ?? 0);
-        $id_plato = (int)($_POST['id_plato'] ?? 0);
-        $id_bebida = (int)($_POST['id_bebida'] ?? 0);
         $descripcion = trim($_POST['descripcion'] ?? '');
-        $cantidad = (int)($_POST['cantidad'] ?? 1);
         
-        // Calcular total basado en el precio del plato o bebida
-        $total = calcularTotalOrden($conn, $id_plato, $id_bebida, $cantidad);
+        // Validar que haya al menos un detalle
+        if (!isset($_POST['detalles']) || !is_array($_POST['detalles']) || count($_POST['detalles']) === 0) {
+            throw new Exception("Debe agregar al menos un plato o bebida a la orden");
+        }
         
-        $sql = "INSERT INTO orden (id_mesa, id_plato, id_bebida, descripcion, cantidad, total, fecha_orden) 
-                VALUES (?, ?, ?, ?, ?, ?, NOW())";
+        // Insertar la orden principal
+        $sql = "INSERT INTO orden (id_mesa, descripcion, fecha_orden) VALUES (?, ?, NOW())";
         $stmt = $conn->prepare($sql);
-        $stmt->bind_param("iiisid", $id_mesa, $id_plato, $id_bebida, $descripcion, $cantidad, $total);
+        $stmt->bind_param("is", $id_mesa, $descripcion);
         
         if ($stmt->execute()) {
+            $id_orden = $conn->insert_id;
+            $stmt->close();
+            
+            // Procesar detalles de la orden
+            $total_orden = 0;
+            foreach ($_POST['detalles'] as $detalle) {
+                $id_plato = (int)($detalle['id_plato'] ?? 0);
+                $id_bebida = (int)($detalle['id_bebida'] ?? 0);
+                $cantidad = (int)($detalle['cantidad'] ?? 1);
+                
+                if (($id_plato > 0 || $id_bebida > 0) && $cantidad > 0) {
+                    $subtotal = calcularSubtotal($conn, $id_plato, $id_bebida, $cantidad);
+                    $total_orden += $subtotal;
+                    
+                    $sql_detalle = "INSERT INTO detalle_orden (id_orden, id_plato, id_bebida, cantidad, subtotal) 
+                                   VALUES (?, ?, ?, ?, ?)";
+                    $stmt_detalle = $conn->prepare($sql_detalle);
+                    $stmt_detalle->bind_param("iiiid", $id_orden, $id_plato, $id_bebida, $cantidad, $subtotal);
+                    $stmt_detalle->execute();
+                    $stmt_detalle->close();
+                }
+            }
+            
+            // Actualizar el total de la orden
+            $sql_update = "UPDATE orden SET total = ? WHERE id_orden = ?";
+            $stmt_update = $conn->prepare($sql_update);
+            $stmt_update->bind_param("di", $total_orden, $id_orden);
+            $stmt_update->execute();
+            $stmt_update->close();
+            
             $conn->commit();
             $_SESSION['mensaje'] = "Orden creada exitosamente";
             $_SESSION['tipo_mensaje'] = "success";
@@ -49,7 +78,6 @@ function crearOrden(): void {
             throw new Exception("Error al crear orden: " . $stmt->error);
         }
         
-        $stmt->close();
     } catch (Exception $e) {
         $conn->rollback();
         $_SESSION['mensaje'] = $e->getMessage();
@@ -69,20 +97,55 @@ function actualizarOrden(): void {
         
         $id_orden = (int)($_POST['id_orden'] ?? 0);
         $id_mesa = (int)($_POST['id_mesa'] ?? 0);
-        $id_plato = (int)($_POST['id_plato'] ?? 0);
-        $id_bebida = (int)($_POST['id_bebida'] ?? 0);
         $descripcion = trim($_POST['descripcion'] ?? '');
-        $cantidad = (int)($_POST['cantidad'] ?? 1);
         
-        // Calcular total basado en el precio del plato o bebida
-        $total = calcularTotalOrden($conn, $id_plato, $id_bebida, $cantidad);
+        // Validar que haya al menos un detalle
+        if (!isset($_POST['detalles']) || !is_array($_POST['detalles']) || count($_POST['detalles']) === 0) {
+            throw new Exception("Debe agregar al menos un plato o bebida a la orden");
+        }
         
-        $sql = "UPDATE orden SET id_mesa = ?, id_plato = ?, id_bebida = ?, 
-                descripcion = ?, cantidad = ?, total = ? WHERE id_orden = ?";
+        // Actualizar la orden principal
+        $sql = "UPDATE orden SET id_mesa = ?, descripcion = ? WHERE id_orden = ?";
         $stmt = $conn->prepare($sql);
-        $stmt->bind_param("iiisidi", $id_mesa, $id_plato, $id_bebida, $descripcion, $cantidad, $total, $id_orden);
+        $stmt->bind_param("isi", $id_mesa, $descripcion, $id_orden);
         
         if ($stmt->execute()) {
+            $stmt->close();
+            
+            // Eliminar detalles existentes
+            $sql_delete = "DELETE FROM detalle_orden WHERE id_orden = ?";
+            $stmt_delete = $conn->prepare($sql_delete);
+            $stmt_delete->bind_param("i", $id_orden);
+            $stmt_delete->execute();
+            $stmt_delete->close();
+            
+            // Procesar nuevos detalles
+            $total_orden = 0;
+            foreach ($_POST['detalles'] as $detalle) {
+                $id_plato = (int)($detalle['id_plato'] ?? 0);
+                $id_bebida = (int)($detalle['id_bebida'] ?? 0);
+                $cantidad = (int)($detalle['cantidad'] ?? 1);
+                
+                if (($id_plato > 0 || $id_bebida > 0) && $cantidad > 0) {
+                    $subtotal = calcularSubtotal($conn, $id_plato, $id_bebida, $cantidad);
+                    $total_orden += $subtotal;
+                    
+                    $sql_detalle = "INSERT INTO detalle_orden (id_orden, id_plato, id_bebida, cantidad, subtotal) 
+                                   VALUES (?, ?, ?, ?, ?)";
+                    $stmt_detalle = $conn->prepare($sql_detalle);
+                    $stmt_detalle->bind_param("iiiid", $id_orden, $id_plato, $id_bebida, $cantidad, $subtotal);
+                    $stmt_detalle->execute();
+                    $stmt_detalle->close();
+                }
+            }
+            
+            // Actualizar el total de la orden
+            $sql_update = "UPDATE orden SET total = ? WHERE id_orden = ?";
+            $stmt_update = $conn->prepare($sql_update);
+            $stmt_update->bind_param("di", $total_orden, $id_orden);
+            $stmt_update->execute();
+            $stmt_update->close();
+            
             $conn->commit();
             $_SESSION['mensaje'] = "Orden actualizada exitosamente";
             $_SESSION['tipo_mensaje'] = "success";
@@ -90,7 +153,6 @@ function actualizarOrden(): void {
             throw new Exception("Error al actualizar orden: " . $stmt->error);
         }
         
-        $stmt->close();
     } catch (Exception $e) {
         $conn->rollback();
         $_SESSION['mensaje'] = $e->getMessage();
@@ -107,11 +169,22 @@ function eliminarOrden(): void {
     $id_orden = (int)($_POST['id_orden'] ?? 0);
 
     try {
+        $conn->begin_transaction();
+        
+        // Primero eliminar detalles de la orden
+        $sql_detalles = "DELETE FROM detalle_orden WHERE id_orden = ?";
+        $stmt_detalles = $conn->prepare($sql_detalles);
+        $stmt_detalles->bind_param("i", $id_orden);
+        $stmt_detalles->execute();
+        $stmt_detalles->close();
+        
+        // Luego eliminar la orden principal
         $sql = "DELETE FROM orden WHERE id_orden = ?";
         $stmt = $conn->prepare($sql);
         $stmt->bind_param("i", $id_orden);
         
         if ($stmt->execute()) {
+            $conn->commit();
             $_SESSION['mensaje'] = "Orden eliminada exitosamente";
             $_SESSION['tipo_mensaje'] = "success";
         } else {
@@ -120,6 +193,7 @@ function eliminarOrden(): void {
         
         $stmt->close();
     } catch (mysqli_sql_exception $e) {
+        $conn->rollback();
         if ((int)$e->getCode() === 1451) {
             $_SESSION['mensaje'] = "No se puede eliminar: la orden tiene facturas relacionadas.";
             $_SESSION['tipo_mensaje'] = "error";
@@ -134,8 +208,8 @@ function eliminarOrden(): void {
     }
 }
 
-function calcularTotalOrden($conn, $id_plato, $id_bebida, $cantidad): float {
-    $total = 0.0;
+function calcularSubtotal($conn, $id_plato, $id_bebida, $cantidad): float {
+    $subtotal = 0.0;
     
     // Si hay plato, obtener su precio
     if ($id_plato > 0) {
@@ -148,7 +222,7 @@ function calcularTotalOrden($conn, $id_plato, $id_bebida, $cantidad): float {
         $stmt_plato->close();
         
         if ($row_plato) {
-            $total += (float)$row_plato['precio_unitario'] * $cantidad;
+            $subtotal += (float)$row_plato['precio_unitario'] * $cantidad;
         }
     }
     
@@ -163,11 +237,11 @@ function calcularTotalOrden($conn, $id_plato, $id_bebida, $cantidad): float {
         $stmt_bebida->close();
         
         if ($row_bebida) {
-            $total += (float)$row_bebida['precio_unitario'] * $cantidad;
+            $subtotal += (float)$row_bebida['precio_unitario'] * $cantidad;
         }
     }
     
-    return $total;
+    return $subtotal;
 }
 
 // --- Funciones para obtener datos ---
@@ -193,36 +267,58 @@ function obtenerBebidas(): array {
     return $rows;
 }
 
-function obtenerOrdenes(): array {
+function obtenerMesas(): array {
     $conn = conectar();
-    $sql = "SELECT o.*, p.nombre_plato, b.descripcion as nombre_bebida,
-                   (SELECT COUNT(*) FROM facturas f WHERE f.id_orden = o.id_orden) as tiene_factura
-            FROM orden o
-            LEFT JOIN platos p ON o.id_plato = p.id_plato
-            LEFT JOIN bebidas b ON o.id_bebida = b.id_bebida
-            ORDER BY o.fecha_orden DESC";
+    $sql = "SELECT id_mesa, descripcion, capacidad_personas, estado 
+            FROM mesas 
+            WHERE estado = 'DISPONIBLE'
+            ORDER BY id_mesa ASC";
     $res = $conn->query($sql);
     $rows = $res ? $res->fetch_all(MYSQLI_ASSOC) : [];
     desconectar($conn);
     return $rows;
 }
 
-function obtenerMesas(): array {
-    // Asumiendo que tienes una tabla de mesas, si no, puedes usar números fijos
-    return [
-        ['id' => 1, 'numero' => 'Mesa 1'],
-        ['id' => 2, 'numero' => 'Mesa 2'],
-        ['id' => 3, 'numero' => 'Mesa 3'],
-        ['id' => 4, 'numero' => 'Mesa 4'],
-        ['id' => 5, 'numero' => 'Mesa 5'],
-        ['id' => 6, 'numero' => 'Mesa 6'],
-    ];
+function obtenerOrdenes(): array {
+    $conn = conectar();
+    $sql = "SELECT o.*, m.descripcion as descripcion_mesa, m.capacidad_personas,
+                   (SELECT COUNT(*) FROM facturas f WHERE f.id_orden = o.id_orden) as tiene_factura
+            FROM orden o
+            LEFT JOIN mesas m ON o.id_mesa = m.id_mesa
+            ORDER BY o.fecha_orden DESC";
+    $res = $conn->query($sql);
+    $ordenes = $res ? $res->fetch_all(MYSQLI_ASSOC) : [];
+    
+    // Obtener detalles para cada orden
+    foreach ($ordenes as &$orden) {
+        $orden['detalles'] = obtenerDetallesOrden($conn, $orden['id_orden']);
+    }
+    
+    desconectar($conn);
+    return $ordenes;
+}
+
+function obtenerDetallesOrden($conn, $id_orden): array {
+    $sql = "SELECT do.*, p.nombre_plato, b.descripcion as nombre_bebida
+            FROM detalle_orden do
+            LEFT JOIN platos p ON do.id_plato = p.id_plato
+            LEFT JOIN bebidas b ON do.id_bebida = b.id_bebida
+            WHERE do.id_orden = ?
+            ORDER BY do.id_detalle_orden ASC";
+    $stmt = $conn->prepare($sql);
+    $stmt->bind_param("i", $id_orden);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    $detalles = $result ? $result->fetch_all(MYSQLI_ASSOC) : [];
+    $stmt->close();
+    
+    return $detalles;
 }
 
 $platos = obtenerPlatos();
 $bebidas = obtenerBebidas();
-$ordenes = obtenerOrdenes();
 $mesas = obtenerMesas();
+$ordenes = obtenerOrdenes();
 ?>
 <!DOCTYPE html>
 <html lang="es">
@@ -242,6 +338,8 @@ $mesas = obtenerMesas();
         .orden-info { background: #f8f9fa; padding: 10px; border-radius: 5px; margin: 10px 0; }
         .precio-info { color: #6c757d; font-size: 0.9em; }
         .facturada-badge { background: #28a745; color: white; padding: 2px 8px; border-radius: 12px; font-size: 0.8em; }
+        .detalle-item { border: 1px solid #ddd; padding: 10px; margin: 5px 0; border-radius: 5px; }
+        .subtotal-display { font-weight: bold; color: #17a2b8; }
     </style>
 </head>
 <body>
@@ -270,66 +368,39 @@ $mesas = obtenerMesas();
             <input type="hidden" name="operacion" id="operacion" value="crear">
             <input type="hidden" name="id_orden" id="id_orden" value="">
 
-            <div class="col-md-3">
+            <div class="col-md-4">
                 <label for="id_mesa" class="form-label required">Mesa</label>
                 <select id="id_mesa" name="id_mesa" class="form-select" required>
                     <option value="">Seleccionar mesa...</option>
                     <?php foreach($mesas as $mesa): ?>
-                        <option value="<?= $mesa['id'] ?>">
-                            <?= htmlspecialchars($mesa['numero']) ?>
+                        <option value="<?= $mesa['id_mesa'] ?>">
+                            Mesa <?= $mesa['id_mesa'] ?> - <?= htmlspecialchars($mesa['descripcion']) ?> (Capacidad: <?= $mesa['capacidad_personas'] ?>)
                         </option>
                     <?php endforeach; ?>
                 </select>
             </div>
 
-            <div class="col-md-4">
-                <label for="id_plato" class="form-label">Plato</label>
-                <select id="id_plato" name="id_plato" class="form-select">
-                    <option value="">Seleccionar plato...</option>
-                    <?php foreach($platos as $plato): ?>
-                        <option value="<?= $plato['id_plato'] ?>" 
-                                data-precio="<?= $plato['precio_unitario'] ?>">
-                            <?= htmlspecialchars($plato['nombre_plato']) ?> - Q<?= number_format($plato['precio_unitario'], 2) ?>
-                        </option>
-                    <?php endforeach; ?>
-                </select>
-            </div>
-
-            <div class="col-md-4">
-                <label for="id_bebida" class="form-label">Bebida</label>
-                <select id="id_bebida" name="id_bebida" class="form-select">
-                    <option value="">Seleccionar bebida...</option>
-                    <?php foreach($bebidas as $bebida): ?>
-                        <option value="<?= $bebida['id_bebida'] ?>" 
-                                data-precio="<?= $bebida['precio_unitario'] ?>">
-                            <?= htmlspecialchars($bebida['descripcion']) ?> - Q<?= number_format($bebida['precio_unitario'], 2) ?>
-                        </option>
-                    <?php endforeach; ?>
-                </select>
-            </div>
-
-            <div class="col-md-6">
-                <label for="descripcion" class="form-label">Descripción</label>
+            <div class="col-md-8">
+                <label for="descripcion" class="form-label">Descripción General</label>
                 <textarea id="descripcion" name="descripcion" class="form-control" rows="2" 
-                          placeholder="Observaciones o especificaciones de la orden..."></textarea>
+                          placeholder="Observaciones o especificaciones generales de la orden..."></textarea>
             </div>
 
-            <div class="col-md-3">
-                <label for="cantidad" class="form-label required">Cantidad</label>
-                <input type="number" id="cantidad" name="cantidad" class="form-control" 
-                       min="1" value="1" required>
-            </div>
-
-            <div class="col-md-3">
-                <label class="form-label">Total</label>
-                <div class="orden-info">
-                    <span id="total_display" class="monto-total">Q0.00</span>
+            <!-- Sección para Detalles de la Orden -->
+            <div class="col-12">
+                <h4 class="mt-4 mb-3">Detalles de la Orden</h4>
+                <div id="detalles-orden-container">
+                    <!-- Los detalles se agregarán dinámicamente aquí -->
                 </div>
+                <button type="button" id="btn-agregar-detalle" class="btn btn-outline-primary btn-sm mt-2">
+                    + Agregar Plato/Bebida
+                </button>
             </div>
 
             <div class="col-12">
-                <div class="precio-info">
-                    <small>Seleccione al menos un plato o una bebida</small>
+                <div class="orden-info text-end">
+                    <strong>Total de la Orden: </strong>
+                    <span id="total_display" class="monto-total">Q0.00</span>
                 </div>
             </div>
         </form>
@@ -349,10 +420,8 @@ $mesas = obtenerMesas();
                     <tr>
                         <th>ID</th>
                         <th>Mesa</th>
-                        <th>Plato</th>
-                        <th>Bebida</th>
                         <th>Descripción</th>
-                        <th>Cantidad</th>
+                        <th>Detalles</th>
                         <th>Total</th>
                         <th>Fecha</th>
                         <th>Estado</th>
@@ -364,11 +433,19 @@ $mesas = obtenerMesas();
                         <?php foreach($ordenes as $orden): ?>
                         <tr>
                             <td><?= htmlspecialchars($orden['id_orden']); ?></td>
-                            <td><?= htmlspecialchars($orden['id_mesa']); ?></td>
-                            <td><?= htmlspecialchars($orden['nombre_plato'] ?? '-'); ?></td>
-                            <td><?= htmlspecialchars($orden['nombre_bebida'] ?? '-'); ?></td>
+                            <td>Mesa <?= htmlspecialchars($orden['id_mesa']); ?> - <?= htmlspecialchars($orden['descripcion_mesa'] ?? ''); ?></td>
                             <td><?= htmlspecialchars($orden['descripcion'] ?? '-'); ?></td>
-                            <td><?= htmlspecialchars($orden['cantidad']); ?></td>
+                            <td>
+                                <small>
+                                    <?php foreach($orden['detalles'] as $detalle): ?>
+                                        <?php if ($detalle['nombre_plato']): ?>
+                                            <?= $detalle['cantidad'] ?>x <?= htmlspecialchars($detalle['nombre_plato']) ?><br>
+                                        <?php elseif ($detalle['nombre_bebida']): ?>
+                                            <?= $detalle['cantidad'] ?>x <?= htmlspecialchars($detalle['nombre_bebida']) ?><br>
+                                        <?php endif; ?>
+                                    <?php endforeach; ?>
+                                </small>
+                            </td>
                             <td>Q<?= number_format($orden['total'], 2); ?></td>
                             <td><?= date('d/m/Y H:i', strtotime($orden['fecha_orden'])); ?></td>
                             <td>
@@ -383,10 +460,8 @@ $mesas = obtenerMesas();
                                     <button class="btn btn-sm btn-primary editar-btn"
                                         data-id="<?= $orden['id_orden']; ?>"
                                         data-mesa="<?= $orden['id_mesa']; ?>"
-                                        data-plato="<?= $orden['id_plato']; ?>"
-                                        data-bebida="<?= $orden['id_bebida']; ?>"
                                         data-descripcion="<?= htmlspecialchars($orden['descripcion'] ?? ''); ?>"
-                                        data-cantidad="<?= $orden['cantidad']; ?>">
+                                        data-detalles='<?= json_encode($orden['detalles']); ?>'>
                                         Editar
                                     </button>
                                     <form method="post" class="d-inline" data-eliminar="true">
@@ -401,7 +476,7 @@ $mesas = obtenerMesas();
                         </tr>
                         <?php endforeach; ?>
                     <?php else: ?>
-                        <tr><td colspan="10" class="text-center">No hay órdenes registradas</td></tr>
+                        <tr><td colspan="8" class="text-center">No hay órdenes registradas</td></tr>
                     <?php endif; ?>
                 </tbody>
             </table>
