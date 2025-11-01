@@ -152,6 +152,22 @@ function obtenerSucursales() {
     return $data;
 }
 
+// Formatear hora a 12h con am/pm (ej: 9:00 am)
+function format_time($timeStr) {
+    if (empty($timeStr)) return '';
+    // Intentar parsear con strtotime; si falla devolver original sin segundos
+    $ts = strtotime($timeStr);
+    if ($ts === false) {
+        // intentar recortar segundos si vienen en formato HH:MM:SS
+        $parts = explode(':', $timeStr);
+        if (count($parts) >= 2) {
+            return ltrim($parts[0], '0') . ':' . $parts[1];
+        }
+        return $timeStr;
+    }
+    return date('g:i a', $ts);
+}
+
 // ---------------------- MAPEOS ----------------------
 $sucursales = obtenerSucursales();
 $conn = conectar();
@@ -203,7 +219,7 @@ desconectar($conn);
 
             <div class="col-md-6">
                 <label class="form-label">📌Dirección de la Sucursal</label>
-                <input type="text" class="form-control" name="direccion_sucursal" id="direccion_sucursal" required>
+                <input type="text" class="form-control" name="direccion_sucursal" id="direccion_sucursal"  required placeholder="Ej: 6ta calle 3-37 Zona 1 Mixco">
             </div>
 
             <div class="col-md-3">
@@ -218,18 +234,19 @@ desconectar($conn);
 
             <div class="col-md-3">
                 <label class="form-label">📊Capacidad de Empleados</label>
-                <input type="number" class="form-control" name="capacidad_empleados" id="capacidad_empleados" min="1" required>
+                <input type="number" class="form-control" name="capacidad_empleados" id="capacidad_empleados" min="1" required placeholder="Ej: 10">
             </div>
 
             <div class="col-md-3">
                 <label class="form-label">📞Teléfono</label>
-                <input type="text" class="form-control" name="telefono_sucursal" id="telefono_sucursal" required>
+                <input type="text" class="form-control" name="telefono_sucursal" id="telefono_sucursal" required placeholder="Ej: 2344-5588">
                 <small class="form-text help-text">*8 dígitos</small>
             </div>
 
             <div class="col-md-3">
                 <label class="form-label">📧Correo Electrónico</label>
-                <input type="email" class="form-control" name="correo_sucursal" id="correo_sucursal" required>
+                <input type="email" class="form-control" name="correo_sucursal" id="correo_sucursal" required placeholder="Ej: mixcozona1@gmail.com">
+                <small class="form-text text-muted help-text">*usuario@gmail.com</small>
             </div>
 
             <div class="col-md-3">
@@ -273,7 +290,7 @@ desconectar($conn);
                         <tr>
                             <td><?= $s['id_sucursal']; ?></td>
                             <td><?= htmlspecialchars($s['direccion_sucursal']); ?></td>
-                            <td><?= htmlspecialchars($s['horario_apertura']) . ' - ' . htmlspecialchars($s['hora_cierre']); ?></td>
+                            <td><?= htmlspecialchars(format_time($s['horario_apertura'])) . ' - ' . htmlspecialchars(format_time($s['hora_cierre'])); ?></td>
                             <td><?= htmlspecialchars($s['capacidad_empleados']); ?></td>
                             <td><?= htmlspecialchars($s['telefono_sucursal']); ?></td>
                             <td><?= htmlspecialchars($s['correo_sucursal']); ?></td>
