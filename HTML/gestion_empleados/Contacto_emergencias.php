@@ -256,23 +256,23 @@ desconectar($conn);
             <input type="hidden" name="id_contacto" id="id_contacto">
 
             <div class="col-md-4">
-                <label class="form-label">👤 Nombre del Contacto</label>
+                <label class="form-label">👤 Nombre del Contacto:</label>
                 <input type="text" class="form-control" name="nombre_contacto" id="nombre_contacto"  required placeholder="Ej: Rubén Luch">
             </div>
 
             <div class="col-md-3">
-                <label class="form-label">👩‍❤️‍👨 Relación</label>
+                <label class="form-label">👩‍❤️‍👨 Relación:</label>
                 <input type="text" class="form-control" name="relacion" id="relacion"  required placeholder="Ej: Espos@, Herman@, Amig@">
             </div>
 
             <div class="col-md-3">
-                <label class="form-label">📞 Número de Teléfono</label>
+                <label class="form-label">📞 Número de Teléfono:</label>
                 <input type="text" class="form-control" name="numero_telefono" id="numero_telefono"  required placeholder="Ej: 2446-5890">
                 <small class="form-text help-text">*8 dígitos</small>
             </div>
 
             <div class="col-md-4">
-                <label class="form-label">Empleado Asociado</label>
+                <label class="form-label">Empleado Asociado:</label>
                 <select class="form-select" name="id_empleado" id="id_empleado" required>
                     <option value="">-- Seleccione Empleado --</option>
                     <?php foreach ($empleados_map as $id => $nombre): ?>

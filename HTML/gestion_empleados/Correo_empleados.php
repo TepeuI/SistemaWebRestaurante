@@ -183,7 +183,7 @@ desconectar($conn);
             <input type="hidden" name="id_correo" id="id_correo">
 
             <div class="col-md-4">
-                <label class="form-label">👤 Empleado</label>
+                <label class="form-label">👤 Empleado:</label>
                 <select class="form-select" name="id_empleado" id="id_empleado" required>
                     <option value="">-- Seleccione empleado --</option>
                     <?php foreach ($empleados_map as $id => $nombre): ?>
@@ -193,7 +193,7 @@ desconectar($conn);
             </div>
 
             <div class="col-md-4">
-                <label class="form-label">📧 Correo Electrónico</label>
+                <label class="form-label">📧 Correo Electrónico:</label>
                 <input type="email" class="form-control" name="direccion_correo" id="direccion_correo" required placeholder="Ej: juanperez25@gmail.com">
                 <small class="form-text text-muted help-text">*usuario@gmail.com</small>
             

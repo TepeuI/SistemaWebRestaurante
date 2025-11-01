@@ -218,39 +218,39 @@ desconectar($conn);
             <input type="hidden" name="id_sucursal" id="id_sucursal">
 
             <div class="col-md-6">
-                <label class="form-label">📌Dirección de la Sucursal</label>
+                <label class="form-label">📌Dirección de la Sucursal:</label>
                 <input type="text" class="form-control" name="direccion_sucursal" id="direccion_sucursal"  required placeholder="Ej: 6ta calle 3-37 Zona 1 Mixco">
             </div>
 
             <div class="col-md-3">
-                <label class="form-label">⌚Horario de Apertura</label>
+                <label class="form-label">⌚Horario de Apertura:</label>
                 <input type="time" class="form-control" name="horario_apertura" id="horario_apertura" required>
             </div>
 
             <div class="col-md-3">
-                <label class="form-label">⌚Hora de Cierre</label>
+                <label class="form-label">⌚Hora de Cierre:</label>
                 <input type="time" class="form-control" name="hora_cierre" id="hora_cierre" required>
             </div>
 
             <div class="col-md-3">
-                <label class="form-label">📊Capacidad de Empleados</label>
+                <label class="form-label">📊Capacidad de Empleados:</label>
                 <input type="number" class="form-control" name="capacidad_empleados" id="capacidad_empleados" min="1" required placeholder="Ej: 10">
             </div>
 
             <div class="col-md-3">
-                <label class="form-label">📞Teléfono</label>
+                <label class="form-label">📞Teléfono:</label>
                 <input type="text" class="form-control" name="telefono_sucursal" id="telefono_sucursal" required placeholder="Ej: 2344-5588">
                 <small class="form-text help-text">*8 dígitos</small>
             </div>
 
             <div class="col-md-3">
-                <label class="form-label">📧Correo Electrónico</label>
+                <label class="form-label">📧Correo Electrónico:</label>
                 <input type="email" class="form-control" name="correo_sucursal" id="correo_sucursal" required placeholder="Ej: mixcozona1@gmail.com">
                 <small class="form-text text-muted help-text">*usuario@gmail.com</small>
             </div>
 
             <div class="col-md-3">
-                <label class="form-label">📍Departamento</label>
+                <label class="form-label">📍Departamento:</label>
                 <select class="form-select" name="id_departamento" id="id_departamento">
                     <option value="">-- Seleccione Departamento --</option>
                     <?php foreach ($departamentos as $id => $nombre): ?>
