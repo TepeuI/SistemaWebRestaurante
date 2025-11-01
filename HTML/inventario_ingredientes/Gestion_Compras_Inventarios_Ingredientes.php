@@ -29,15 +29,33 @@ function crearCompra() {
     global $conn;
     $conn = conectar();
     
+    $id_compra_ingrediente = intval($_POST['id_compra_ingrediente_input'] ?? '');
     $id_proveedor = intval($_POST['id_proveedor'] ?? '');
     $fecha_de_compra = $_POST['fecha_de_compra'] ?? '';
-    $monto_total_compra_q = floatval($_POST['monto_total_compra_q'] ?? 0);
+    $monto_total_compra = floatval($_POST['monto_total_compra_q'] ?? 0);
     
-    $sql = "INSERT INTO compras_ingrediente (id_proveedor, fecha_de_compra, monto_total_compra_q) 
-            VALUES (?, ?, ?)";
+    // Verificar si el ID ya existe
+    $sql_check = "SELECT id_compra_ingrediente FROM compras_ingrediente WHERE id_compra_ingrediente = ?";
+    $stmt_check = $conn->prepare($sql_check);
+    $stmt_check->bind_param("i", $id_compra_ingrediente);
+    $stmt_check->execute();
+    $stmt_check->store_result();
+    
+    if ($stmt_check->num_rows > 0) {
+        $_SESSION['mensaje'] = "Error: El ID de compra ya existe";
+        $_SESSION['tipo_mensaje'] = "error";
+        $stmt_check->close();
+        desconectar($conn);
+        header('Location: Gestion_Compras_Inventarios_Ingredientes.php');
+        exit();
+    }
+    $stmt_check->close();
+    
+    $sql = "INSERT INTO compras_ingrediente (id_compra_ingrediente, id_proveedor, fecha_de_compra, monto_total_compra) 
+            VALUES (?, ?, ?, ?)";
     
     $stmt = $conn->prepare($sql);
-    $stmt->bind_param("isd", $id_proveedor, $fecha_de_compra, $monto_total_compra_q);
+    $stmt->bind_param("iisd", $id_compra_ingrediente, $id_proveedor, $fecha_de_compra, $monto_total_compra);
     
     if ($stmt->execute()) {
         $_SESSION['mensaje'] = "Compra registrada exitosamente";
@@ -49,7 +67,7 @@ function crearCompra() {
     
     $stmt->close();
     desconectar($conn);
-    header('Location: compras_ingredientes.php');
+    header('Location: Gestion_Compras_Inventarios_Ingredientes.php');
     exit();
 }
 
@@ -60,13 +78,13 @@ function actualizarCompra() {
     $id_compra_ingrediente = intval($_POST['id_compra_ingrediente'] ?? '');
     $id_proveedor = intval($_POST['id_proveedor'] ?? '');
     $fecha_de_compra = $_POST['fecha_de_compra'] ?? '';
-    $monto_total_compra_q = floatval($_POST['monto_total_compra_q'] ?? 0);
+    $monto_total_compra = floatval($_POST['monto_total_compra_q'] ?? 0);
     
-    $sql = "UPDATE compras_ingrediente SET id_proveedor = ?, fecha_de_compra = ?, monto_total_compra_q = ? 
+    $sql = "UPDATE compras_ingrediente SET id_proveedor = ?, fecha_de_compra = ?, monto_total_compra = ? 
             WHERE id_compra_ingrediente = ?";
     
     $stmt = $conn->prepare($sql);
-    $stmt->bind_param("isdi", $id_proveedor, $fecha_de_compra, $monto_total_compra_q, $id_compra_ingrediente);
+    $stmt->bind_param("isdi", $id_proveedor, $fecha_de_compra, $monto_total_compra, $id_compra_ingrediente);
     
     if ($stmt->execute()) {
         $_SESSION['mensaje'] = "Compra actualizada exitosamente";
@@ -78,7 +96,7 @@ function actualizarCompra() {
     
     $stmt->close();
     desconectar($conn);
-    header('Location: compras_ingredientes.php');
+    header('Location: Gestion_Compras_Inventarios_Ingredientes.php');
     exit();
 }
 
@@ -89,7 +107,7 @@ function eliminarCompra() {
     $id_compra_ingrediente = intval($_POST['id_compra_ingrediente'] ?? '');
     
     // Verificar si la compra tiene detalles asociados
-    $sql_check = "SELECT id_detalle FROM detalle_compra_ingrediente WHERE id_compra_ingrediente = ? LIMIT 1";
+    $sql_check = "SELECT id_compra_ingrediente FROM detalle_compra_ingrediente WHERE id_compra_ingrediente = ? LIMIT 1";
     $stmt_check = $conn->prepare($sql_check);
     $stmt_check->bind_param("i", $id_compra_ingrediente);
     $stmt_check->execute();
@@ -100,7 +118,7 @@ function eliminarCompra() {
         $_SESSION['tipo_mensaje'] = "error";
         $stmt_check->close();
         desconectar($conn);
-        header('Location: compras_ingredientes.php');
+        header('Location: Gestion_Compras_Inventarios_Ingredientes.php');
         exit();
     }
     $stmt_check->close();
@@ -120,7 +138,7 @@ function eliminarCompra() {
     
     $stmt->close();
     desconectar($conn);
-    header('Location: compras_ingredientes.php');
+    header('Location: Gestion_Compras_Inventarios_Ingredientes.php');
     exit();
 }
 
@@ -233,6 +251,11 @@ $proveedores = obtenerProveedores();
             color: #059669;
             font-weight: bold;
         }
+        
+        .campo-deshabilitado {
+            background-color: #f8f9fa;
+            color: #6c757d;
+        }
     </style>
 
     <!-- Bootstrap y librerías base -->
@@ -271,7 +294,16 @@ $proveedores = obtenerProveedores();
             <input type="hidden" id="operacion" name="operacion" value="crear">
             <input type="hidden" id="id_compra_ingrediente" name="id_compra_ingrediente" value="">
             
-            <div class="col-md-4">
+            <div class="col-md-3">
+                <label class="form-label fw-semibold" for="id_compra_ingrediente_input">
+                    <i class="bi bi-hash me-1"></i>ID Compra: *
+                </label>
+                <input type="number" class="form-control" id="id_compra_ingrediente_input" 
+                       name="id_compra_ingrediente_input" required min="1" 
+                       placeholder="Ingrese el ID">
+            </div>
+            
+            <div class="col-md-3">
                 <label class="form-label fw-semibold" for="id_proveedor">
                     <i class="bi bi-truck me-1"></i>Proveedor: *
                 </label>
@@ -285,14 +317,14 @@ $proveedores = obtenerProveedores();
                 </select>
             </div>
             
-            <div class="col-md-4">
+            <div class="col-md-3">
                 <label class="form-label fw-semibold" for="fecha_de_compra">
                     <i class="bi bi-calendar-date me-1"></i>Fecha de Compra: *
                 </label>
                 <input type="date" class="form-control" id="fecha_de_compra" name="fecha_de_compra" required>
             </div>
             
-            <div class="col-md-4">
+            <div class="col-md-3">
                 <label class="form-label fw-semibold" for="monto_total_compra_q">
                     <i class="bi bi-currency-dollar me-1"></i>Monto Total (Q): *
                 </label>
@@ -338,7 +370,7 @@ $proveedores = obtenerProveedores();
                         <td><?php echo htmlspecialchars($compra['nombre_proveedor']); ?></td>
                         <td><?php echo htmlspecialchars($compra['fecha_de_compra']); ?></td>
                         <td class="monto-alto">
-                        <?php echo number_format($compra['monto_total_compra'], 2); ?>
+                            Q <?php echo number_format($compra['monto_total_compra'], 2); ?>
                         </td>
                         <td>
                             <button class="btn btn-sm btn-primary btn-action editar-btn" 
@@ -378,6 +410,7 @@ $proveedores = obtenerProveedores();
         const btnCancelar = document.getElementById('btn-cancelar');
         const operacionInput = document.getElementById('operacion');
         const idCompraInput = document.getElementById('id_compra_ingrediente');
+        const idCompraInputManual = document.getElementById('id_compra_ingrediente_input');
 
         // Establecer fecha actual por defecto
         document.getElementById('fecha_de_compra').valueAsDate = new Date();
@@ -420,9 +453,12 @@ $proveedores = obtenerProveedores();
 
                 // Llenar formulario
                 idCompraInput.value = id;
+                idCompraInputManual.value = id;
+                idCompraInputManual.classList.add('campo-deshabilitado');
+                idCompraInputManual.disabled = true;
                 document.getElementById('id_proveedor').value = proveedor;
                 document.getElementById('fecha_de_compra').value = fecha;
-                document.getElementById('monto_total_compra').value = monto;
+                document.getElementById('monto_total_compra_q').value = monto;
 
                 mostrarBotonesActualizar();
             });
@@ -431,6 +467,9 @@ $proveedores = obtenerProveedores();
         function limpiarFormulario() {
             form.reset();
             idCompraInput.value = '';
+            idCompraInputManual.value = '';
+            idCompraInputManual.classList.remove('campo-deshabilitado');
+            idCompraInputManual.disabled = false;
             operacionInput.value = 'crear';
             // Restablecer fecha actual
             document.getElementById('fecha_de_compra').valueAsDate = new Date();
@@ -440,6 +479,8 @@ $proveedores = obtenerProveedores();
             btnGuardar.style.display = 'inline-block';
             btnActualizar.style.display = 'none';
             btnCancelar.style.display = 'none';
+            idCompraInputManual.disabled = false;
+            idCompraInputManual.classList.remove('campo-deshabilitado');
         }
 
         function mostrarBotonesActualizar() {
@@ -449,20 +490,29 @@ $proveedores = obtenerProveedores();
         }
 
         function validarFormulario() {
+            const idCompra = idCompraInputManual.value;
             const proveedor = document.getElementById('id_proveedor').value;
             const fecha = document.getElementById('fecha_de_compra').value;
-            const monto = document.getElementById('monto_total_compra').value;
+            const monto = document.getElementById('monto_total_compra_q').value;
 
+            if (!idCompra || idCompra <= 0) {
+                alert('El ID de compra es requerido y debe ser un número positivo');
+                idCompraInputManual.focus();
+                return false;
+            }
             if (!proveedor) {
                 alert('El proveedor es requerido');
+                document.getElementById('id_proveedor').focus();
                 return false;
             }
             if (!fecha) {
                 alert('La fecha de compra es requerida');
+                document.getElementById('fecha_de_compra').focus();
                 return false;
             }
             if (!monto || monto <= 0) {
                 alert('El monto total debe ser un número positivo');
+                document.getElementById('monto_total_compra_q').focus();
                 return false;
             }
 
