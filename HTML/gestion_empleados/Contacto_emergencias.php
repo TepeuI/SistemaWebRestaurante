@@ -40,19 +40,23 @@ function crearContacto() {
         header('Location: Contacto_emergencias.php');
         exit();
     }
-
-    // Validar nombre y relación (solo letras y espacios, con acentos) y longitudes razonables
-    if (!preg_match('/^[A-Za-zÁÉÍÓÚÜÑáéíóúüñ\s]{2,60}$/u', $nombre)) {
-        $_SESSION['mensaje'] = 'El nombre del contacto debe contener solo letras y espacios (2-60 caracteres).';
+    // Normalizar y validar nombre usando la misma lógica que en Empleados/Puestos
+    $nombre = normalize_name($nombre);
+    if (!is_valid_name($nombre) || mb_strlen($nombre) < 2 || mb_strlen($nombre) > 60) {
+        $_SESSION['mensaje'] = 'El nombre del contacto sólo debe contener letras y espacios (2-60 caracteres).';
         $_SESSION['tipo_mensaje'] = 'error';
         header('Location: Contacto_emergencias.php');
         exit();
     }
-    if ($relacion !== '' && !preg_match('/^[A-Za-zÁÉÍÓÚÜÑáéíóúüñ\s]{2,40}$/u', $relacion)) {
-        $_SESSION['mensaje'] = 'La relación debe contener solo letras y espacios (2-40 caracteres).';
-        $_SESSION['tipo_mensaje'] = 'error';
-        header('Location: Contacto_emergencias.php');
-        exit();
+    // Normalizar y validar relación (opcional) usando misma lógica que nombres
+    if ($relacion !== '') {
+        $relacion = normalize_name($relacion);
+        if (!is_valid_name($relacion) || mb_strlen($relacion) < 2 || mb_strlen($relacion) > 40) {
+            $_SESSION['mensaje'] = 'La relación sólo debe contener letras y espacios (2-40 caracteres).';
+            $_SESSION['tipo_mensaje'] = 'error';
+            header('Location: Contacto_emergencias.php');
+            exit();
+        }
     }
 
     // Validar teléfono (opcional) formato 0000-0000 o vacío
@@ -95,17 +99,23 @@ function actualizarContacto() {
     }
 
     // Validar nombre y relación
-    if (!preg_match('/^[A-Za-zÁÉÍÓÚÜÑáéíóúüñ\s]{2,60}$/u', $nombre)) {
-        $_SESSION['mensaje'] = 'El nombre del contacto debe contener solo letras y espacios (2-60 caracteres).';
+    // Normalizar y validar nombre usando la misma lógica que en Empleados/Puestos
+    $nombre = normalize_name($nombre);
+    if (!is_valid_name($nombre) || mb_strlen($nombre) < 2 || mb_strlen($nombre) > 60) {
+        $_SESSION['mensaje'] = 'El nombre del contacto sólo debe contener letras y espacios (2-60 caracteres).';
         $_SESSION['tipo_mensaje'] = 'error';
         header('Location: Contacto_emergencias.php');
         exit();
     }
-    if ($relacion !== '' && !preg_match('/^[A-Za-zÁÉÍÓÚÜÑáéíóúüñ\s]{2,40}$/u', $relacion)) {
-        $_SESSION['mensaje'] = 'La relación debe contener solo letras y espacios (2-40 caracteres).';
-        $_SESSION['tipo_mensaje'] = 'error';
-        header('Location: Contacto_emergencias.php');
-        exit();
+    // Normalizar y validar relación (opcional)
+    if ($relacion !== '') {
+        $relacion = normalize_name($relacion);
+        if (!is_valid_name($relacion) || mb_strlen($relacion) < 2 || mb_strlen($relacion) > 40) {
+            $_SESSION['mensaje'] = 'La relación sólo debe contener letras y espacios (2-40 caracteres).';
+            $_SESSION['tipo_mensaje'] = 'error';
+            header('Location: Contacto_emergencias.php');
+            exit();
+        }
     }
 
     if ($telefono && !preg_match('/^\d{4}-\d{4}$/', $telefono)) {
@@ -152,7 +162,9 @@ function obtenerContactos() {
                    e.id_empleado, e.nombre_empleado, e.apellido_empleado
             FROM contacto_emergencia c
             INNER JOIN empleados e ON c.id_empleado = e.id_empleado
-            ORDER BY c.id_contacto";
+        -- Ordenar por id_empleado y luego por id_contacto para que los grupos
+        -- se muestren en orden ascendente por empleado y por inserción del contacto
+        ORDER BY c.id_empleado ASC, c.id_contacto ASC";
     $resultado = $conn->query($sql);
     $data = [];
     while ($fila = $resultado->fetch_assoc()) {
@@ -160,6 +172,38 @@ function obtenerContactos() {
     }
     desconectar($conn);
     return $data;
+}
+
+// ---------------------- Normalización y validación de nombres (reutilizado)
+function normalize_name($s) {
+    $s = isset($s) ? (string)$s : '';
+    $s = preg_replace('/[^A-Za-zÁÉÍÓÚÜÑáéíóúüñ\s]/u', '', $s);
+    $s = preg_replace('/\s+/u', ' ', trim($s));
+    if ($s === '') return '';
+    if (function_exists('mb_strtoupper')) {
+        $upper = mb_strtoupper($s, 'UTF-8');
+        if ($s === $upper) return $s;
+    } else {
+        if ($s === strtoupper($s)) return $s;
+    }
+    if (function_exists('mb_convert_case')) {
+        return mb_convert_case($s, MB_CASE_TITLE, 'UTF-8');
+    }
+    $parts = preg_split('/\s+/u', $s);
+    $out = [];
+    foreach ($parts as $p) {
+        $first = strtoupper(substr($p, 0, 1));
+        $rest = strtolower(substr($p, 1));
+        $out[] = $first . $rest;
+    }
+    return implode(' ', $out);
+}
+
+function is_valid_name($s) {
+    if (!is_string($s)) return false;
+    $s = trim($s);
+    if ($s === '') return false;
+    return preg_match('/^[A-Za-zÁÉÍÓÚÜÑáéíóúüñ\s]+$/u', $s) === 1;
 }
 
 // ---------------------- MAPEO DE DATOS ----------------------

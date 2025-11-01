@@ -48,6 +48,13 @@
             </li>
 
             <li>
+                <a href="#" class="submenu-toggle"><span>🖥️</span> Recursos Humanos RH</a>
+                <ul class="submenu">
+                    <li><a href="gestion_RH/Puestos.php">Puestos de trabajo</a></li>
+                </ul>
+            </li>
+
+            <li>
                 <a href="#" class="submenu-toggle"><span>📍</span> Gestión Departamental</a>
                 <ul class="submenu">
                     <li><a href="Departamental/Sucursales.php">Sucursales</a></li>

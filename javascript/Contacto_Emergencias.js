@@ -52,18 +52,24 @@ document.addEventListener('DOMContentLoaded', function () {
             return false;
         }
 
-        // Validar nombre (solo letras y espacios, 2-60)
-        if (!/^[A-Za-zÁÉÍÓÚÜÑáéíóúüñ\s]{2,60}$/.test(nombre)) {
+        // Validar nombre: usar misma regla que Empleados/Puestos (solo letras y espacios)
+        const nameRegex = /^[A-Za-zÁÉÍÓÚÜÑáéíóúüñ\s]+$/;
+        const nombreNorm = nombre.replace(/\s+/g, ' ');
+        if (!nameRegex.test(nombreNorm) || nombreNorm.length < 2 || nombreNorm.length > 60) {
             showWarning('El nombre solo debe contener letras y espacios (2-60 caracteres).');
             nombreInput.focus();
             return false;
         }
 
-        // Validar relación (si la hay, 2-40)
-        if (relacion && !/^[A-Za-zÁÉÍÓÚÜÑáéíóúüñ\s]{2,40}$/.test(relacion)) {
-            showWarning('La relación solo debe contener letras y espacios (2-40 caracteres).');
-            relacionInput.focus();
-            return false;
+        // Validar relación (opcional) usando misma regla que nombres (2-40)
+        if (relacion) {
+            const relNorm = relacion.replace(/\s+/g, ' ');
+            const nameRegex = /^[A-Za-zÁÉÍÓÚÜÑáéíóúüñ\s]+$/;
+            if (!nameRegex.test(relNorm) || relNorm.length < 2 || relNorm.length > 40) {
+                showWarning('La relación solo debe contener letras y espacios (2-40 caracteres).');
+                relacionInput.focus();
+                return false;
+            }
         }
 
         return true;
@@ -76,6 +82,54 @@ document.addEventListener('DOMContentLoaded', function () {
         if (operacionInput) operacionInput.value = 'crear';
         mostrarBotonesGuardar();
     }
+
+    // Sanitizar y formatear el campo nombre_contacto (igual que Empleados/Puestos)
+    (function initNombreSanitizer() {
+        if (!nombreInput) return;
+        const nameSanitizeRegex = /[^A-Za-zÁÉÍÓÚÜÑáéíóúüñ\s]/g;
+        nombreInput.addEventListener('input', function () {
+            let v = this.value || '';
+            v = v.replace(nameSanitizeRegex, '');
+            v = v.replace(/\s+/g, ' ');
+            this.value = v;
+        });
+        nombreInput.addEventListener('blur', function () {
+            let v = (this.value || '').trim();
+            if (!v) return;
+            if (v === v.toUpperCase()) { this.value = v.replace(/\s+/g, ' '); return; }
+            const parts = v.split(' ').filter(Boolean);
+            const formatted = parts.map(p => {
+                const first = p.charAt(0).toLocaleUpperCase('es-ES');
+                const rest = p.slice(1).toLocaleLowerCase('es-ES');
+                return first + rest;
+            }).join(' ');
+            this.value = formatted;
+        });
+    })();
+
+    // Sanitizar y formatear el campo relacion (igual que nombre)
+    (function initRelacionSanitizer() {
+        if (!relacionInput) return;
+        const nameSanitizeRegex = /[^A-Za-zÁÉÍÓÚÜÑáéíóúüñ\s]/g;
+        relacionInput.addEventListener('input', function () {
+            let v = this.value || '';
+            v = v.replace(nameSanitizeRegex, '');
+            v = v.replace(/\s+/g, ' ');
+            this.value = v;
+        });
+        relacionInput.addEventListener('blur', function () {
+            let v = (this.value || '').trim();
+            if (!v) return;
+            if (v === v.toUpperCase()) { this.value = v.replace(/\s+/g, ' '); return; }
+            const parts = v.split(' ').filter(Boolean);
+            const formatted = parts.map(p => {
+                const first = p.charAt(0).toLocaleUpperCase('es-ES');
+                const rest = p.slice(1).toLocaleLowerCase('es-ES');
+                return first + rest;
+            }).join(' ');
+            this.value = formatted;
+        });
+    })();
 
     function habilitarCampos() {
         inputs.forEach(input => {

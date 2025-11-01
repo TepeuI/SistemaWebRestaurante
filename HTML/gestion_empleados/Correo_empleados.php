@@ -117,11 +117,13 @@ function eliminarCorreo() {
 
 function obtenerCorreos() {
     $conn = conectar();
+    // Ordenar por id_empleado asc y luego por id_correo asc para que al agrupar
+    // los empleados aparezcan en orden numérico (1,2,3...) y sus correos en orden de inserción.
     $sql = "SELECT c.id_correo, c.direccion_correo, c.id_empleado,
-                   e.nombre_empleado, e.apellido_empleado
-            FROM correos_empleado c
-            INNER JOIN empleados e ON c.id_empleado = e.id_empleado
-            ORDER BY c.id_correo";
+             e.nombre_empleado, e.apellido_empleado
+         FROM correos_empleado c
+         INNER JOIN empleados e ON c.id_empleado = e.id_empleado
+         ORDER BY c.id_empleado ASC, c.id_correo ASC";
     $resultado = $conn->query($sql);
     $data = [];
     while ($fila = $resultado->fetch_assoc()) {

@@ -123,11 +123,13 @@ function eliminarTelefono() {
 
 function obtenerTelefonos() {
     $conn = conectar();
+    // Ordenar primero por id_empleado (asc) y luego por id_telefono para mantener
+    // el orden lógico por empleado conforme se agregan los registros.
     $sql = "SELECT t.id_telefono, t.numero_telefono, t.id_empleado, 
-                   e.nombre_empleado, e.apellido_empleado
-            FROM telefono_empleados t
-            INNER JOIN empleados e ON t.id_empleado = e.id_empleado
-            ORDER BY t.id_telefono";
+             e.nombre_empleado, e.apellido_empleado
+         FROM telefono_empleados t
+         INNER JOIN empleados e ON t.id_empleado = e.id_empleado
+         ORDER BY t.id_empleado ASC, t.id_telefono ASC";
     $resultado = $conn->query($sql);
     $data = [];
     while ($fila = $resultado->fetch_assoc()) {
