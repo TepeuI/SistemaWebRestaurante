@@ -53,6 +53,7 @@
                     <li><a href="gestion_RH/Puestos.php">Puestos de trabajo</a></li>
                     <li><a href="gestion_RH/Asistencias.php">Asistencias de Empleados</a></li>
                     <li><a href="gestion_RH/Penalizacion.php">Penalizaciones de Empleados</a></li>
+                    <li><a href="gestion_RH/Empleados_Sucursal.php">Asignaciones de Sucursal</a></li>
                 </ul>
             </li>
 

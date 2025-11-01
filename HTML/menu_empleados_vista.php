@@ -51,7 +51,7 @@
             <li>
                 <a href="#" class="submenu-toggle"><span>📍</span> Gestión Departamental</a>
                 <ul class="submenu">
-                    <li><a href="#" class="consulta-only" data-href="Departamental/Sucursales.php">Sucursales</a></li>
+                    <li><a href="Reportes_Empleados/Empleados_Sucursal.php">Asignacion de Sucursales a empleados</a></li>
                 </ul>
             </li>
 
