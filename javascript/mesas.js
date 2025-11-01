@@ -11,7 +11,7 @@ document.addEventListener("DOMContentLoaded", () => {
   cargarSiguienteId();
 
   // Insertar o Modificar
-    form.addEventListener("submit", async (e) => {
+  form.addEventListener("submit", async (e) => {
     e.preventDefault();
     if (!validarFormulario()) return;
 
@@ -19,96 +19,129 @@ document.addEventListener("DOMContentLoaded", () => {
     datos.append("accion", editando ? "modificar" : "insertar");
     if (editando) datos.append("id_mesa", idEditando);
 
-    const resp = await fetch("../mesas_crud.php", { method: "POST", body: datos });
-    const res = await resp.json();
+    try {
+      const resp = await fetch("../mesas_crud.php", { method: "POST", body: datos });
+      const res = await resp.json();
 
-    if (res.status === "ok") {
-      Swal.fire({
-        icon: "success",
-        title: editando ? "Mesa modificada" : "Mesa agregada",
-        showConfirmButton: false,
-        timer: 1500,
-      });
+      if (res.status === "ok") {
+        Swal.fire({
+          icon: "success",
+          title: editando ? "Mesa actualizada correctamente" : "Mesa agregada correctamente",
+          showConfirmButton: false,
+          timer: 1500,
+        });
 
-      form.reset();
-      cargarTabla();
-      cargarSiguienteId();
-      editando = false;
-      idEditando = null;
-      btnInsertar.textContent = "Insertar";
-    } else {
+        form.reset();
+        cargarTabla();
+        cargarSiguienteId();
+        editando = false;
+        idEditando = null;
+        btnInsertar.textContent = "Insertar";
+      } else {
+        Swal.fire({
+          icon: "error",
+          title: "Error en la operación",
+          text: res.msg || "Ocurrió un error al procesar la mesa.",
+        });
+      }
+    } catch (error) {
+      console.error("Error:", error);
       Swal.fire({
         icon: "error",
-        title: "Error en la operación",
-        text: res.msg ?? "Revisa los datos.",
+        title: "Error de conexión",
+        text: "No se pudo conectar con el servidor.",
       });
     }
   });
 
-  // Validación básica
+  // 🔹 Validaciones
   function validarFormulario() {
-    let valid = true;
-    const regexSQL = /['";=<>*%]/;
+    const descripcion = document.getElementById("mesa-descripcion").value.trim();
+    const capacidad = document.getElementById("mesa-capacidad").value.trim();
+    const estado = document.getElementById("mesa-estado").value.trim();
+    const regexDesc = /^[a-zA-Z0-9\s#-]+$/u;
 
-    form.querySelectorAll("input, select").forEach(input => {
-      if (!input.value.trim()) {
-        input.classList.add("is-invalid");
-        valid = false;
-      } else if (regexSQL.test(input.value)) {
-        Swal.fire({
-          icon: "warning",
-          title: "Carácteres inválidos",
-          text: `El campo "${input.id}" contiene caracteres no permitidos.`,
-        });
-        input.classList.add("is-invalid");
-        valid = false;
-      } else {
-        input.classList.remove("is-invalid");
-      }
-    });
-
-    if (!valid) {
+    if (!descripcion || !capacidad || !estado) {
       Swal.fire({
         icon: "warning",
-        title: "Formulario incompleto",
-        text: "Por favor, corrige los campos marcados en rojo.",
+        title: "Campos incompletos",
+        text: "Por favor, completa todos los campos antes de continuar.",
       });
+      return false;
     }
-    return valid;
+
+    if (!regexDesc.test(descripcion)) {
+      Swal.fire({
+        icon: "warning",
+        title: "Descripción inválida",
+        text: "Solo se permiten letras, números, espacios, # y -.",
+      });
+      return false;
+    }
+
+    if (isNaN(capacidad) || capacidad <= 0) {
+      Swal.fire({
+        icon: "warning",
+        title: "Capacidad inválida",
+        text: "La capacidad debe ser un número mayor que cero.",
+      });
+      return false;
+    }
+
+    return true;
   }
 
-  // Cargar Tabla
+  // 🔹 Cargar tabla
   function cargarTabla() {
     fetch("../mesas_crud.php", {
       method: "POST",
       body: new URLSearchParams({ accion: "listar" }),
     })
-      .then(r => r.json())
-      .then(res => {
+      .then((r) => r.json())
+      .then((res) => {
         const tbody = document.querySelector("#tabla-mesas tbody");
         tbody.innerHTML = "";
-        if (res.status === "ok") {
-          res.data.forEach(row => {
+
+        if (res.status === "ok" && res.data.length > 0) {
+          res.data.forEach((row) => {
             const tr = document.createElement("tr");
             tr.innerHTML = `
               <td>${row.id_mesa}</td>
               <td>${row.descripcion}</td>
               <td>${row.capacidad_personas}</td>
-              <td>${row.estado}</td>
+              <td>
+                <span class="badge ${row.estado === "DISPONIBLE" ? "bg-success" : "bg-secondary"}">
+                  ${row.estado}
+                </span>
+              </td>
               <td class="text-center">
                 <button class="btn btn-sm btn-primary btn-editar">✏️</button>
                 <button class="btn btn-sm btn-danger btn-eliminar">🗑️</button>
               </td>
             `;
+
             tr.querySelector(".btn-editar").addEventListener("click", () => editarFila(row));
             tr.querySelector(".btn-eliminar").addEventListener("click", () => eliminarFila(row.id_mesa));
             tbody.appendChild(tr);
           });
+        } else {
+          tbody.innerHTML = `
+            <tr>
+              <td colspan="5" class="text-center text-muted py-3">No hay mesas registradas</td>
+            </tr>`;
         }
+      })
+      .catch((err) => {
+        console.error("Error al cargar tabla:", err);
+        Swal.fire({
+          icon: "error",
+          title: "Error al cargar mesas",
+          text: "No se pudo obtener la lista de mesas desde el servidor.",
+        });
       });
   }
 
-  // Editar Mesa
+  // 🔹 Editar mesa
   function editarFila(row) {
     document.getElementById("mesa-id").value = row.id_mesa;
     document.getElementById("mesa-descripcion").value = row.descripcion;
@@ -122,12 +155,12 @@ document.addEventListener("DOMContentLoaded", () => {
     Swal.fire({
       icon: "info",
       title: `Editando mesa #${row.id_mesa}`,
-      showConfirmButton: false,
       timer: 1200,
+      showConfirmButton: false,
     });
   }
 
-  // Eliminar Mesa
+  // 🔹 Eliminar mesa
   function eliminarFila(id) {
     Swal.fire({
       title: `¿Eliminar mesa #${id}?`,
@@ -138,60 +171,71 @@ document.addEventListener("DOMContentLoaded", () => {
       cancelButtonColor: "#3085d6",
       confirmButtonText: "Sí, eliminar",
       cancelButtonText: "Cancelar",
-    }).then(result => {
+    }).then(async (result) => {
       if (result.isConfirmed) {
-        const datos = new URLSearchParams();
-        datos.append("accion", "eliminar");
-        datos.append("id_mesa", id);
+        try {
+          const datos = new URLSearchParams({ accion: "eliminar", id_mesa: id });
+          const resp = await fetch("../mesas_crud.php", { method: "POST", body: datos });
+          const res = await resp.json();
 
-        fetch("../mesas_crud.php", { method: "POST", body: datos })
-          .then(r => r.json())
-          .then(res => {
-            if (res.status === "ok") {
-              Swal.fire({
-                icon: "success",
-                title: "Mesa eliminada",
-                showConfirmButton: false,
-                timer: 1300,
-              });
-              cargarTabla();
-              cargarSiguienteId();
-            }
+          if (res.status === "ok") {
+            Swal.fire({
+              icon: "success",
+              title: "Mesa eliminada correctamente",
+              timer: 1300,
+              showConfirmButton: false,
+            });
+            cargarTabla();
+            cargarSiguienteId();
+          } else {
+            Swal.fire({
+              icon: "error",
+              title: "Error al eliminar",
+              text: res.msg || "No se pudo eliminar la mesa.",
+            });
+          }
+        } catch (err) {
+          console.error("Error al eliminar:", err);
+          Swal.fire({
+            icon: "error",
+            title: "Error de conexión",
+            text: "No se pudo comunicar con el servidor.",
           });
+        }
       }
     });
   }
 
-  //boton de refrescar
+  // 🔹 Botón Refrescar
   btnActualizar.addEventListener("click", () => {
-    cargarTabla();
     form.reset();
     editando = false;
     idEditando = null;
     btnInsertar.textContent = "Insertar";
+    cargarTabla();
     cargarSiguienteId();
 
     Swal.fire({
       icon: "info",
       title: "Formulario reiniciado",
-      text: "La tabla ha sido actualizada y el formulario se limpió.",
+      text: "La tabla se actualizó y el formulario fue limpiado.",
       timer: 1500,
-      showConfirmButton: false
+      showConfirmButton: false,
     });
   });
 
+  // 🔹 Obtener siguiente ID
+  function cargarSiguienteId() {
+    fetch("../mesas_crud.php", {
+      method: "POST",
+      body: new URLSearchParams({ accion: "siguiente_id" }),
+    })
+      .then((r) => r.json())
+      .then((res) => {
+        if (res.status === "ok") {
+          document.getElementById("mesa-id").value = res.siguiente;
+        }
+      })
+      .catch((err) => console.error("Error al obtener ID:", err));
+  }
 });
-
-// obtener siguiente ID
-function cargarSiguienteId() {
-  fetch("../mesas_crud.php", {
-    method: "POST",
-    body: new URLSearchParams({ accion: "siguiente_id" }),
-  })
-    .then(r => r.json())
-    .then(res => {
-      if (res.status === "ok") {
-        document.getElementById("mesa-id").value = res.siguiente;
-      }
-    });
-}

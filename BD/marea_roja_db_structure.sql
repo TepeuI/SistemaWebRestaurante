@@ -196,7 +196,7 @@ CREATE TABLE bitacora (
   ip                   VARCHAR(64),
   pc                   VARCHAR(100),
   operacion_realizada  VARCHAR(200) NOT NULL,
-  fecha_hora_accion    DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+  fecha_hora_accion    DATETIME NOT NULL
 ) ENGINE=InnoDB;
 
 -- =========================================================
