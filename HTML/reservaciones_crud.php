@@ -1,13 +1,18 @@
 <?php
-include("conexion.php");
-include("funciones_globales.php");
-session_start();
-$conexion = conectar();
+error_reporting(E_ALL);
+ini_set('display_errors', 1);
 
+require_once("conexion.php");
+require_once("funciones_globales.php");
+
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
+
+$conexion = conectar();
+header('Content-Type: application/json; charset=utf-8');
 
 $accion = $_POST['accion'] ?? '';
-
-header('Content-Type: application/json; charset=utf-8');
 
 switch ($accion) {
 
@@ -250,7 +255,7 @@ switch ($accion) {
         echo json_encode(['status' => 'ok', 'data' => $mesas]);
         break;
 
-    // 🔢 Siguiente ID
+    // siguiente ID
     case 'siguiente_id':
         $sql = "SELECT IFNULL(MAX(id_reservacion), 0) + 1 AS siguiente FROM reservaciones";
         $resultado = $conexion->query($sql);

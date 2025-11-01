@@ -22,7 +22,7 @@
     <link rel="stylesheet" href="../../css/diseñoModulos.css">
 
     <!-- Archivo JavaScript para manejos del CRUD y otro para alertas interactivas -->
-    <script defer src="../../javascript/reservaciones.js"></script>
+    <script defer src="../../javascript/Reservaciones.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     
 </head>
