@@ -220,18 +220,18 @@ $puestos = obtenerPuestos();
             <input type="hidden" name="id_puesto" id="id_puesto">
 
             <div class="col-md-4">
-                <label class="form-label">Nombre del Puesto</label>
-                <input type="text" class="form-control" name="puesto" id="puesto" required>
+                <label class="form-label">Nombre del Puesto:</label>
+                <input type="text" class="form-control" name="puesto" id="puesto" required placeholder="Ej: Gerente de General">
             </div>
 
             <div class="col-md-4">
-                <label class="form-label">Descripción</label>
-                <input type="text" class="form-control" name="descripcion" id="descripcion" required>
+                <label class="form-label">Descripción:</label>
+                <input type="text" class="form-control" name="descripcion" id="descripcion" required placeholder="Ej: Supervisa todas las operaciones del restaurante..">
             </div>
 
             <div class="col-md-3">
-                <label class="form-label">Sueldo Base (Q)</label>
-                <input type="number" class="form-control" name="sueldo_base" id="sueldo_base" required>
+                <label class="form-label">Sueldo Base:</label>
+                <input type="number" class="form-control" name="sueldo_base" id="sueldo_base" required placeholder="Ej: 5,000.00">
             </div>
 
             <div class="d-flex gap-2 mt-4">
@@ -263,7 +263,7 @@ $puestos = obtenerPuestos();
                             <td><?= $p['id_puesto']; ?></td>
                             <td><?= htmlspecialchars($p['puesto']); ?></td>
                             <td><?= htmlspecialchars($p['descripcion']); ?></td>
-                            <td><?= number_format($p['sueldo_base'], 2); ?></td>
+                            <td><?= 'Q ' . number_format($p['sueldo_base'], 2); ?></td>
                             <td class="text-center">
                                 <button type="button" class="btn btn-primary btn-sm editar-btn"
                                     data-id="<?= $p['id_puesto']; ?>"
