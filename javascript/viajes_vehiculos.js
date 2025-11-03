@@ -34,28 +34,28 @@ document.addEventListener('DOMContentLoaded', function () {
         return input.toString().trim().replace(/[<>&"']/g, '');
     }
 
-    // Función para sanitizar y validar campos de texto
-    function sanitizarTexto(texto, campo) {
-        if (!texto) return '';
-        
-        // Eliminar espacios en blanco al inicio y final
-        texto = texto.trim();
-        
-        // Reemplazar múltiples espacios por uno solo
-        texto = texto.replace(/\s+/g, ' ');
-        
-        // Validar contra XSS (eliminar etiquetas HTML)
-        texto = texto.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '');
-        texto = texto.replace(/<[^>]*>/g, '');
-        
-        // Validar caracteres permitidos según el campo
-        const config = configValidaciones[campo];
-        if (config && config.regex && !config.regex.test(texto)) {
-            return null; // Indica que el texto contiene caracteres no permitidos
-        }
-        
-        return texto;
+    // Función para sanitizar y validar campos de texto - CORREGIDA
+function sanitizarTexto(texto, campo) {
+    if (!texto) return '';
+    
+    // Solo eliminar espacios al inicio y final, PERO NO los espacios internos
+    texto = texto.trim();
+    
+    // ELIMINADO: La línea que reemplazaba múltiples espacios por uno solo
+    // texto = texto.replace(/\s+/g, ' '); // ← ESTA LÍNCA FUE ELIMINADA
+    
+    // Validar contra XSS (eliminar etiquetas HTML)
+    texto = texto.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '');
+    texto = texto.replace(/<[^>]*>/g, '');
+    
+    // Validar caracteres permitidos según el campo
+    const config = configValidaciones[campo];
+    if (config && config.regex && !config.regex.test(texto)) {
+        return null; // Indica que el texto contiene caracteres no permitidos
     }
+    
+    return texto;
+}
 
     // Función para mostrar advertencias (formato unificado)
     function showWarning(msg) {
@@ -441,7 +441,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // Inicializar estado del formulario y validaciones
     mostrarBotonesGuardar();
-    configurarValidacionEnTiempoReal();
+    //configurarValidacionEnTiempoReal();
 
     // Prevenir envío de formulario con Enter en campos individuales
     if (form) {
