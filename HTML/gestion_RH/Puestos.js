@@ -1,64 +1,83 @@
-// Penalizacion.js — gestión del formulario de penalizaciones
+// Puestos.js — gestión del formulario de puestos
 document.addEventListener('DOMContentLoaded', function () {
-    console.log('[Penalizacion.js] DOMContentLoaded: inicio');
+    console.log('[Puestos.js] DOMContentLoaded: inicio');
 
     // Elementos base
-    const form = document.getElementById('form-penalizacion');
+    const form = document.getElementById('form-puesto');
     const inputs = form ? form.querySelectorAll('input, select, textarea') : [];
     const btnNuevo = document.getElementById('btn-nuevo');
     const btnGuardar = document.getElementById('btn-guardar');
     const btnActualizar = document.getElementById('btn-actualizar');
     const btnCancelar = document.getElementById('btn-cancelar');
     const operacionInput = document.getElementById('operacion');
-    const idPenalizacionInput = document.getElementById('id_penalizacion');
+    const idPuestoInput = document.getElementById('id_puesto');
 
     // Campos del formulario
-    const empleadoInput = document.getElementById('id_empleado');
-    const fechaInput = document.getElementById('fecha_penalizacion');
-    const descripcionInput = document.getElementById('descripcion_penalizacion');
-    const descuentoInput = document.getElementById('descuento_penalizacion');
+    const puestoInput = document.getElementById('puesto');
+    const descripcionInput = document.getElementById('descripcion');
+    const sueldoInput = document.getElementById('sueldo_base');
 
     // ---------- Validaciones ----------
     function validarFormulario() {
-        const empleado = empleadoInput?.value.trim();
-        const fecha = fechaInput?.value.trim();
+        const puesto = puestoInput?.value.trim();
         const descripcion = descripcionInput?.value.trim();
-        const descuento = descuentoInput?.value.trim();
+        const sueldo = sueldoInput?.value.trim();
 
         const showWarning = (msg) => {
             if (typeof Swal !== 'undefined') Swal.fire({ icon: 'warning', title: 'Atención', text: msg });
             else alert(msg);
         };
 
-        if (!empleado) { showWarning('Debe seleccionar un empleado.'); empleadoInput.focus(); return false; }
-        if (!fecha) { showWarning('Debe seleccionar la fecha de la penalización.'); fechaInput.focus(); return false; }
-        if (!descripcion) { showWarning('Debe ingresar una descripción.'); descripcionInput.focus(); return false; }
-        if (!descuento) { showWarning('Debe ingresar el descuento.'); descuentoInput.focus(); return false; }
+        if (!puesto) { showWarning('Debe ingresar el nombre del puesto.'); puestoInput.focus(); return false; }
+        if (!descripcion) { showWarning('Debe ingresar la descripción del puesto.'); descripcionInput.focus(); return false; }
+        if (!sueldo) { showWarning('Debe ingresar el sueldo base.'); sueldoInput.focus(); return false; }
 
-        const regexDescripcion = /^[A-Za-zÁÉÍÓÚÜÑáéíóúüñ0-9\s.,()-]+$/;
-        if (!regexDescripcion.test(descripcion)) {
-            showWarning('La descripción contiene caracteres no válidos.');
-            descripcionInput.focus();
-            return false;
-        }
+    // Validación estricta para el nombre del puesto: sólo letras y espacios (igual que en Empleados)
+    const nameRegex = /^[A-Za-zÁÉÍÓÚÜÑáéíóúüñ\s]+$/;
+    const puestoNorm = puesto.replace(/\s+/g, ' ');
+    if (!nameRegex.test(puestoNorm)) { showWarning('El nombre del puesto sólo debe contener letras y espacios.'); puestoInput.focus(); return false; }
 
-        const valorDescuento = parseFloat(descuento);
-        if (isNaN(valorDescuento) || valorDescuento < 0) {
-            showWarning('El descuento debe ser un valor numérico positivo.');
-            descuentoInput.focus();
-            return false;
-        }
+    // Para la descripción permitimos más caracteres (letras, números y signos básicos)
+    const descRegex = /^[A-Za-zÁÉÍÓÚÜÑáéíóúüñ0-9\s.,()\-]+$/;
+    if (!descRegex.test(descripcion)) { showWarning('La descripción contiene caracteres no válidos.'); descripcionInput.focus(); return false; }
+
+        const sueldoVal = parseFloat(sueldo);
+        if (isNaN(sueldoVal) || sueldoVal < 0) { showWarning('El sueldo base debe ser un número positivo.'); sueldoInput.focus(); return false; }
 
         return true;
     }
 
-    // ---------- Helpers UI ----------
+    // ---------- UI Helpers ----------
     function limpiarFormulario() {
         if (form) form.reset();
-        if (idPenalizacionInput) idPenalizacionInput.value = '';
+        if (idPuestoInput) idPuestoInput.value = '';
         if (operacionInput) operacionInput.value = 'crear';
         mostrarBotonesGuardar();
     }
+
+    // Sanitizar y formatear el campo nombre del puesto
+    (function initPuestoSanitizer() {
+        if (!puestoInput) return;
+        const nameSanitizeRegex = /[^A-Za-zÁÉÍÓÚÜÑáéíóúüñ\s]/g;
+        puestoInput.addEventListener('input', function () {
+            let v = this.value || '';
+            v = v.replace(nameSanitizeRegex, '');
+            v = v.replace(/\s+/g, ' ');
+            this.value = v;
+        });
+        puestoInput.addEventListener('blur', function () {
+            let v = (this.value || '').trim();
+            if (!v) return;
+            if (v === v.toUpperCase()) { this.value = v.replace(/\s+/g, ' '); return; }
+            const parts = v.split(' ').filter(Boolean);
+            const formatted = parts.map(p => {
+                const first = p.charAt(0).toLocaleUpperCase('es-ES');
+                const rest = p.slice(1).toLocaleLowerCase('es-ES');
+                return first + rest;
+            }).join(' ');
+            this.value = formatted;
+        });
+    })();
 
     function habilitarCampos() {
         inputs.forEach(input => {
@@ -81,12 +100,6 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     // ---------- Botones ----------
-    btnNuevo?.addEventListener('click', function () {
-        limpiarFormulario();
-        habilitarCampos();
-        mostrarBotonesGuardar();
-    });
-
     btnGuardar?.addEventListener('click', function (evt) {
         evt.preventDefault();
         if (!form) return;
@@ -96,8 +109,8 @@ document.addEventListener('DOMContentLoaded', function () {
                 form.submit();
             };
             Swal.fire({
-                title: 'Guardar penalización',
-                text: '¿Deseas registrar esta penalización?',
+                title: 'Guardar puesto',
+                text: '¿Deseas registrar este puesto?',
                 icon: 'question',
                 showCancelButton: true,
                 confirmButtonText: 'Sí',
@@ -114,7 +127,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 form.submit();
             };
             Swal.fire({
-                title: 'Actualizar penalización',
+                title: 'Actualizar puesto',
                 text: '¿Deseas guardar los cambios?',
                 icon: 'question',
                 showCancelButton: true,
@@ -133,24 +146,23 @@ document.addEventListener('DOMContentLoaded', function () {
     document.querySelectorAll('.editar-btn').forEach(btn => {
         btn.addEventListener('click', function () {
             const id = this.getAttribute('data-id');
-            const empleado = this.getAttribute('data-empleado');
-            const fecha = this.getAttribute('data-fecha');
+            const puesto = this.getAttribute('data-puesto');
             const descripcion = this.getAttribute('data-descripcion');
-            const descuento = this.getAttribute('data-descuento');
+            const sueldo = this.getAttribute('data-sueldo');
 
             const doFill = () => {
-                idPenalizacionInput.value = id || '';
-                empleadoInput.value = empleado || '';
-                fechaInput.value = fecha || '';
+                idPuestoInput.value = id || '';
+                puestoInput.value = puesto || '';
                 descripcionInput.value = descripcion || '';
-                descuentoInput.value = descuento || '';
+                sueldoInput.value = sueldo || '';
+
                 habilitarCampos();
                 mostrarBotonesActualizar();
             };
 
             Swal.fire({
-                title: 'Editar penalización',
-                text: '¿Deseas editar esta penalización?',
+                title: 'Editar puesto',
+                text: '¿Deseas editar este puesto?',
                 icon: 'question',
                 showCancelButton: true,
                 confirmButtonText: 'Sí',
@@ -165,11 +177,11 @@ document.addEventListener('DOMContentLoaded', function () {
             evt.preventDefault();
             const frm = this;
             Swal.fire({
-                title: '¿Eliminar penalización?',
+                title: '¿Eliminar puesto?',
                 text: 'Esta acción no se puede deshacer.',
                 icon: 'warning',
                 showCancelButton: true,
-                confirmButtonText: 'Sí',
+                confirmButtonText: 'Sí, eliminar',
                 cancelButtonText: 'Cancelar'
             }).then(res => { if (res.isConfirmed) frm.submit(); });
         });
@@ -192,5 +204,5 @@ document.addEventListener('DOMContentLoaded', function () {
         console.warn('Error mostrando mensaje del servidor', e);
     }
 
-    console.log('[Penalizacion.js] DOMContentLoaded: fin');
+    console.log('[Puestos.js] DOMContentLoaded: fin');
 });

@@ -1,6 +1,7 @@
 <?php
 session_start();
 require_once '../conexion.php';
+require_once '../funciones_globales.php';
 
 // --- Verificar sesión ---
 if (!isset($_SESSION['id_usuario'])) {
@@ -68,6 +69,10 @@ function crearFactura(): void {
             }
             
             $conn->commit();
+            
+            // 🔹 REGISTRAR EN BITÁCORA
+            registrarBitacora($conn, "facturas", "crear", "Factura #$id_factura creada - Serie: $codigo_serie, Cliente: $id_cliente, Orden: $id_orden, Total: Q" . number_format($monto_total, 2));
+            
             $_SESSION['mensaje'] = "Factura creada exitosamente";
             $_SESSION['tipo_mensaje'] = "success";
         } else {
@@ -138,6 +143,10 @@ function actualizarFactura(): void {
             }
             
             $conn->commit();
+            
+            // 🔹 REGISTRAR EN BITÁCORA
+            registrarBitacora($conn, "facturas", "actualizar", "Factura #$id_factura actualizada - Serie: $codigo_serie, Cliente: $id_cliente, Orden: $id_orden");
+            
             $_SESSION['mensaje'] = "Factura actualizada exitosamente";
             $_SESSION['tipo_mensaje'] = "success";
         } else {
@@ -163,6 +172,14 @@ function eliminarFactura(): void {
     try {
         $conn->begin_transaction();
         
+        // Primero obtener información para la bitácora
+        $stmt_info = $conn->prepare("SELECT codigo_serie, id_cliente, id_orden FROM facturas WHERE id_factura = ?");
+        $stmt_info->bind_param("i", $id_factura);
+        $stmt_info->execute();
+        $stmt_info->bind_result($codigo_serie, $id_cliente, $id_orden);
+        $stmt_info->fetch();
+        $stmt_info->close();
+        
         // Primero eliminar detalles de cobro
         $sql_detalles = "DELETE FROM detalle_cobro WHERE id_factura = ?";
         $stmt_detalles = $conn->prepare($sql_detalles);
@@ -177,6 +194,10 @@ function eliminarFactura(): void {
         
         if ($stmt->execute()) {
             $conn->commit();
+            
+            // 🔹 REGISTRAR EN BITÁCORA
+            registrarBitacora($conn, "facturas", "eliminar", "Factura #$id_factura eliminada - Serie: $codigo_serie, Cliente: $id_cliente, Orden: $id_orden");
+            
             $_SESSION['mensaje'] = "Factura eliminada exitosamente";
             $_SESSION['tipo_mensaje'] = "success";
         } else {
@@ -320,6 +341,7 @@ $facturas = obtenerFacturas();
 $tipos_cobro = obtenerTiposCobro();
 $ordenes_disponibles = obtenerOrdenesDisponibles();
 ?>
+
 <!DOCTYPE html>
 <html lang="es">
 <head>

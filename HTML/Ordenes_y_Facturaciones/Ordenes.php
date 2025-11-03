@@ -1,6 +1,7 @@
 <?php
 session_start();
 require_once '../conexion.php';
+require_once '../funciones_globales.php';
 
 // --- Verificar sesión ---
 if (!isset($_SESSION['id_usuario'])) {
@@ -70,10 +71,15 @@ function crearOrden(): void {
             $stmt_update->bind_param("di", $total_orden, $id_orden);
             $stmt_update->execute();
             $stmt_update->close();
+            
             // Actualizar inventario según los ingredientes de cada plato
             actualizarInventarioPorOrden($conn, $id_orden);
 
             $conn->commit();
+            
+            // 🔹 REGISTRAR EN BITÁCORA
+            registrarBitacora($conn, "orden", "crear", "Orden #$id_orden creada - Mesa: $id_mesa, Total: Q" . number_format($total_orden, 2));
+            
             $_SESSION['mensaje'] = "Orden creada exitosamente";
             $_SESSION['tipo_mensaje'] = "success";
         } else {
@@ -149,6 +155,10 @@ function actualizarOrden(): void {
             $stmt_update->close();
             
             $conn->commit();
+            
+            // 🔹 REGISTRAR EN BITÁCORA
+            registrarBitacora($conn, "orden", "actualizar", "Orden #$id_orden actualizada - Mesa: $id_mesa, Total: Q" . number_format($total_orden, 2));
+            
             $_SESSION['mensaje'] = "Orden actualizada exitosamente";
             $_SESSION['tipo_mensaje'] = "success";
         } else {
@@ -173,6 +183,14 @@ function eliminarOrden(): void {
     try {
         $conn->begin_transaction();
         
+        // Primero obtener información para la bitácora
+        $stmt_info = $conn->prepare("SELECT id_mesa, total FROM orden WHERE id_orden = ?");
+        $stmt_info->bind_param("i", $id_orden);
+        $stmt_info->execute();
+        $stmt_info->bind_result($id_mesa, $total);
+        $stmt_info->fetch();
+        $stmt_info->close();
+        
         // Primero eliminar detalles de la orden
         $sql_detalles = "DELETE FROM detalle_orden WHERE id_orden = ?";
         $stmt_detalles = $conn->prepare($sql_detalles);
@@ -187,6 +205,10 @@ function eliminarOrden(): void {
         
         if ($stmt->execute()) {
             $conn->commit();
+            
+            // 🔹 REGISTRAR EN BITÁCORA
+            registrarBitacora($conn, "orden", "eliminar", "Orden #$id_orden eliminada - Mesa: $id_mesa, Total: Q" . number_format($total, 2));
+            
             $_SESSION['mensaje'] = "Orden eliminada exitosamente";
             $_SESSION['tipo_mensaje'] = "success";
         } else {
@@ -209,6 +231,8 @@ function eliminarOrden(): void {
         exit();
     }
 }
+
+// ... (el resto de las funciones se mantienen igual: calcularSubtotal, actualizarInventarioPorOrden, obtenerFactorConversion, etc.)
 
 function calcularSubtotal($conn, $id_plato, $id_bebida, $cantidad): float {
     $subtotal = 0.0;
@@ -349,6 +373,7 @@ function obtenerFactorConversion(mysqli $conn, int $unidad_origen, int $unidad_d
     return 1.0;
 }
 
+// ... (el resto del código HTML y funciones de obtención de datos se mantienen igual)
 
 // --- Funciones para obtener datos ---
 function obtenerPlatos(): array {
@@ -426,6 +451,7 @@ $bebidas = obtenerBebidas();
 $mesas = obtenerMesas();
 $ordenes = obtenerOrdenes();
 ?>
+
 <!DOCTYPE html>
 <html lang="es">
 <head>

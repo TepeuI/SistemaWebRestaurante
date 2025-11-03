@@ -181,7 +181,6 @@ desconectar($conn);
         </div>
 
         <div class="d-flex gap-2 mt-4">
-            <button id="btn-nuevo" type="button" class="btn btn-secondary">Nuevo</button>
             <button id="btn-guardar" type="button" class="btn btn-success">Guardar</button>
             <button id="btn-actualizar" type="button" class="btn btn-warning" style="display:none;">Actualizar</button>
             <button id="btn-cancelar" type="button" class="btn btn-danger" style="display:none;">Cancelar</button>
@@ -249,6 +248,6 @@ desconectar($conn);
 </main>
 
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-<script src="/SistemaWebRestaurante/javascript/Empleados_Sucursal.js"></script>
+<script src="./Empleados_Sucursal.js"></script>
 </body>
 </html>
