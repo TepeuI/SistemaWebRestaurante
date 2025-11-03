@@ -525,7 +525,7 @@ function obtenerMobiliario() {
     try {
         $sql = "SELECT id_mobiliario, nombre_mobiliario 
                 FROM inventario_mobiliario 
-                WHERE id_tipo_mobiliario = 1 
+                WHERE id_tipo_mobiliario = 6 
                 ORDER BY nombre_mobiliario";
         
         $resultado = $conn->query($sql);
@@ -545,6 +545,8 @@ function obtenerMobiliario() {
         return [];
     }
 }
+
+
 
 $vehiculos = obtenerVehiculos();
 $mobiliarios = obtenerMobiliario();
