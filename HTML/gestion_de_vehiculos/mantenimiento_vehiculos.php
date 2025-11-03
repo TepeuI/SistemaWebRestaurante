@@ -1,6 +1,7 @@
 <?php
 session_start();
 require_once '../conexion.php';
+require_once '../funciones_globales.php';
 
 // Verificar si el usuario está logueado
 if (!isset($_SESSION['id_usuario'])) {
@@ -175,6 +176,17 @@ function crearMantenimiento() {
     // Redondear costo a 2 decimales
     $costo_mantenimiento = round($costo_mantenimiento, 2);
     
+    // Obtener información del vehículo y taller para bitácora
+    $sql_info = "SELECT v.no_placa, v.marca_vehiculo, v.modelo_vehiculo, t.nombre_taller 
+                 FROM vehiculos v, talleres t 
+                 WHERE v.id_vehiculo = ? AND t.id_taller = ?";
+    $stmt_info = $conn->prepare($sql_info);
+    $stmt_info->bind_param("ii", $id_vehiculo, $id_taller);
+    $stmt_info->execute();
+    $result_info = $stmt_info->get_result();
+    $info = $result_info->fetch_assoc();
+    $stmt_info->close();
+    
     $sql = "INSERT INTO mantenimiento_vehiculo (id_vehiculo, id_taller, descripcion_mantenimiento, fecha_mantenimiento, costo_mantenimiento) 
             VALUES (?, ?, ?, ?, ?)";
     
@@ -182,6 +194,14 @@ function crearMantenimiento() {
     $stmt->bind_param("iissd", $id_vehiculo, $id_taller, $descripcion_mantenimiento, $fecha_mantenimiento, $costo_mantenimiento);
     
     if ($stmt->execute()) {
+        // REGISTRO DE BITÁCORA - CREAR MANTENIMIENTO
+        registrarBitacora(
+            $conn,
+            "Mantenimiento Vehículos",
+            "insertar",
+            "Mantenimiento creado: Vehículo {$info['no_placa']} ({$info['marca_vehiculo']} {$info['modelo_vehiculo']}) - Taller: {$info['nombre_taller']} - Fecha: $fecha_mantenimiento - Costo: Q $costo_mantenimiento - Descripción: " . substr($descripcion_mantenimiento, 0, 100) . "..."
+        );
+        
         $_SESSION['mensaje'] = "Mantenimiento creado exitosamente";
         $_SESSION['tipo_mensaje'] = "success";
     } else {
@@ -243,6 +263,31 @@ function actualizarMantenimiento() {
     // Redondear costo a 2 decimales
     $costo_mantenimiento = round($costo_mantenimiento, 2);
     
+    // Obtener datos anteriores para la bitácora
+    $sql_anterior = "SELECT mv.id_vehiculo, mv.id_taller, mv.descripcion_mantenimiento, mv.fecha_mantenimiento, mv.costo_mantenimiento,
+                            v.no_placa, v.marca_vehiculo, v.modelo_vehiculo, t.nombre_taller
+                     FROM mantenimiento_vehiculo mv
+                     LEFT JOIN vehiculos v ON mv.id_vehiculo = v.id_vehiculo
+                     LEFT JOIN talleres t ON mv.id_taller = t.id_taller
+                     WHERE mv.id_mantenimiento = ?";
+    $stmt_anterior = $conn->prepare($sql_anterior);
+    $stmt_anterior->bind_param("i", $id_mantenimiento);
+    $stmt_anterior->execute();
+    $result_anterior = $stmt_anterior->get_result();
+    $datos_anterior = $result_anterior->fetch_assoc();
+    $stmt_anterior->close();
+    
+    // Obtener información nueva para bitácora
+    $sql_nuevo = "SELECT v.no_placa, v.marca_vehiculo, v.modelo_vehiculo, t.nombre_taller 
+                  FROM vehiculos v, talleres t 
+                  WHERE v.id_vehiculo = ? AND t.id_taller = ?";
+    $stmt_nuevo = $conn->prepare($sql_nuevo);
+    $stmt_nuevo->bind_param("ii", $id_vehiculo, $id_taller);
+    $stmt_nuevo->execute();
+    $result_nuevo = $stmt_nuevo->get_result();
+    $info_nuevo = $result_nuevo->fetch_assoc();
+    $stmt_nuevo->close();
+    
     $sql = "UPDATE mantenimiento_vehiculo 
             SET id_vehiculo = ?, id_taller = ?, descripcion_mantenimiento = ?, 
                 fecha_mantenimiento = ?, costo_mantenimiento = ? 
@@ -252,6 +297,34 @@ function actualizarMantenimiento() {
     $stmt->bind_param("iissdi", $id_vehiculo, $id_taller, $descripcion_mantenimiento, $fecha_mantenimiento, $costo_mantenimiento, $id_mantenimiento);
     
     if ($stmt->execute()) {
+        // REGISTRO DE BITÁCORA - ACTUALIZAR MANTENIMIENTO
+        $cambios = [];
+        
+        if ($datos_anterior['id_vehiculo'] != $id_vehiculo) {
+            $cambios[] = "Vehículo: {$datos_anterior['no_placa']} → {$info_nuevo['no_placa']}";
+        }
+        if ($datos_anterior['id_taller'] != $id_taller) {
+            $cambios[] = "Taller: {$datos_anterior['nombre_taller']} → {$info_nuevo['nombre_taller']}";
+        }
+        if ($datos_anterior['fecha_mantenimiento'] != $fecha_mantenimiento) {
+            $cambios[] = "Fecha: {$datos_anterior['fecha_mantenimiento']} → $fecha_mantenimiento";
+        }
+        if ($datos_anterior['costo_mantenimiento'] != $costo_mantenimiento) {
+            $cambios[] = "Costo: Q {$datos_anterior['costo_mantenimiento']} → Q $costo_mantenimiento";
+        }
+        if ($datos_anterior['descripcion_mantenimiento'] != $descripcion_mantenimiento) {
+            $cambios[] = "Descripción modificada";
+        }
+        
+        if (!empty($cambios)) {
+            registrarBitacora(
+                $conn,
+                "Mantenimiento Vehículos",
+                "Actualizar",
+                "Mantenimiento actualizado (ID: $id_mantenimiento) - Cambios: " . implode(", ", $cambios)
+            );
+        }
+        
         $_SESSION['mensaje'] = "Mantenimiento actualizado exitosamente";
         $_SESSION['tipo_mensaje'] = "success";
     } else {
@@ -283,8 +356,12 @@ function eliminarMantenimiento() {
     $id_mantenimiento = intval($id_mantenimiento);
     
     try {
-        // Primero verificar si el mantenimiento existe
-        $check_mantenimiento = $conn->prepare("SELECT id_mantenimiento FROM mantenimiento_vehiculo WHERE id_mantenimiento = ?");
+        // Primero verificar si el mantenimiento existe y obtener datos para bitácora
+        $check_mantenimiento = $conn->prepare("SELECT mv.*, v.no_placa, v.marca_vehiculo, v.modelo_vehiculo, t.nombre_taller 
+                                              FROM mantenimiento_vehiculo mv
+                                              LEFT JOIN vehiculos v ON mv.id_vehiculo = v.id_vehiculo
+                                              LEFT JOIN talleres t ON mv.id_taller = t.id_taller
+                                              WHERE mv.id_mantenimiento = ?");
         if (!$check_mantenimiento) {
             throw new Exception("Error al preparar la consulta: " . $conn->error);
         }
@@ -305,6 +382,8 @@ function eliminarMantenimiento() {
             header('Location: mantenimiento_vehiculos.php');
             exit();
         }
+        
+        $mantenimiento = $result_mantenimiento->fetch_assoc();
         $check_mantenimiento->close();
         
         // Verificar si existe la tabla facturas y si tiene relación
@@ -341,6 +420,14 @@ function eliminarMantenimiento() {
         
         if ($stmt->execute()) {
             if ($stmt->affected_rows > 0) {
+                // REGISTRO DE BITÁCORA - ELIMINAR MANTENIMIENTO
+                registrarBitacora(
+                    $conn,
+                    "Mantenimiento Vehículos",
+                    "Eliminar",
+                    "Mantenimiento eliminado: ID $id_mantenimiento - Vehículo {$mantenimiento['no_placa']} ({$mantenimiento['marca_vehiculo']} {$mantenimiento['modelo_vehiculo']}) - Taller: {$mantenimiento['nombre_taller']} - Fecha: {$mantenimiento['fecha_mantenimiento']} - Costo: Q {$mantenimiento['costo_mantenimiento']}"
+                );
+                
                 $_SESSION['mensaje'] = "Mantenimiento eliminado exitosamente";
                 $_SESSION['tipo_mensaje'] = "success";
             } else {

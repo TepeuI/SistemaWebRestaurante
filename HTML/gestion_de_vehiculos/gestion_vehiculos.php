@@ -1,6 +1,7 @@
 <?php
 session_start();
 require_once '../conexion.php';
+require_once '../funciones_globales.php';
 
 // Verificar si el usuario está logueado
 if (!isset($_SESSION['id_usuario'])) {
@@ -207,6 +208,14 @@ function crearVehiculo() {
     $stmt->bind_param("sssissi", $no_placa, $marca_vehiculo, $modelo_vehiculo, $anio_vehiculo, $descripcion, $estado, $id_mobiliario);
     
     if ($stmt->execute()) {
+        // REGISTRO DE BITÁCORA - CREAR VEHÍCULO
+        registrarBitacora(
+            $conn,
+            "Gestión Vehículos",
+            "insertar",
+            "Vehículo creado: Placa '$no_placa' (Marca: $marca_vehiculo, Modelo: $modelo_vehiculo, Año: $anio_vehiculo, Estado: $estado, Mobiliario ID: " . ($id_mobiliario ?? 'Ninguno') . ")"
+        );
+        
         $_SESSION['mensaje'] = "Vehículo creado exitosamente";
         $_SESSION['tipo_mensaje'] = "success";
     } else {
@@ -269,6 +278,17 @@ function actualizarVehiculo() {
     $estado = $_POST['estado'];
     $id_mobiliario = !empty($_POST['id_mobiliario']) ? intval($_POST['id_mobiliario']) : null;
     
+    // Obtener datos anteriores para la bitácora
+    $sql_anterior = "SELECT no_placa, marca_vehiculo, modelo_vehiculo, anio_vehiculo, descripcion, estado, id_mobiliario 
+                     FROM vehiculos 
+                     WHERE id_vehiculo = ?";
+    $stmt_anterior = $conn->prepare($sql_anterior);
+    $stmt_anterior->bind_param("i", $id_vehiculo);
+    $stmt_anterior->execute();
+    $result_anterior = $stmt_anterior->get_result();
+    $datos_anterior = $result_anterior->fetch_assoc();
+    $stmt_anterior->close();
+    
     $sql = "UPDATE vehiculos SET no_placa = ?, marca_vehiculo = ?, modelo_vehiculo = ?, anio_vehiculo = ?, descripcion = ?, estado = ?, id_mobiliario = ? 
             WHERE id_vehiculo = ?";
     
@@ -276,6 +296,42 @@ function actualizarVehiculo() {
     $stmt->bind_param("sssissii", $no_placa, $marca_vehiculo, $modelo_vehiculo, $anio_vehiculo, $descripcion, $estado, $id_mobiliario, $id_vehiculo);
     
     if ($stmt->execute()) {
+        // REGISTRO DE BITÁCORA - ACTUALIZAR VEHÍCULO
+        $cambios = [];
+        
+        if ($datos_anterior['no_placa'] != $no_placa) {
+            $cambios[] = "Placa: '{$datos_anterior['no_placa']}' → '$no_placa'";
+        }
+        if ($datos_anterior['marca_vehiculo'] != $marca_vehiculo) {
+            $cambios[] = "Marca: '{$datos_anterior['marca_vehiculo']}' → '$marca_vehiculo'";
+        }
+        if ($datos_anterior['modelo_vehiculo'] != $modelo_vehiculo) {
+            $cambios[] = "Modelo: '{$datos_anterior['modelo_vehiculo']}' → '$modelo_vehiculo'";
+        }
+        if ($datos_anterior['anio_vehiculo'] != $anio_vehiculo) {
+            $cambios[] = "Año: {$datos_anterior['anio_vehiculo']} → $anio_vehiculo";
+        }
+        if ($datos_anterior['estado'] != $estado) {
+            $cambios[] = "Estado: {$datos_anterior['estado']} → $estado";
+        }
+        if ($datos_anterior['id_mobiliario'] != $id_mobiliario) {
+            $mob_anterior = $datos_anterior['id_mobiliario'] ?? 'Ninguno';
+            $mob_nuevo = $id_mobiliario ?? 'Ninguno';
+            $cambios[] = "Mobiliario: $mob_anterior → $mob_nuevo";
+        }
+        if ($datos_anterior['descripcion'] != $descripcion) {
+            $cambios[] = "Descripción modificada";
+        }
+        
+        if (!empty($cambios)) {
+            registrarBitacora(
+                $conn,
+                "Gestión Vehículos",
+                "Actualizar",
+                "Vehículo actualizado (ID: $id_vehiculo) - Cambios: " . implode(", ", $cambios)
+            );
+        }
+        
         $_SESSION['mensaje'] = "Vehículo actualizado exitosamente";
         $_SESSION['tipo_mensaje'] = "success";
     } else {
@@ -308,7 +364,7 @@ function eliminarVehiculo() {
     
     try {
         // Primero verificar si el vehículo existe
-        $check_vehiculo = $conn->prepare("SELECT id_vehiculo, no_placa FROM vehiculos WHERE id_vehiculo = ?");
+        $check_vehiculo = $conn->prepare("SELECT id_vehiculo, no_placa, marca_vehiculo, modelo_vehiculo, anio_vehiculo, estado, id_mobiliario FROM vehiculos WHERE id_vehiculo = ?");
         if (!$check_vehiculo) {
             throw new Exception("Error al preparar la consulta: " . $conn->error);
         }
@@ -332,6 +388,11 @@ function eliminarVehiculo() {
         
         $vehiculo = $result_vehiculo->fetch_assoc();
         $placa_vehiculo = $vehiculo['no_placa'];
+        $marca_vehiculo = $vehiculo['marca_vehiculo'];
+        $modelo_vehiculo = $vehiculo['modelo_vehiculo'];
+        $anio_vehiculo = $vehiculo['anio_vehiculo'];
+        $estado_vehiculo = $vehiculo['estado'];
+        $id_mobiliario = $vehiculo['id_mobiliario'];
         $check_vehiculo->close();
         
         // Verificar si el vehículo está siendo usado en viajes
@@ -383,6 +444,14 @@ function eliminarVehiculo() {
         
         if ($stmt->execute()) {
             if ($stmt->affected_rows > 0) {
+                // REGISTRO DE BITÁCORA - ELIMINAR VEHÍCULO
+                registrarBitacora(
+                    $conn,
+                    "Gestión Vehículos",
+                    "Eliminar",
+                    "Vehículo eliminado: Placa '$placa_vehiculo' (Marca: $marca_vehiculo, Modelo: $modelo_vehiculo, Año: $anio_vehiculo, Estado: $estado_vehiculo, Mobiliario ID: " . ($id_mobiliario ?? 'Ninguno') . ")"
+                );
+                
                 $_SESSION['mensaje'] = "Vehículo con placa \"$placa_vehiculo\" eliminado exitosamente";
                 $_SESSION['tipo_mensaje'] = "success";
             } else {

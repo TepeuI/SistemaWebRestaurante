@@ -1,6 +1,7 @@
 <?php
 session_start();
 require_once '../conexion.php';
+require_once '../funciones_globales.php'; // Añadido para bitácoras
 
 // Verificar si el usuario está logueado
 if (!isset($_SESSION['id_usuario'])) {
@@ -88,6 +89,12 @@ function crearViaje() {
         exit();
     }
     
+    // Obtener información adicional para la bitácora
+    $info_ruta = obtenerInfoRuta($id_ruta);
+    $info_vehiculo = obtenerInfoVehiculo($id_vehiculo);
+    $info_piloto = obtenerInfoEmpleado($id_empleado_piloto);
+    $info_acompanante = $id_empleado_acompanante ? obtenerInfoEmpleado($id_empleado_acompanante) : null;
+    
     $sql = "INSERT INTO viajes (id_ruta, id_vehiculo, id_empleado_piloto, id_empleado_acompanante, fecha_hora_salida, tiempo_aproximado_min, descripcion_viaje) 
             VALUES (?, ?, ?, ?, ?, ?, ?)";
     
@@ -95,6 +102,25 @@ function crearViaje() {
     $stmt->bind_param("iiissss", $id_ruta, $id_vehiculo, $id_empleado_piloto, $id_empleado_acompanante, $fecha_hora_salida_mysql, $tiempo_aproximado_min, $descripcion_viaje);
     
     if ($stmt->execute()) {
+        $id_viaje_nuevo = $conn->insert_id;
+        
+        // REGISTRO DE BITÁCORA - CREAR VIAJE
+        $descripcion_bitacora = "Viaje creado (ID: $id_viaje_nuevo) - " .
+                               "Ruta: '{$info_ruta['descripcion_ruta']}' - " .
+                               "Vehículo: {$info_vehiculo['no_placa']} - " .
+                               "Piloto: {$info_piloto['nombre_completo']} - " .
+                               ($info_acompanante ? "Acompañante: {$info_acompanante['nombre_completo']} - " : "Sin acompañante - ") .
+                               "Salida: $fecha_hora_salida_mysql - " .
+                               "Tiempo estimado: " . ($tiempo_aproximado_min ? $tiempo_aproximado_min . " min" : "No especificado") . " - " .
+                               "Descripción: " . ($descripcion_viaje ?: "No especificada");
+        
+        registrarBitacora(
+            $conn,
+            "Gestión Viajes",
+            "insertar",
+            $descripcion_bitacora
+        );
+        
         $_SESSION['mensaje'] = "Viaje creado exitosamente";
         $_SESSION['tipo_mensaje'] = "success";
     } else {
@@ -166,6 +192,29 @@ function actualizarViaje() {
         exit();
     }
     
+    // Obtener datos anteriores para la bitácora
+    $sql_anterior = "SELECT v.*, r.descripcion_ruta, ve.no_placa, 
+                            ep.nombre_empleado as piloto_nombre, ep.apellido_empleado as piloto_apellido,
+                            ea.nombre_empleado as acompanante_nombre, ea.apellido_empleado as acompanante_apellido
+                     FROM viajes v
+                     LEFT JOIN rutas r ON v.id_ruta = r.id_ruta
+                     LEFT JOIN vehiculos ve ON v.id_vehiculo = ve.id_vehiculo
+                     LEFT JOIN empleados ep ON v.id_empleado_piloto = ep.id_empleado
+                     LEFT JOIN empleados ea ON v.id_empleado_acompanante = ea.id_empleado
+                     WHERE v.id_viaje = ?";
+    $stmt_anterior = $conn->prepare($sql_anterior);
+    $stmt_anterior->bind_param("i", $id_viaje);
+    $stmt_anterior->execute();
+    $result_anterior = $stmt_anterior->get_result();
+    $datos_anterior = $result_anterior->fetch_assoc();
+    $stmt_anterior->close();
+    
+    // Obtener información nueva para la bitácora
+    $info_ruta_nueva = obtenerInfoRuta($id_ruta);
+    $info_vehiculo_nueva = obtenerInfoVehiculo($id_vehiculo);
+    $info_piloto_nuevo = obtenerInfoEmpleado($id_empleado_piloto);
+    $info_acompanante_nuevo = $id_empleado_acompanante ? obtenerInfoEmpleado($id_empleado_acompanante) : null;
+    
     $sql = "UPDATE viajes 
             SET id_ruta = ?, id_vehiculo = ?, id_empleado_piloto = ?, id_empleado_acompanante = ?, 
                 fecha_hora_salida = ?, tiempo_aproximado_min = ?, descripcion_viaje = ? 
@@ -175,6 +224,64 @@ function actualizarViaje() {
     $stmt->bind_param("iiissssi", $id_ruta, $id_vehiculo, $id_empleado_piloto, $id_empleado_acompanante, $fecha_hora_salida_mysql, $tiempo_aproximado_min, $descripcion_viaje, $id_viaje);
     
     if ($stmt->execute()) {
+        // REGISTRO DE BITÁCORA - ACTUALIZAR VIAJE
+        $cambios = [];
+        
+        // Comparar cambios en ruta
+        if ($datos_anterior['id_ruta'] != $id_ruta) {
+            $ruta_anterior = obtenerInfoRuta($datos_anterior['id_ruta']);
+            $cambios[] = "Ruta: '{$ruta_anterior['descripcion_ruta']}' → '{$info_ruta_nueva['descripcion_ruta']}'";
+        }
+        
+        // Comparar cambios en vehículo
+        if ($datos_anterior['id_vehiculo'] != $id_vehiculo) {
+            $vehiculo_anterior = obtenerInfoVehiculo($datos_anterior['id_vehiculo']);
+            $cambios[] = "Vehículo: {$vehiculo_anterior['no_placa']} → {$info_vehiculo_nueva['no_placa']}";
+        }
+        
+        // Comparar cambios en piloto
+        if ($datos_anterior['id_empleado_piloto'] != $id_empleado_piloto) {
+            $piloto_anterior = obtenerInfoEmpleado($datos_anterior['id_empleado_piloto']);
+            $cambios[] = "Piloto: {$piloto_anterior['nombre_completo']} → {$info_piloto_nuevo['nombre_completo']}";
+        }
+        
+        // Comparar cambios en acompañante
+        $acompanante_anterior_id = $datos_anterior['id_empleado_acompanante'];
+        if ($acompanante_anterior_id != $id_empleado_acompanante) {
+            $acompanante_anterior = $acompanante_anterior_id ? obtenerInfoEmpleado($acompanante_anterior_id) : null;
+            $acompanante_anterior_nombre = $acompanante_anterior ? $acompanante_anterior['nombre_completo'] : 'Ninguno';
+            $acompanante_nuevo_nombre = $info_acompanante_nuevo ? $info_acompanante_nuevo['nombre_completo'] : 'Ninguno';
+            $cambios[] = "Acompañante: $acompanante_anterior_nombre → $acompanante_nuevo_nombre";
+        }
+        
+        // Comparar cambios en fecha/hora
+        if ($datos_anterior['fecha_hora_salida'] != $fecha_hora_salida_mysql) {
+            $cambios[] = "Fecha/Hora Salida: {$datos_anterior['fecha_hora_salida']} → $fecha_hora_salida_mysql";
+        }
+        
+        // Comparar cambios en tiempo aproximado
+        if ($datos_anterior['tiempo_aproximado_min'] != $tiempo_aproximado_min) {
+            $tiempo_anterior = $datos_anterior['tiempo_aproximado_min'] ? $datos_anterior['tiempo_aproximado_min'] . " min" : "No especificado";
+            $tiempo_nuevo = $tiempo_aproximado_min ? $tiempo_aproximado_min . " min" : "No especificado";
+            $cambios[] = "Tiempo estimado: $tiempo_anterior → $tiempo_nuevo";
+        }
+        
+        // Comparar cambios en descripción
+        if ($datos_anterior['descripcion_viaje'] != $descripcion_viaje) {
+            $desc_anterior = $datos_anterior['descripcion_viaje'] ?: "No especificada";
+            $desc_nueva = $descripcion_viaje ?: "No especificada";
+            $cambios[] = "Descripción: '$desc_anterior' → '$desc_nueva'";
+        }
+        
+        if (!empty($cambios)) {
+            registrarBitacora(
+                $conn,
+                "Gestión Viajes",
+                "Actualizar",
+                "Viaje actualizado (ID: $id_viaje) - Cambios: " . implode(", ", $cambios)
+            );
+        }
+        
         $_SESSION['mensaje'] = "Viaje actualizado exitosamente";
         $_SESSION['tipo_mensaje'] = "success";
     } else {
@@ -195,6 +302,33 @@ function eliminarViaje() {
     $id_viaje = $_POST['id_viaje'] ?? '';
     
     try {
+        // Obtener información del viaje para la bitácora
+        $sql_info = "SELECT v.*, r.descripcion_ruta, ve.no_placa, 
+                            ep.nombre_empleado as piloto_nombre, ep.apellido_empleado as piloto_apellido,
+                            ea.nombre_empleado as acompanante_nombre, ea.apellido_empleado as acompanante_apellido
+                     FROM viajes v
+                     LEFT JOIN rutas r ON v.id_ruta = r.id_ruta
+                     LEFT JOIN vehiculos ve ON v.id_vehiculo = ve.id_vehiculo
+                     LEFT JOIN empleados ep ON v.id_empleado_piloto = ep.id_empleado
+                     LEFT JOIN empleados ea ON v.id_empleado_acompanante = ea.id_empleado
+                     WHERE v.id_viaje = ?";
+        $stmt_info = $conn->prepare($sql_info);
+        $stmt_info->bind_param("i", $id_viaje);
+        $stmt_info->execute();
+        $result_info = $stmt_info->get_result();
+        
+        if ($result_info->num_rows === 0) {
+            $_SESSION['mensaje'] = "Error: El viaje que intenta eliminar no existe en el sistema.";
+            $_SESSION['tipo_mensaje'] = "error";
+            $stmt_info->close();
+            desconectar($conn);
+            header('Location: viajes_vehiculos.php');
+            exit();
+        }
+        
+        $viaje = $result_info->fetch_assoc();
+        $stmt_info->close();
+        
         // Verificar si el viaje está siendo referenciado en otras tablas
         // Por ejemplo, si hay una tabla de facturas o reportes que referencien viajes
         // $check_facturas = $conn->prepare("SELECT COUNT(*) as count FROM facturas WHERE id_viaje = ?");
@@ -218,8 +352,30 @@ function eliminarViaje() {
         $stmt->bind_param("i", $id_viaje);
         
         if ($stmt->execute()) {
-            $_SESSION['mensaje'] = "Viaje eliminado exitosamente";
-            $_SESSION['tipo_mensaje'] = "success";
+            if ($stmt->affected_rows > 0) {
+                // REGISTRO DE BITÁCORA - ELIMINAR VIAJE
+                $descripcion_bitacora = "Viaje eliminado (ID: $id_viaje) - " .
+                                       "Ruta: '{$viaje['descripcion_ruta']}' - " .
+                                       "Vehículo: {$viaje['no_placa']} - " .
+                                       "Piloto: {$viaje['piloto_nombre']} {$viaje['piloto_apellido']} - " .
+                                       ($viaje['acompanante_nombre'] ? "Acompañante: {$viaje['acompanante_nombre']} {$viaje['acompanante_apellido']} - " : "Sin acompañante - ") .
+                                       "Salida: {$viaje['fecha_hora_salida']} - " .
+                                       "Tiempo estimado: " . ($viaje['tiempo_aproximado_min'] ? $viaje['tiempo_aproximado_min'] . " min" : "No especificado") . " - " .
+                                       "Descripción: " . ($viaje['descripcion_viaje'] ?: "No especificada");
+                
+                registrarBitacora(
+                    $conn,
+                    "Gestión Viajes",
+                    "Eliminar",
+                    $descripcion_bitacora
+                );
+                
+                $_SESSION['mensaje'] = "Viaje eliminado exitosamente";
+                $_SESSION['tipo_mensaje'] = "success";
+            } else {
+                $_SESSION['mensaje'] = "No se pudo eliminar el viaje. Es posible que ya haya sido eliminado o no exista.";
+                $_SESSION['tipo_mensaje'] = "error";
+            }
         } else {
             // Capturar cualquier otro error que pueda ocurrir
             $_SESSION['mensaje'] = "Error al eliminar viaje: " . $conn->error;
@@ -334,6 +490,47 @@ function validarEmpleado($id_empleado) {
     $stmt->close();
     desconectar($conn);
     return $exists;
+}
+
+// Funciones auxiliares para bitácoras
+function obtenerInfoRuta($id_ruta) {
+    $conn = conectar();
+    $sql = "SELECT descripcion_ruta, inicio_ruta, fin_ruta FROM rutas WHERE id_ruta = ?";
+    $stmt = $conn->prepare($sql);
+    $stmt->bind_param("i", $id_ruta);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    $ruta = $result->fetch_assoc();
+    $stmt->close();
+    desconectar($conn);
+    return $ruta;
+}
+
+function obtenerInfoVehiculo($id_vehiculo) {
+    $conn = conectar();
+    $sql = "SELECT no_placa, marca_vehiculo, modelo_vehiculo FROM vehiculos WHERE id_vehiculo = ?";
+    $stmt = $conn->prepare($sql);
+    $stmt->bind_param("i", $id_vehiculo);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    $vehiculo = $result->fetch_assoc();
+    $stmt->close();
+    desconectar($conn);
+    return $vehiculo;
+}
+
+function obtenerInfoEmpleado($id_empleado) {
+    $conn = conectar();
+    $sql = "SELECT nombre_empleado, apellido_empleado FROM empleados WHERE id_empleado = ?";
+    $stmt = $conn->prepare($sql);
+    $stmt->bind_param("i", $id_empleado);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    $empleado = $result->fetch_assoc();
+    $empleado['nombre_completo'] = $empleado['nombre_empleado'] . ' ' . $empleado['apellido_empleado'];
+    $stmt->close();
+    desconectar($conn);
+    return $empleado;
 }
 
 // Obtener datos para los selectores

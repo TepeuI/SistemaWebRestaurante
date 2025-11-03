@@ -1,6 +1,7 @@
 <?php
 session_start();
 require_once '../conexion.php';
+require_once '../funciones_globales.php';
 
 // Verificar si el usuario está logueado
 if (!isset($_SESSION['id_usuario'])) {
@@ -153,6 +154,14 @@ function crearMobiliario() {
     $stmt->bind_param("sisi", $nombre_mobiliario, $id_tipo_mobiliario, $descripcion, $cantidad_en_stock);
     
     if ($stmt->execute()) {
+        // REGISTRO DE BITÁCORA - CREAR MOBILIARIO
+        registrarBitacora(
+            $conn,
+            "Gestión Mobiliario",
+            "insertar",
+            "Mobiliario creado: '$nombre_mobiliario' (Tipo ID: $id_tipo_mobiliario, Stock: $cantidad_en_stock, Descripción: " . ($descripcion ? substr($descripcion, 0, 100) . "..." : "Sin descripción") . ")"
+        );
+        
         $_SESSION['mensaje'] = "Mobiliario creado exitosamente";
         $_SESSION['tipo_mensaje'] = "success";
     } else {
@@ -212,6 +221,17 @@ function actualizarMobiliario() {
     $descripcion = !empty($_POST['descripcion']) ? trim($_POST['descripcion']) : null;
     $cantidad_en_stock = intval($_POST['cantidad_en_stock']);
     
+    // Obtener datos anteriores para la bitácora
+    $sql_anterior = "SELECT nombre_mobiliario, id_tipo_mobiliario, descripcion, cantidad_en_stock 
+                     FROM inventario_mobiliario 
+                     WHERE id_mobiliario = ?";
+    $stmt_anterior = $conn->prepare($sql_anterior);
+    $stmt_anterior->bind_param("i", $id_mobiliario);
+    $stmt_anterior->execute();
+    $result_anterior = $stmt_anterior->get_result();
+    $datos_anterior = $result_anterior->fetch_assoc();
+    $stmt_anterior->close();
+    
     $sql = "UPDATE inventario_mobiliario SET nombre_mobiliario = ?, id_tipo_mobiliario = ?, descripcion = ?, cantidad_en_stock = ? 
             WHERE id_mobiliario = ?";
     
@@ -219,6 +239,33 @@ function actualizarMobiliario() {
     $stmt->bind_param("sisii", $nombre_mobiliario, $id_tipo_mobiliario, $descripcion, $cantidad_en_stock, $id_mobiliario);
     
     if ($stmt->execute()) {
+        // REGISTRO DE BITÁCORA - ACTUALIZAR MOBILIARIO
+        $cambios = [];
+        
+        if ($datos_anterior['nombre_mobiliario'] != $nombre_mobiliario) {
+            $cambios[] = "Nombre: '{$datos_anterior['nombre_mobiliario']}' → '$nombre_mobiliario'";
+        }
+        if ($datos_anterior['id_tipo_mobiliario'] != $id_tipo_mobiliario) {
+            $cambios[] = "Tipo ID: {$datos_anterior['id_tipo_mobiliario']} → $id_tipo_mobiliario";
+        }
+        if ($datos_anterior['descripcion'] != $descripcion) {
+            $desc_anterior = $datos_anterior['descripcion'] ?? 'Sin descripción';
+            $desc_nueva = $descripcion ?? 'Sin descripción';
+            $cambios[] = "Descripción modificada";
+        }
+        if ($datos_anterior['cantidad_en_stock'] != $cantidad_en_stock) {
+            $cambios[] = "Stock: {$datos_anterior['cantidad_en_stock']} → $cantidad_en_stock";
+        }
+        
+        if (!empty($cambios)) {
+            registrarBitacora(
+                $conn,
+                "Gestión Mobiliario",
+                "Actualizar",
+                "Mobiliario actualizado (ID: $id_mobiliario) - Cambios: " . implode(", ", $cambios)
+            );
+        }
+        
         $_SESSION['mensaje'] = "Mobiliario actualizado exitosamente";
         $_SESSION['tipo_mensaje'] = "success";
     } else {
@@ -251,7 +298,7 @@ function eliminarMobiliario() {
     
     try {
         // Primero verificar si el mobiliario existe
-        $check_mobiliario = $conn->prepare("SELECT id_mobiliario, nombre_mobiliario FROM inventario_mobiliario WHERE id_mobiliario = ?");
+        $check_mobiliario = $conn->prepare("SELECT id_mobiliario, nombre_mobiliario, id_tipo_mobiliario, descripcion, cantidad_en_stock FROM inventario_mobiliario WHERE id_mobiliario = ?");
         if (!$check_mobiliario) {
             throw new Exception("Error al preparar la consulta: " . $conn->error);
         }
@@ -275,6 +322,9 @@ function eliminarMobiliario() {
         
         $mobiliario = $result_mobiliario->fetch_assoc();
         $nombre_mobiliario = $mobiliario['nombre_mobiliario'];
+        $id_tipo_mobiliario = $mobiliario['id_tipo_mobiliario'];
+        $descripcion = $mobiliario['descripcion'];
+        $cantidad_en_stock = $mobiliario['cantidad_en_stock'];
         $check_mobiliario->close();
         
         // Verificar si existe la tabla detalle_compra_mobiliario y si tiene relación con inventario_mobiliario
@@ -311,6 +361,14 @@ function eliminarMobiliario() {
         
         if ($stmt->execute()) {
             if ($stmt->affected_rows > 0) {
+                // REGISTRO DE BITÁCORA - ELIMINAR MOBILIARIO
+                registrarBitacora(
+                    $conn,
+                    "Gestión Mobiliario",
+                    "Eliminar",
+                    "Mobiliario eliminado: '$nombre_mobiliario' (ID: $id_mobiliario, Tipo ID: $id_tipo_mobiliario, Stock: $cantidad_en_stock, Descripción: " . ($descripcion ? substr($descripcion, 0, 100) . "..." : "Sin descripción") . ")"
+                );
+                
                 $_SESSION['mensaje'] = "Mobiliario \"$nombre_mobiliario\" eliminado exitosamente";
                 $_SESSION['tipo_mensaje'] = "success";
             } else {

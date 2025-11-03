@@ -1,6 +1,7 @@
 <?php
 session_start();
 require_once '../conexion.php';
+require_once '../funciones_globales.php'; // Añadido para bitácoras
 
 // Verificar si el usuario está logueado
 if (!isset($_SESSION['id_usuario'])) {
@@ -40,6 +41,21 @@ function crearProveedor() {
     $stmt->bind_param("sss", $nombre_proveedor, $correo_proveedor, $telefono_proveedor);
     
     if ($stmt->execute()) {
+        $id_proveedor_nuevo = $conn->insert_id;
+        
+        // REGISTRO DE BITÁCORA - CREAR PROVEEDOR
+        $descripcion_bitacora = "Proveedor creado (ID: $id_proveedor_nuevo) - " .
+                               "Nombre: '$nombre_proveedor' - " .
+                               "Correo: " . ($correo_proveedor ?: 'No especificado') . " - " .
+                               "Teléfono: " . ($telefono_proveedor ?: 'No especificado');
+        
+        registrarBitacora(
+            $conn,
+            "Gestión Proveedores",
+            "insertar",
+            $descripcion_bitacora
+        );
+        
         $_SESSION['mensaje'] = "Proveedor creado exitosamente";
         $_SESSION['tipo_mensaje'] = "success";
     } else {
@@ -62,6 +78,17 @@ function actualizarProveedor() {
     $correo_proveedor = $_POST['correo_proveedor'] ?? '';
     $telefono_proveedor = $_POST['telefono_proveedor'] ?? '';
     
+    // Obtener datos anteriores para la bitácora
+    $sql_anterior = "SELECT nombre_proveedor, correo_proveedor, telefono_proveedor 
+                     FROM proveedores 
+                     WHERE id_proveedor = ?";
+    $stmt_anterior = $conn->prepare($sql_anterior);
+    $stmt_anterior->bind_param("i", $id_proveedor);
+    $stmt_anterior->execute();
+    $result_anterior = $stmt_anterior->get_result();
+    $datos_anterior = $result_anterior->fetch_assoc();
+    $stmt_anterior->close();
+    
     $sql = "UPDATE proveedores SET nombre_proveedor = ?, correo_proveedor = ?, telefono_proveedor = ? 
             WHERE id_proveedor = ?";
     
@@ -69,6 +96,37 @@ function actualizarProveedor() {
     $stmt->bind_param("sssi", $nombre_proveedor, $correo_proveedor, $telefono_proveedor, $id_proveedor);
     
     if ($stmt->execute()) {
+        // REGISTRO DE BITÁCORA - ACTUALIZAR PROVEEDOR
+        $cambios = [];
+        
+        // Comparar cambios en nombre
+        if ($datos_anterior['nombre_proveedor'] != $nombre_proveedor) {
+            $cambios[] = "Nombre: '{$datos_anterior['nombre_proveedor']}' → '$nombre_proveedor'";
+        }
+        
+        // Comparar cambios en correo
+        if ($datos_anterior['correo_proveedor'] != $correo_proveedor) {
+            $correo_anterior = $datos_anterior['correo_proveedor'] ?: 'No especificado';
+            $correo_nuevo = $correo_proveedor ?: 'No especificado';
+            $cambios[] = "Correo: '$correo_anterior' → '$correo_nuevo'";
+        }
+        
+        // Comparar cambios en teléfono
+        if ($datos_anterior['telefono_proveedor'] != $telefono_proveedor) {
+            $telefono_anterior = $datos_anterior['telefono_proveedor'] ?: 'No especificado';
+            $telefono_nuevo = $telefono_proveedor ?: 'No especificado';
+            $cambios[] = "Teléfono: '$telefono_anterior' → '$telefono_nuevo'";
+        }
+        
+        if (!empty($cambios)) {
+            registrarBitacora(
+                $conn,
+                "Gestión Proveedores",
+                "Actualizar",
+                "Proveedor actualizado (ID: $id_proveedor) - Cambios: " . implode(", ", $cambios)
+            );
+        }
+        
         $_SESSION['mensaje'] = "Proveedor actualizado exitosamente";
         $_SESSION['tipo_mensaje'] = "success";
     } else {
@@ -98,29 +156,26 @@ function eliminarProveedor() {
     }
     
     try {
-        // Primero verificar si el proveedor existe
-        $check_proveedor = $conn->prepare("SELECT id_proveedor FROM proveedores WHERE id_proveedor = ?");
-        if (!$check_proveedor) {
-            throw new Exception("Error al preparar la consulta: " . $conn->error);
-        }
+        // Obtener información del proveedor para la bitácora
+        $sql_info = "SELECT nombre_proveedor, correo_proveedor, telefono_proveedor 
+                     FROM proveedores 
+                     WHERE id_proveedor = ?";
+        $stmt_info = $conn->prepare($sql_info);
+        $stmt_info->bind_param("i", $id_proveedor);
+        $stmt_info->execute();
+        $result_info = $stmt_info->get_result();
         
-        $check_proveedor->bind_param("i", $id_proveedor);
-        
-        if (!$check_proveedor->execute()) {
-            throw new Exception("Error al ejecutar la consulta: " . $check_proveedor->error);
-        }
-        
-        $result_proveedor = $check_proveedor->get_result();
-        
-        if ($result_proveedor->num_rows === 0) {
+        if ($result_info->num_rows === 0) {
             $_SESSION['mensaje'] = "Error: El proveedor que intenta eliminar no existe en el sistema.";
             $_SESSION['tipo_mensaje'] = "error";
-            $check_proveedor->close();
+            $stmt_info->close();
             desconectar($conn);
             header('Location: gestion_proveedores.php');
             exit();
         }
-        $check_proveedor->close();
+        
+        $proveedor = $result_info->fetch_assoc();
+        $stmt_info->close();
         
         // Verificar si existe la tabla compras_mobiliario y si tiene relación con proveedores
         $check_tabla_compras = $conn->query("SHOW TABLES LIKE 'compras_mobiliario'");
@@ -172,6 +227,19 @@ function eliminarProveedor() {
         
         if ($stmt->execute()) {
             if ($stmt->affected_rows > 0) {
+                // REGISTRO DE BITÁCORA - ELIMINAR PROVEEDOR
+                $descripcion_bitacora = "Proveedor eliminado (ID: $id_proveedor) - " .
+                                       "Nombre: '{$proveedor['nombre_proveedor']}' - " .
+                                       "Correo: " . ($proveedor['correo_proveedor'] ?: 'No especificado') . " - " .
+                                       "Teléfono: " . ($proveedor['telefono_proveedor'] ?: 'No especificado');
+                
+                registrarBitacora(
+                    $conn,
+                    "Gestión Proveedores",
+                    "Eliminar",
+                    $descripcion_bitacora
+                );
+                
                 $_SESSION['mensaje'] = "Proveedor eliminado exitosamente";
                 $_SESSION['tipo_mensaje'] = "success";
             } else {

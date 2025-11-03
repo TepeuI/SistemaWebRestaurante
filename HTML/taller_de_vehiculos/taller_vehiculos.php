@@ -1,6 +1,7 @@
 <?php
 session_start();
 require_once '../conexion.php';
+require_once '../funciones_globales.php'; // Añadido para bitácoras
 
 // Verificar si el usuario está logueado
 if (!isset($_SESSION['id_usuario'])) {
@@ -34,6 +35,9 @@ function crearTaller() {
     $telefono = $_POST['telefono'] ?? '';
     $id_especialidad = $_POST['id_especialidad'] ?? null;
     
+    // Obtener información de especialidad para la bitácora
+    $info_especialidad = $id_especialidad ? obtenerInfoEspecialidad($id_especialidad) : null;
+    
     $sql = "INSERT INTO talleres (nombre_taller, correo, telefono, id_especialidad) 
             VALUES (?, ?, ?, ?)";
     
@@ -41,6 +45,22 @@ function crearTaller() {
     $stmt->bind_param("sssi", $nombre_taller, $correo, $telefono, $id_especialidad);
     
     if ($stmt->execute()) {
+        $id_taller_nuevo = $conn->insert_id;
+        
+        // REGISTRO DE BITÁCORA - CREAR TALLER
+        $descripcion_bitacora = "Taller creado (ID: $id_taller_nuevo) - " .
+                               "Nombre: '$nombre_taller' - " .
+                               "Teléfono: " . ($telefono ?: 'No especificado') . " - " .
+                               "Correo: " . ($correo ?: 'No especificado') . " - " .
+                               ($info_especialidad ? "Especialidad: {$info_especialidad['descripcion']}" : "Sin especialidad específica");
+        
+        registrarBitacora(
+            $conn,
+            "Gestión Talleres",
+            "insertar",
+            $descripcion_bitacora
+        );
+        
         $_SESSION['mensaje'] = "Taller creado exitosamente";
         $_SESSION['tipo_mensaje'] = "success";
     } else {
@@ -64,6 +84,21 @@ function actualizarTaller() {
     $telefono = $_POST['telefono'] ?? '';
     $id_especialidad = $_POST['id_especialidad'] ?? null;
     
+    // Obtener datos anteriores para la bitácora
+    $sql_anterior = "SELECT t.*, e.descripcion as especialidad
+                     FROM talleres t
+                     LEFT JOIN especialidades_reparacion e ON t.id_especialidad = e.id_especialidad
+                     WHERE t.id_taller = ?";
+    $stmt_anterior = $conn->prepare($sql_anterior);
+    $stmt_anterior->bind_param("i", $id_taller);
+    $stmt_anterior->execute();
+    $result_anterior = $stmt_anterior->get_result();
+    $datos_anterior = $result_anterior->fetch_assoc();
+    $stmt_anterior->close();
+    
+    // Obtener información nueva de especialidad para la bitácora
+    $info_especialidad_nueva = $id_especialidad ? obtenerInfoEspecialidad($id_especialidad) : null;
+    
     $sql = "UPDATE talleres 
             SET nombre_taller = ?, correo = ?, telefono = ?, id_especialidad = ? 
             WHERE id_taller = ?";
@@ -72,6 +107,46 @@ function actualizarTaller() {
     $stmt->bind_param("sssii", $nombre_taller, $correo, $telefono, $id_especialidad, $id_taller);
     
     if ($stmt->execute()) {
+        // REGISTRO DE BITÁCORA - ACTUALIZAR TALLER
+        $cambios = [];
+        
+        // Comparar cambios en nombre
+        if ($datos_anterior['nombre_taller'] != $nombre_taller) {
+            $cambios[] = "Nombre: '{$datos_anterior['nombre_taller']}' → '$nombre_taller'";
+        }
+        
+        // Comparar cambios en teléfono
+        if ($datos_anterior['telefono'] != $telefono) {
+            $telefono_anterior = $datos_anterior['telefono'] ?: 'No especificado';
+            $telefono_nuevo = $telefono ?: 'No especificado';
+            $cambios[] = "Teléfono: '$telefono_anterior' → '$telefono_nuevo'";
+        }
+        
+        // Comparar cambios en correo
+        if ($datos_anterior['correo'] != $correo) {
+            $correo_anterior = $datos_anterior['correo'] ?: 'No especificado';
+            $correo_nuevo = $correo ?: 'No especificado';
+            $cambios[] = "Correo: '$correo_anterior' → '$correo_nuevo'";
+        }
+        
+        // Comparar cambios en especialidad
+        $especialidad_anterior_id = $datos_anterior['id_especialidad'];
+        if ($especialidad_anterior_id != $id_especialidad) {
+            $especialidad_anterior = $especialidad_anterior_id ? obtenerInfoEspecialidad($especialidad_anterior_id) : null;
+            $especialidad_anterior_nombre = $especialidad_anterior ? $especialidad_anterior['descripcion'] : 'Ninguna';
+            $especialidad_nueva_nombre = $info_especialidad_nueva ? $info_especialidad_nueva['descripcion'] : 'Ninguna';
+            $cambios[] = "Especialidad: $especialidad_anterior_nombre → $especialidad_nueva_nombre";
+        }
+        
+        if (!empty($cambios)) {
+            registrarBitacora(
+                $conn,
+                "Gestión Talleres",
+                "Actualizar",
+                "Taller actualizado (ID: $id_taller) - Cambios: " . implode(", ", $cambios)
+            );
+        }
+        
         $_SESSION['mensaje'] = "Taller actualizado exitosamente";
         $_SESSION['tipo_mensaje'] = "success";
     } else {
@@ -92,6 +167,28 @@ function eliminarTaller() {
     $id_taller = $_POST['id_taller'] ?? '';
     
     try {
+        // Obtener información del taller para la bitácora
+        $sql_info = "SELECT t.*, e.descripcion as especialidad
+                     FROM talleres t
+                     LEFT JOIN especialidades_reparacion e ON t.id_especialidad = e.id_especialidad
+                     WHERE t.id_taller = ?";
+        $stmt_info = $conn->prepare($sql_info);
+        $stmt_info->bind_param("i", $id_taller);
+        $stmt_info->execute();
+        $result_info = $stmt_info->get_result();
+        
+        if ($result_info->num_rows === 0) {
+            $_SESSION['mensaje'] = "Error: El taller que intenta eliminar no existe en el sistema.";
+            $_SESSION['tipo_mensaje'] = "error";
+            $stmt_info->close();
+            desconectar($conn);
+            header('Location: taller_vehiculos.php');
+            exit();
+        }
+        
+        $taller = $result_info->fetch_assoc();
+        $stmt_info->close();
+        
         // Verificar si el taller está siendo usado en la tabla mantenimiento_vehiculo
         $check_mantenimientos = $conn->prepare("SELECT COUNT(*) as count FROM mantenimiento_vehiculo WHERE id_taller = ?");
         $check_mantenimientos->bind_param("i", $id_taller);
@@ -114,8 +211,27 @@ function eliminarTaller() {
         $stmt->bind_param("i", $id_taller);
         
         if ($stmt->execute()) {
-            $_SESSION['mensaje'] = "Taller eliminado exitosamente";
-            $_SESSION['tipo_mensaje'] = "success";
+            if ($stmt->affected_rows > 0) {
+                // REGISTRO DE BITÁCORA - ELIMINAR TALLER
+                $descripcion_bitacora = "Taller eliminado (ID: $id_taller) - " .
+                                       "Nombre: '{$taller['nombre_taller']}' - " .
+                                       "Teléfono: " . ($taller['telefono'] ?: 'No especificado') . " - " .
+                                       "Correo: " . ($taller['correo'] ?: 'No especificado') . " - " .
+                                       ($taller['especialidad'] ? "Especialidad: {$taller['especialidad']}" : "Sin especialidad específica");
+                
+                registrarBitacora(
+                    $conn,
+                    "Gestión Talleres",
+                    "Eliminar",
+                    $descripcion_bitacora
+                );
+                
+                $_SESSION['mensaje'] = "Taller eliminado exitosamente";
+                $_SESSION['tipo_mensaje'] = "success";
+            } else {
+                $_SESSION['mensaje'] = "No se pudo eliminar el taller. Es posible que ya haya sido eliminado o no exista.";
+                $_SESSION['tipo_mensaje'] = "error";
+            }
         } else {
             // Capturar cualquier otro error que pueda ocurrir
             $_SESSION['mensaje'] = "Error al eliminar taller: " . $conn->error;
@@ -142,6 +258,20 @@ function eliminarTaller() {
     desconectar($conn);
     header('Location: taller_vehiculos.php');
     exit();
+}
+
+// Funciones auxiliares para bitácoras
+function obtenerInfoEspecialidad($id_especialidad) {
+    $conn = conectar();
+    $sql = "SELECT descripcion FROM especialidades_reparacion WHERE id_especialidad = ?";
+    $stmt = $conn->prepare($sql);
+    $stmt->bind_param("i", $id_especialidad);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    $especialidad = $result->fetch_assoc();
+    $stmt->close();
+    desconectar($conn);
+    return $especialidad;
 }
 
 // Obtener especialidades para el selector

@@ -1,6 +1,7 @@
 <?php
 session_start();
 require_once '../conexion.php';
+require_once '../funciones_globales.php';
 
 // Verificar si el usuario está logueado
 if (!isset($_SESSION['id_usuario'])) {
@@ -154,6 +155,14 @@ function crearRuta() {
     $stmt->bind_param("sssd", $descripcion_ruta, $inicio_ruta, $fin_ruta, $gasolina_aproximada);
     
     if ($stmt->execute()) {
+        // REGISTRO DE BITÁCORA - CREAR RUTA
+        registrarBitacora(
+            $conn,
+            "Gestión Rutas",
+            "insertar",
+            "Ruta creada: '$descripcion_ruta' (Inicio: " . ($inicio_ruta ?? 'No especificado') . ", Fin: " . ($fin_ruta ?? 'No especificado') . ", Gasolina: " . ($gasolina_aproximada ? $gasolina_aproximada . ' L' : 'No especificada') . ")"
+        );
+        
         $_SESSION['mensaje'] = "Ruta creada exitosamente";
         $_SESSION['tipo_mensaje'] = "success";
     } else {
@@ -211,6 +220,17 @@ function actualizarRuta() {
         $gasolina_aproximada = round($gasolina_aproximada, 2);
     }
     
+    // Obtener datos anteriores para la bitácora
+    $sql_anterior = "SELECT descripcion_ruta, inicio_ruta, fin_ruta, gasolina_aproximada 
+                     FROM rutas 
+                     WHERE id_ruta = ?";
+    $stmt_anterior = $conn->prepare($sql_anterior);
+    $stmt_anterior->bind_param("i", $id_ruta);
+    $stmt_anterior->execute();
+    $result_anterior = $stmt_anterior->get_result();
+    $datos_anterior = $result_anterior->fetch_assoc();
+    $stmt_anterior->close();
+    
     $sql = "UPDATE rutas SET descripcion_ruta = ?, inicio_ruta = ?, fin_ruta = ?, gasolina_aproximada = ? 
             WHERE id_ruta = ?";
     
@@ -218,6 +238,37 @@ function actualizarRuta() {
     $stmt->bind_param("sssdi", $descripcion_ruta, $inicio_ruta, $fin_ruta, $gasolina_aproximada, $id_ruta);
     
     if ($stmt->execute()) {
+        // REGISTRO DE BITÁCORA - ACTUALIZAR RUTA
+        $cambios = [];
+        
+        if ($datos_anterior['descripcion_ruta'] != $descripcion_ruta) {
+            $cambios[] = "Descripción: '{$datos_anterior['descripcion_ruta']}' → '$descripcion_ruta'";
+        }
+        if ($datos_anterior['inicio_ruta'] != $inicio_ruta) {
+            $inicio_anterior = $datos_anterior['inicio_ruta'] ?? 'No especificado';
+            $inicio_nuevo = $inicio_ruta ?? 'No especificado';
+            $cambios[] = "Inicio: '$inicio_anterior' → '$inicio_nuevo'";
+        }
+        if ($datos_anterior['fin_ruta'] != $fin_ruta) {
+            $fin_anterior = $datos_anterior['fin_ruta'] ?? 'No especificado';
+            $fin_nuevo = $fin_ruta ?? 'No especificado';
+            $cambios[] = "Fin: '$fin_anterior' → '$fin_nuevo'";
+        }
+        if ($datos_anterior['gasolina_aproximada'] != $gasolina_aproximada) {
+            $gas_anterior = $datos_anterior['gasolina_aproximada'] ? $datos_anterior['gasolina_aproximada'] . ' L' : 'No especificada';
+            $gas_nueva = $gasolina_aproximada ? $gasolina_aproximada . ' L' : 'No especificada';
+            $cambios[] = "Gasolina: $gas_anterior → $gas_nueva";
+        }
+        
+        if (!empty($cambios)) {
+            registrarBitacora(
+                $conn,
+                "Gestión Rutas",
+                "Actualizar",
+                "Ruta actualizada (ID: $id_ruta) - Cambios: " . implode(", ", $cambios)
+            );
+        }
+        
         $_SESSION['mensaje'] = "Ruta actualizada exitosamente";
         $_SESSION['tipo_mensaje'] = "success";
     } else {
@@ -250,7 +301,7 @@ function eliminarRuta() {
     
     try {
         // Primero verificar si la ruta existe
-        $check_ruta = $conn->prepare("SELECT id_ruta, descripcion_ruta FROM rutas WHERE id_ruta = ?");
+        $check_ruta = $conn->prepare("SELECT id_ruta, descripcion_ruta, inicio_ruta, fin_ruta, gasolina_aproximada FROM rutas WHERE id_ruta = ?");
         if (!$check_ruta) {
             throw new Exception("Error al preparar la consulta: " . $conn->error);
         }
@@ -274,6 +325,9 @@ function eliminarRuta() {
         
         $ruta = $result_ruta->fetch_assoc();
         $descripcion_ruta = $ruta['descripcion_ruta'];
+        $inicio_ruta = $ruta['inicio_ruta'];
+        $fin_ruta = $ruta['fin_ruta'];
+        $gasolina_aproximada = $ruta['gasolina_aproximada'];
         $check_ruta->close();
         
         // Verificar si la ruta está siendo usada en la tabla viajes
@@ -304,6 +358,14 @@ function eliminarRuta() {
         
         if ($stmt->execute()) {
             if ($stmt->affected_rows > 0) {
+                // REGISTRO DE BITÁCORA - ELIMINAR RUTA
+                registrarBitacora(
+                    $conn,
+                    "Gestión Rutas",
+                    "Eliminar",
+                    "Ruta eliminada: '$descripcion_ruta' (ID: $id_ruta, Inicio: " . ($inicio_ruta ?? 'No especificado') . ", Fin: " . ($fin_ruta ?? 'No especificado') . ", Gasolina: " . ($gasolina_aproximada ? $gasolina_aproximada . ' L' : 'No especificada') . ")"
+                );
+                
                 $_SESSION['mensaje'] = "Ruta \"$descripcion_ruta\" eliminada exitosamente";
                 $_SESSION['tipo_mensaje'] = "success";
             } else {

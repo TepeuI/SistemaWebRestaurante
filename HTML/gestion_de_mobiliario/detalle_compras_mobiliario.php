@@ -1,6 +1,7 @@
 <?php
 session_start();
 require_once '../conexion.php';
+require_once '../funciones_globales.php';
 
 // Verificar login
 if (!isset($_SESSION['id_usuario'])) {
@@ -217,6 +218,14 @@ function crearDetalleCompra() {
     $stmt->bind_param("iiidd", $id_compra_mobiliario, $id_mobiliario, $cantidad, $costo_unitario, $monto_linea);
 
     if ($stmt->execute()) {
+        // REGISTRO DE BITÁCORA - CREAR DETALLE
+        registrarBitacora(
+            $conn,
+            "Detalle Compras Mobiliario",
+            "insertar",
+            "Detalle creado (Compra ID: $id_compra_mobiliario, Mobiliario ID: $id_mobiliario, Cantidad: $cantidad, Costo Unitario: Q $costo_unitario, Total Línea: Q $monto_linea)"
+        );
+        
         $_SESSION['mensaje'] = "Detalle de compra registrado exitosamente";
         $_SESSION['tipo_mensaje'] = "success";
     } else {
@@ -267,6 +276,9 @@ function actualizarDetalleCompra() {
         $errores[] = "Ya existe un detalle para la compra y mobiliario seleccionados";
     }
 
+    // Obtener datos anteriores para bitácora
+    $datos_anterior = obtenerMontoLinea($id_compra_orig, $id_mob_orig);
+
     // Reglas contables
     if ($compra) {
         $monto_total_compra = round(floatval($compra['monto_total_compra_q']), 2);
@@ -290,8 +302,7 @@ function actualizarDetalleCompra() {
          */
         if ($id_compra_new === $id_compra_orig && $id_mob_new === $id_mob_orig) {
             // Misma línea, restamos su valor anterior del acumulado
-            $linea_original = obtenerMontoLinea($id_compra_orig, $id_mob_orig);
-            $monto_original = round(floatval($linea_original['monto_total_de_mobiliario'] ?? 0), 2);
+            $monto_original = round(floatval($datos_anterior['monto_total_de_mobiliario'] ?? 0), 2);
             $acumulado_total = obtenerAcumuladoDetalles($id_compra_new, null);
             $acumulado_sin_esta = round($acumulado_total - $monto_original, 2);
         } else {
@@ -328,6 +339,32 @@ function actualizarDetalleCompra() {
     );
 
     if ($stmt->execute()) {
+        // REGISTRO DE BITÁCORA - ACTUALIZAR DETALLE
+        $cambios = [];
+        
+        if ($id_compra_orig != $id_compra_new) {
+            $cambios[] = "Compra ID: $id_compra_orig → $id_compra_new";
+        }
+        if ($id_mob_orig != $id_mob_new) {
+            $cambios[] = "Mobiliario ID: $id_mob_orig → $id_mob_new";
+        }
+        if ($datos_anterior['cantidad_de_compra'] != $cantidad) {
+            $cambios[] = "Cantidad: {$datos_anterior['cantidad_de_compra']} → $cantidad";
+        }
+        if ($datos_anterior['costo_unitario'] != $costo_unit) {
+            $cambios[] = "Costo Unitario: Q {$datos_anterior['costo_unitario']} → Q $costo_unit";
+        }
+        if ($datos_anterior['monto_total_de_mobiliario'] != $monto_linea) {
+            $cambios[] = "Total Línea: Q {$datos_anterior['monto_total_de_mobiliario']} → Q $monto_linea";
+        }
+        
+        registrarBitacora(
+            $conn,
+            "Detalle Compras Mobiliario",
+            "Actualizar",
+            "Detalle actualizado (Original - Compra: $id_compra_orig, Mobiliario: $id_mob_orig) - Cambios: " . implode(", ", $cambios)
+        );
+        
         $_SESSION['mensaje'] = "Detalle de compra actualizado exitosamente";
         $_SESSION['tipo_mensaje'] = "success";
     } else {
@@ -361,20 +398,26 @@ function eliminarDetalleCompra() {
     $id_mobiliario        = intval($id_mobiliario);
 
     try {
-        $check = $conn->prepare("SELECT 1 FROM detalle_compra_mobiliario WHERE id_compra_mobiliario = ? AND id_mobiliario = ?");
-        if (!$check) throw new Exception("Error al preparar la consulta: " . $conn->error);
-        $check->bind_param("ii", $id_compra_mobiliario, $id_mobiliario);
-        if (!$check->execute()) throw new Exception("Error al ejecutar la consulta: " . $check->error);
-        $res = $check->get_result();
-        if ($res->num_rows === 0) {
+        // Obtener datos del detalle antes de eliminar para bitácora
+        $sql_datos = "SELECT cantidad_de_compra, costo_unitario, monto_total_de_mobiliario 
+                     FROM detalle_compra_mobiliario 
+                     WHERE id_compra_mobiliario = ? AND id_mobiliario = ?";
+        $stmt_datos = $conn->prepare($sql_datos);
+        $stmt_datos->bind_param("ii", $id_compra_mobiliario, $id_mobiliario);
+        $stmt_datos->execute();
+        $result_datos = $stmt_datos->get_result();
+        
+        if ($result_datos->num_rows === 0) {
             $_SESSION['mensaje'] = "Error: El detalle de compra que intenta eliminar no existe en el sistema.";
             $_SESSION['tipo_mensaje'] = "error";
-            $check->close();
+            $stmt_datos->close();
             desconectar($conn);
             header('Location: detalle_compras_mobiliario.php');
             exit();
         }
-        $check->close();
+        
+        $datos_detalle = $result_datos->fetch_assoc();
+        $stmt_datos->close();
 
         $sql = "DELETE FROM detalle_compra_mobiliario WHERE id_compra_mobiliario = ? AND id_mobiliario = ?";
         $stmt = $conn->prepare($sql);
@@ -383,6 +426,14 @@ function eliminarDetalleCompra() {
         $stmt->bind_param("ii", $id_compra_mobiliario, $id_mobiliario);
         if ($stmt->execute()) {
             if ($stmt->affected_rows > 0) {
+                // REGISTRO DE BITÁCORA - ELIMINAR DETALLE
+                registrarBitacora(
+                    $conn,
+                    "Detalle Compras Mobiliario",
+                    "Eliminar",
+                    "Detalle eliminado (Compra ID: $id_compra_mobiliario, Mobiliario ID: $id_mobiliario, Cantidad: {$datos_detalle['cantidad_de_compra']}, Costo Unitario: Q {$datos_detalle['costo_unitario']}, Total Línea: Q {$datos_detalle['monto_total_de_mobiliario']})"
+                );
+                
                 $_SESSION['mensaje'] = "Detalle de compra eliminado exitosamente";
                 $_SESSION['tipo_mensaje'] = "success";
             } else {

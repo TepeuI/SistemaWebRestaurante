@@ -1,5 +1,5 @@
 // GestionProveedores.js — gestión de formulario de proveedores con SweetAlert2
-// CON VALIDACIONES MEJORADAS Y FORMATO UNIFICADO
+// VERSIÓN CORREGIDA - PERMITE ESPACIOS EN NOMBRE DEL PROVEEDOR
 
 document.addEventListener('DOMContentLoaded', function () {
     // Elementos
@@ -12,18 +12,17 @@ document.addEventListener('DOMContentLoaded', function () {
     const operacionInput = document.getElementById('operacion');
     const idProveedorInput = document.getElementById('id_proveedor');
 
-    // Configuración de validaciones
+    // Configuración de validaciones SIMPLIFICADA - SIN RESTRICCIONES DE CARACTERES PARA NOMBRE
     const configValidaciones = {
         nombre_proveedor: {
             min: 3,
             max: 100,
-            regex: /^[A-Za-z0-9ÁÉÍÓÚÜÑáéíóúüñ\s\-\_\.\,\&\#\(\)]+$/,
-            mensaje: "Solo letras, números, espacios y los siguientes caracteres especiales: - _ . , & # ( )"
+            mensaje: "El nombre debe tener entre 3 y 100 caracteres"
         },
         telefono_proveedor: {
             min: 8,
             max: 20,
-            regex: /^[\d\s\-\+\(\)]+$/,
+            regex: /^[\d\s\-+()]+$/,
             mensaje: "Solo números, espacios, guiones, paréntesis y signo +",
             opcional: true
         },
@@ -36,30 +35,34 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     };
 
-    // Función para sanitizar inputs y prevenir XSS
+    // Función para sanitizar inputs y prevenir XSS (PERMITE ESPACIOS)
     function sanitizarInput(input) {
         if (!input) return '';
-        return input.toString().trim().replace(/[<>&"']/g, '');
+        // Solo elimina caracteres peligrosos pero PERMITE ESPACIOS
+        return input.toString().replace(/[<>&"']/g, '').trim();
     }
 
-    // Función para sanitizar y validar campos de texto
+    // Función para sanitizar y validar campos de texto - VERSIÓN MUY PERMISIVA
     function sanitizarTexto(texto, campo) {
         if (!texto) return '';
         
-        // Eliminar espacios en blanco al inicio y final
+        // Solo eliminar espacios excesivos al inicio y final
         texto = texto.trim();
         
         // Reemplazar múltiples espacios por uno solo
         texto = texto.replace(/\s+/g, ' ');
         
-        // Validar contra XSS (eliminar etiquetas HTML)
+        // Validar contra XSS (eliminar etiquetas HTML) pero PERMITIR CUALQUIER TEXTO
         texto = texto.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '');
         texto = texto.replace(/<[^>]*>/g, '');
         
-        // Validar caracteres permitidos según el campo
+        // Para el nombre del proveedor, NO APLICAR validación de regex
         const config = configValidaciones[campo];
-        if (config && config.regex && !config.regex.test(texto)) {
-            return null; // Indica que el texto contiene caracteres no permitidos
+        if (campo !== 'nombre_proveedor' && config && config.regex) {
+            if (!config.regex.test(texto)) {
+                console.warn(`Texto no permitido en ${campo}: '${texto}'`);
+                return null;
+            }
         }
         
         return texto;
@@ -80,36 +83,24 @@ document.addEventListener('DOMContentLoaded', function () {
         return false;
     }
 
-    // Validación en tiempo real
+    // Validación en tiempo real MUY SIMPLIFICADA
     function configurarValidacionEnTiempoReal() {
-        // Validación de nombre del proveedor
+        // Validación de nombre del proveedor - SIN RESTRICCIONES
         const nombreInput = document.getElementById('nombre_proveedor');
         if (nombreInput) {
+            // ELIMINAR CUALQUIER VALIDACIÓN QUE BLOQUEE ESPACIOS
             nombreInput.addEventListener('input', function() {
-                const valorOriginal = this.value;
-                const valorSanitizado = sanitizarTexto(valorOriginal, 'nombre_proveedor');
+                const valor = this.value;
+                const longitud = valor.length;
                 
-                if (valorSanitizado === null) {
-                    this.style.borderColor = '#dc3545';
-                    this.title = configValidaciones.nombre_proveedor.mensaje;
-                } else {
-                    this.style.borderColor = '';
-                    this.title = '';
-                    
-                    // Actualizar valor si fue sanitizado
-                    if (valorSanitizado !== valorOriginal) {
-                        this.value = valorSanitizado;
-                    }
-                }
-                
-                // Validar longitud
-                if (valorSanitizado && valorSanitizado.length < configValidaciones.nombre_proveedor.min) {
+                // Solo validar longitud, no caracteres
+                if (longitud > 0 && longitud < configValidaciones.nombre_proveedor.min) {
                     this.style.borderColor = '#ffc107';
                     this.title = `Mínimo ${configValidaciones.nombre_proveedor.min} caracteres`;
-                } else if (valorSanitizado && valorSanitizado.length > configValidaciones.nombre_proveedor.max) {
+                } else if (longitud > configValidaciones.nombre_proveedor.max) {
                     this.style.borderColor = '#ffc107';
                     this.title = `Máximo ${configValidaciones.nombre_proveedor.max} caracteres`;
-                } else if (valorSanitizado) {
+                } else if (longitud > 0) {
                     this.style.borderColor = '#28a745';
                     this.title = '';
                 } else {
@@ -119,7 +110,7 @@ document.addEventListener('DOMContentLoaded', function () {
             });
         }
 
-        // Validación de teléfono
+        // Validación de teléfono (opcional)
         const telefonoInput = document.getElementById('telefono_proveedor');
         if (telefonoInput) {
             telefonoInput.addEventListener('input', function() {
@@ -133,17 +124,16 @@ document.addEventListener('DOMContentLoaded', function () {
                     this.style.borderColor = '';
                     this.title = '';
                     
-                    // Actualizar valor si fue sanitizado
-                    if (valorSanitizado !== valorOriginal) {
+                    if (valorSanitizado !== valorOriginal && valorSanitizado !== null) {
                         this.value = valorSanitizado;
                     }
                 }
                 
-                // Validar longitud solo si hay valor
+                const longitud = valorSanitizado ? valorSanitizado.replace(/\D/g, '').length : 0;
                 if (valorSanitizado && valorSanitizado.length > configValidaciones.telefono_proveedor.max) {
                     this.style.borderColor = '#ffc107';
                     this.title = `Máximo ${configValidaciones.telefono_proveedor.max} caracteres`;
-                } else if (valorSanitizado && valorSanitizado.replace(/\D/g, '').length < configValidaciones.telefono_proveedor.min) {
+                } else if (valorSanitizado && longitud < configValidaciones.telefono_proveedor.min) {
                     this.style.borderColor = '#ffc107';
                     this.title = `Mínimo ${configValidaciones.telefono_proveedor.min} dígitos`;
                 } else if (valorSanitizado) {
@@ -156,7 +146,7 @@ document.addEventListener('DOMContentLoaded', function () {
             });
         }
 
-        // Validación de correo
+        // Validación de correo (opcional)
         const correoInput = document.getElementById('correo_proveedor');
         if (correoInput) {
             correoInput.addEventListener('input', function() {
@@ -170,13 +160,11 @@ document.addEventListener('DOMContentLoaded', function () {
                     this.style.borderColor = '';
                     this.title = '';
                     
-                    // Actualizar valor si fue sanitizado
-                    if (valorSanitizado !== valorOriginal) {
+                    if (valorSanitizado !== valorOriginal && valorSanitizado !== null) {
                         this.value = valorSanitizado;
                     }
                 }
                 
-                // Validar longitud solo si hay valor
                 if (valorSanitizado && valorSanitizado.length > configValidaciones.correo_proveedor.max) {
                     this.style.borderColor = '#ffc107';
                     this.title = `Máximo ${configValidaciones.correo_proveedor.max} caracteres`;
@@ -283,14 +271,14 @@ document.addEventListener('DOMContentLoaded', function () {
     document.querySelectorAll('.editar-btn').forEach(btn => {
         btn.addEventListener('click', function () {
             const id = sanitizarInput(this.getAttribute('data-id'));
-            const nombre = sanitizarInput(this.getAttribute('data-nombre'));
+            const nombre = this.getAttribute('data-nombre'); // NO sanitizar para preservar espacios
             const correo = sanitizarInput(this.getAttribute('data-correo'));
             const telefono = sanitizarInput(this.getAttribute('data-telefono'));
 
             const doFill = () => {
                 if (idProveedorInput) idProveedorInput.value = id || '';
                 
-                // Sanitizar y establecer valores
+                // Establecer valores DIRECTAMENTE sin sanitizar el nombre
                 document.getElementById('nombre_proveedor').value = nombre || '';
                 document.getElementById('correo_proveedor').value = correo || '';
                 document.getElementById('telefono_proveedor').value = telefono || '';
@@ -307,7 +295,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 mostrarBotonesActualizar();
                 
                 // Scroll al formulario
-                form.scrollIntoView({ behavior: 'smooth' });
+                if (form) form.scrollIntoView({ behavior: 'smooth' });
             };
 
             if (typeof Swal !== 'undefined') {
@@ -346,7 +334,8 @@ document.addEventListener('DOMContentLoaded', function () {
         mostrarBotonesGuardar();
         
         // Enfocar el primer campo después de limpiar
-        document.getElementById('nombre_proveedor').focus();
+        const nombreInput = document.getElementById('nombre_proveedor');
+        if (nombreInput) nombreInput.focus();
     }
 
     function mostrarBotonesGuardar() {
@@ -373,11 +362,10 @@ document.addEventListener('DOMContentLoaded', function () {
         if (btnCancelar) btnCancelar.style.display = 'inline-block';
     }
 
-    // FUNCIÓN DE VALIDACIÓN COMPLETA DEL FORMULARIO
+    // FUNCIÓN DE VALIDACIÓN COMPLETA DEL FORMULARIO - SIMPLIFICADA
     function validarFormularioCompleto() {
         const nombre = document.getElementById('nombre_proveedor');
         const nombreValor = nombre.value.trim();
-        const nombreSanitizado = sanitizarTexto(nombreValor, 'nombre_proveedor');
         const telefono = document.getElementById('telefono_proveedor');
         const telefonoValor = telefono.value.trim();
         const telefonoSanitizado = sanitizarTexto(telefonoValor, 'telefono_proveedor');
@@ -385,13 +373,9 @@ document.addEventListener('DOMContentLoaded', function () {
         const correoValor = correo.value.trim();
         const correoSanitizado = sanitizarTexto(correoValor, 'correo_proveedor');
 
-        // Validar nombre (requerido)
+        // Validar nombre (requerido) - SOLO LONGITUD
         if (!nombreValor) { 
             return showWarning('El nombre del proveedor es requerido'); 
-        }
-        
-        if (nombreSanitizado === null) {
-            return showWarning(configValidaciones.nombre_proveedor.mensaje);
         }
         
         if (nombreValor.length < configValidaciones.nombre_proveedor.min) {
@@ -503,6 +487,20 @@ document.addEventListener('DOMContentLoaded', function () {
                     return false;
                 }
             }
+        });
+    }
+
+    // DEBUG: Agregar evento para verificar que los espacios funcionen
+    const debugInput = document.getElementById('nombre_proveedor');
+    if (debugInput) {
+        debugInput.addEventListener('keydown', function(e) {
+            if (e.key === ' ') {
+                console.log('Espacio presionado - debería funcionar');
+            }
+        });
+        
+        debugInput.addEventListener('input', function(e) {
+            console.log('Valor actual:', e.target.value);
         });
     }
 });

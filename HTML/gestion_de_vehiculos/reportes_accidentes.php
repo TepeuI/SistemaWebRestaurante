@@ -1,6 +1,7 @@
 <?php
 session_start();
 require_once '../conexion.php';
+require_once '../funciones_globales.php';
 
 // Verificar si el usuario está logueado
 if (!isset($_SESSION['id_usuario'])) {
@@ -152,6 +153,19 @@ function crearAccidente() {
     $descripcion_accidente = trim($_POST['descripcion_accidente']);
     $fecha_hora = str_replace('T', ' ', $_POST['fecha_hora']) . ':00';
     
+    // Obtener información del viaje y empleado para bitácora
+    $sql_info = "SELECT v.descripcion_viaje, ve.no_placa, e.nombre_empleado, e.apellido_empleado 
+                 FROM viajes v 
+                 LEFT JOIN vehiculos ve ON v.id_vehiculo = ve.id_vehiculo 
+                 LEFT JOIN empleados e ON e.id_empleado = ?
+                 WHERE v.id_viaje = ?";
+    $stmt_info = $conn->prepare($sql_info);
+    $stmt_info->bind_param("ii", $id_empleado, $id_viaje);
+    $stmt_info->execute();
+    $result_info = $stmt_info->get_result();
+    $info = $result_info->fetch_assoc();
+    $stmt_info->close();
+    
     $sql = "INSERT INTO reportes_accidentes (id_viaje, id_empleado, descripcion_accidente, fecha_hora) 
             VALUES (?, ?, ?, ?)";
     
@@ -159,6 +173,14 @@ function crearAccidente() {
     $stmt->bind_param("iiss", $id_viaje, $id_empleado, $descripcion_accidente, $fecha_hora);
     
     if ($stmt->execute()) {
+        // REGISTRO DE BITÁCORA - CREAR ACCIDENTE
+        registrarBitacora(
+            $conn,
+            "Reportes Accidentes",
+            "insertar",
+            "Accidente reportado: Viaje #$id_viaje ({$info['descripcion_viaje']}) - Vehículo: {$info['no_placa']} - Reportado por: {$info['nombre_empleado']} {$info['apellido_empleado']} - Fecha: $fecha_hora - Descripción: " . substr($descripcion_accidente, 0, 150) . "..."
+        );
+        
         $_SESSION['mensaje'] = "Reporte de accidente registrado exitosamente";
         $_SESSION['tipo_mensaje'] = "success";
     } else {
@@ -216,6 +238,34 @@ function actualizarAccidente() {
     $descripcion_accidente = trim($_POST['descripcion_accidente']);
     $fecha_hora = str_replace('T', ' ', $_POST['fecha_hora']) . ':00';
     
+    // Obtener datos anteriores para la bitácora
+    $sql_anterior = "SELECT ra.id_viaje, ra.id_empleado, ra.descripcion_accidente, ra.fecha_hora,
+                            v.descripcion_viaje, ve.no_placa, e.nombre_empleado, e.apellido_empleado
+                     FROM reportes_accidentes ra
+                     LEFT JOIN viajes v ON ra.id_viaje = v.id_viaje
+                     LEFT JOIN vehiculos ve ON v.id_vehiculo = ve.id_vehiculo
+                     LEFT JOIN empleados e ON ra.id_empleado = e.id_empleado
+                     WHERE ra.id_accidente = ?";
+    $stmt_anterior = $conn->prepare($sql_anterior);
+    $stmt_anterior->bind_param("i", $id_accidente);
+    $stmt_anterior->execute();
+    $result_anterior = $stmt_anterior->get_result();
+    $datos_anterior = $result_anterior->fetch_assoc();
+    $stmt_anterior->close();
+    
+    // Obtener información nueva para bitácora
+    $sql_nuevo = "SELECT v.descripcion_viaje, ve.no_placa, e.nombre_empleado, e.apellido_empleado 
+                  FROM viajes v 
+                  LEFT JOIN vehiculos ve ON v.id_vehiculo = ve.id_vehiculo 
+                  LEFT JOIN empleados e ON e.id_empleado = ?
+                  WHERE v.id_viaje = ?";
+    $stmt_nuevo = $conn->prepare($sql_nuevo);
+    $stmt_nuevo->bind_param("ii", $id_empleado, $id_viaje);
+    $stmt_nuevo->execute();
+    $result_nuevo = $stmt_nuevo->get_result();
+    $info_nuevo = $result_nuevo->fetch_assoc();
+    $stmt_nuevo->close();
+    
     $sql = "UPDATE reportes_accidentes SET id_viaje = ?, id_empleado = ?, descripcion_accidente = ?, fecha_hora = ? 
             WHERE id_accidente = ?";
     
@@ -223,6 +273,31 @@ function actualizarAccidente() {
     $stmt->bind_param("iissi", $id_viaje, $id_empleado, $descripcion_accidente, $fecha_hora, $id_accidente);
     
     if ($stmt->execute()) {
+        // REGISTRO DE BITÁCORA - ACTUALIZAR ACCIDENTE
+        $cambios = [];
+        
+        if ($datos_anterior['id_viaje'] != $id_viaje) {
+            $cambios[] = "Viaje: #{$datos_anterior['id_viaje']} → #$id_viaje";
+        }
+        if ($datos_anterior['id_empleado'] != $id_empleado) {
+            $cambios[] = "Empleado: {$datos_anterior['nombre_empleado']} {$datos_anterior['apellido_empleado']} → {$info_nuevo['nombre_empleado']} {$info_nuevo['apellido_empleado']}";
+        }
+        if ($datos_anterior['fecha_hora'] != $fecha_hora) {
+            $cambios[] = "Fecha/Hora: {$datos_anterior['fecha_hora']} → $fecha_hora";
+        }
+        if ($datos_anterior['descripcion_accidente'] != $descripcion_accidente) {
+            $cambios[] = "Descripción modificada";
+        }
+        
+        if (!empty($cambios)) {
+            registrarBitacora(
+                $conn,
+                "Reportes Accidentes",
+                "Actualizar",
+                "Accidente actualizado (ID: $id_accidente) - Cambios: " . implode(", ", $cambios)
+            );
+        }
+        
         $_SESSION['mensaje'] = "Reporte de accidente actualizado exitosamente";
         $_SESSION['tipo_mensaje'] = "success";
     } else {
@@ -254,8 +329,13 @@ function eliminarAccidente() {
     $id_accidente = intval($id_accidente);
     
     try {
-        // Primero verificar si el accidente existe
-        $check_accidente = $conn->prepare("SELECT id_accidente FROM reportes_accidentes WHERE id_accidente = ?");
+        // Primero verificar si el accidente existe y obtener datos para bitácora
+        $check_accidente = $conn->prepare("SELECT ra.*, v.descripcion_viaje, ve.no_placa, e.nombre_empleado, e.apellido_empleado 
+                                          FROM reportes_accidentes ra
+                                          LEFT JOIN viajes v ON ra.id_viaje = v.id_viaje
+                                          LEFT JOIN vehiculos ve ON v.id_vehiculo = ve.id_vehiculo
+                                          LEFT JOIN empleados e ON ra.id_empleado = e.id_empleado
+                                          WHERE ra.id_accidente = ?");
         if (!$check_accidente) {
             throw new Exception("Error al preparar la consulta: " . $conn->error);
         }
@@ -276,6 +356,8 @@ function eliminarAccidente() {
             header('Location: reportes_accidentes.php');
             exit();
         }
+        
+        $accidente = $result_accidente->fetch_assoc();
         $check_accidente->close();
         
         // Verificar si existe la tabla seguimiento_accidentes y si tiene relación
@@ -312,6 +394,14 @@ function eliminarAccidente() {
         
         if ($stmt->execute()) {
             if ($stmt->affected_rows > 0) {
+                // REGISTRO DE BITÁCORA - ELIMINAR ACCIDENTE
+                registrarBitacora(
+                    $conn,
+                    "Reportes Accidentes",
+                    "Eliminar",
+                    "Accidente eliminado: ID $id_accidente - Viaje #{$accidente['id_viaje']} ({$accidente['descripcion_viaje']}) - Vehículo: {$accidente['no_placa']} - Reportado por: {$accidente['nombre_empleado']} {$accidente['apellido_empleado']} - Fecha: {$accidente['fecha_hora']}"
+                );
+                
                 $_SESSION['mensaje'] = "Reporte de accidente eliminado exitosamente";
                 $_SESSION['tipo_mensaje'] = "success";
             } else {

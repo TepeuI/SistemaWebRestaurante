@@ -1,6 +1,7 @@
 <?php
 session_start();
 require_once '../conexion.php';
+require_once '../funciones_globales.php';
 
 // Verificar si el usuario está logueado
 if (!isset($_SESSION['id_usuario'])) {
@@ -120,6 +121,14 @@ function crearCompra() {
     $stmt->bind_param("isd", $id_proveedor, $fecha_de_compra, $monto_total_compra_q);
     
     if ($stmt->execute()) {
+        // REGISTRO DE BITÁCORA - CREAR
+        registrarBitacora(
+            $conn,
+            "Compras Mobiliario",
+            "insertar",
+            "Compra registrada (ID Proveedor: $id_proveedor, Fecha: $fecha_de_compra, Monto: Q $monto_total_compra_q)"
+        );
+        
         $_SESSION['mensaje'] = "Compra registrada exitosamente";
         $_SESSION['tipo_mensaje'] = "success";
     } else {
@@ -172,6 +181,17 @@ function actualizarCompra() {
     // Redondear a 2 decimales
     $monto_total_compra_q = round($monto_total_compra_q, 2);
     
+    // Obtener datos anteriores para la bitácora
+    $sql_anterior = "SELECT id_proveedor, fecha_de_compra, monto_total_compra_q 
+                     FROM compras_mobiliario 
+                     WHERE id_compra_mobiliario = ?";
+    $stmt_anterior = $conn->prepare($sql_anterior);
+    $stmt_anterior->bind_param("i", $id_compra_mobiliario);
+    $stmt_anterior->execute();
+    $result_anterior = $stmt_anterior->get_result();
+    $datos_anterior = $result_anterior->fetch_assoc();
+    $stmt_anterior->close();
+    
     $sql = "UPDATE compras_mobiliario SET id_proveedor = ?, fecha_de_compra = ?, monto_total_compra_q = ? 
             WHERE id_compra_mobiliario = ?";
     
@@ -179,6 +199,27 @@ function actualizarCompra() {
     $stmt->bind_param("isdi", $id_proveedor, $fecha_de_compra, $monto_total_compra_q, $id_compra_mobiliario);
     
     if ($stmt->execute()) {
+        // REGISTRO DE BITÁCORA - ACTUALIZAR
+        $cambios = [];
+        if ($datos_anterior['id_proveedor'] != $id_proveedor) {
+            $cambios[] = "Proveedor: {$datos_anterior['id_proveedor']} → $id_proveedor";
+        }
+        if ($datos_anterior['fecha_de_compra'] != $fecha_de_compra) {
+            $cambios[] = "Fecha: {$datos_anterior['fecha_de_compra']} → $fecha_de_compra";
+        }
+        if ($datos_anterior['monto_total_compra_q'] != $monto_total_compra_q) {
+            $cambios[] = "Monto: Q {$datos_anterior['monto_total_compra_q']} → Q $monto_total_compra_q";
+        }
+        
+        if (!empty($cambios)) {
+            registrarBitacora(
+                $conn,
+                "Compras Mobiliario",
+                "Actualizar",
+                "Compra actualizada (ID: $id_compra_mobiliario) - Cambios: " . implode(", ", $cambios)
+            );
+        }
+        
         $_SESSION['mensaje'] = "Compra actualizada exitosamente";
         $_SESSION['tipo_mensaje'] = "success";
     } else {
@@ -210,8 +251,8 @@ function eliminarCompra() {
     $id_compra_mobiliario = intval($id_compra_mobiliario);
     
     try {
-        // Primero verificar si la compra existe
-        $check_compra = $conn->prepare("SELECT id_compra_mobiliario FROM compras_mobiliario WHERE id_compra_mobiliario = ?");
+        // Primero verificar si la compra existe y obtener datos para bitácora
+        $check_compra = $conn->prepare("SELECT id_proveedor, fecha_de_compra, monto_total_compra_q FROM compras_mobiliario WHERE id_compra_mobiliario = ?");
         if (!$check_compra) {
             throw new Exception("Error al preparar la consulta: " . $conn->error);
         }
@@ -232,6 +273,8 @@ function eliminarCompra() {
             header('Location: compras_mobiliario.php');
             exit();
         }
+        
+        $datos_compra = $result_compra->fetch_assoc();
         $check_compra->close();
         
         // Verificar si existe la tabla inventario_mobiliario y si tiene relación con compras
@@ -284,6 +327,14 @@ function eliminarCompra() {
         
         if ($stmt->execute()) {
             if ($stmt->affected_rows > 0) {
+                // REGISTRO DE BITÁCORA - ELIMINAR
+                registrarBitacora(
+                    $conn,
+                    "Compras Mobiliario",
+                    "Eliminar",
+                    "Compra eliminada (ID: $id_compra_mobiliario, Proveedor: {$datos_compra['id_proveedor']}, Fecha: {$datos_compra['fecha_de_compra']}, Monto: Q {$datos_compra['monto_total_compra_q']})"
+                );
+                
                 $_SESSION['mensaje'] = "Compra eliminada exitosamente";
                 $_SESSION['tipo_mensaje'] = "success";
             } else {

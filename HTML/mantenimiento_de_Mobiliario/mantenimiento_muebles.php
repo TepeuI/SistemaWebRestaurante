@@ -1,6 +1,7 @@
 <?php
 session_start();
 require_once '../conexion.php';
+require_once '../funciones_globales.php'; // Añadido para bitácoras
 
 // Verificar si el usuario está logueado
 if (!isset($_SESSION['id_usuario'])) {
@@ -41,6 +42,10 @@ function crearMantenimiento() {
         $id_taller = NULL;
     }
     
+    // Obtener información adicional para la bitácora
+    $info_mobiliario = obtenerInfoMobiliario($id_mobiliario);
+    $info_taller = $id_taller ? obtenerInfoTaller($id_taller) : null;
+    
     $sql = "INSERT INTO mantenimiento_muebles (id_mobiliario, id_taller, descripcion_mantenimiento, fecha_mantenimiento, codigo_serie, costo_mantenimiento) 
             VALUES (?, ?, ?, ?, ?, ?)";
     
@@ -48,6 +53,24 @@ function crearMantenimiento() {
     $stmt->bind_param("iisssd", $id_mobiliario, $id_taller, $descripcion_mantenimiento, $fecha_mantenimiento, $codigo_serie, $costo_mantenimiento);
     
     if ($stmt->execute()) {
+        $id_mantenimiento_nuevo = $conn->insert_id;
+        
+        // REGISTRO DE BITÁCORA - CREAR MANTENIMIENTO
+        $descripcion_bitacora = "Mantenimiento creado (ID: $id_mantenimiento_nuevo) - " .
+                               "Mobiliario: '{$info_mobiliario['nombre_mobiliario']}' ({$info_mobiliario['tipo_mobiliario']}) - " .
+                               ($info_taller ? "Taller: {$info_taller['nombre_taller']} - " : "Mantenimiento interno - ") .
+                               "Código Serie: $codigo_serie - " .
+                               "Descripción: " . (strlen($descripcion_mantenimiento) > 50 ? substr($descripcion_mantenimiento, 0, 50) . "..." : $descripcion_mantenimiento) . " - " .
+                               "Fecha: $fecha_mantenimiento - " .
+                               "Costo: Q " . number_format($costo_mantenimiento, 2);
+        
+        registrarBitacora(
+            $conn,
+            "Mantenimiento Muebles",
+            "insertar",
+            $descripcion_bitacora
+        );
+        
         $_SESSION['mensaje'] = "Mantenimiento registrado exitosamente";
         $_SESSION['tipo_mensaje'] = "success";
     } else {
@@ -78,6 +101,24 @@ function actualizarMantenimiento() {
         $id_taller = NULL;
     }
     
+    // Obtener datos anteriores para la bitácora
+    $sql_anterior = "SELECT mm.*, im.nombre_mobiliario, tm.descripcion as tipo_mobiliario, t.nombre_taller
+                     FROM mantenimiento_muebles mm
+                     LEFT JOIN inventario_mobiliario im ON mm.id_mobiliario = im.id_mobiliario
+                     LEFT JOIN tipos_mobiliario tm ON im.id_tipo_mobiliario = tm.id_tipo_mobiliario
+                     LEFT JOIN talleres t ON mm.id_taller = t.id_taller
+                     WHERE mm.id_mantenimiento_muebles = ?";
+    $stmt_anterior = $conn->prepare($sql_anterior);
+    $stmt_anterior->bind_param("i", $id_mantenimiento_muebles);
+    $stmt_anterior->execute();
+    $result_anterior = $stmt_anterior->get_result();
+    $datos_anterior = $result_anterior->fetch_assoc();
+    $stmt_anterior->close();
+    
+    // Obtener información nueva para la bitácora
+    $info_mobiliario_nuevo = obtenerInfoMobiliario($id_mobiliario);
+    $info_taller_nuevo = $id_taller ? obtenerInfoTaller($id_taller) : null;
+    
     $sql = "UPDATE mantenimiento_muebles SET id_mobiliario = ?, id_taller = ?, descripcion_mantenimiento = ?, fecha_mantenimiento = ?, codigo_serie = ?, costo_mantenimiento = ? 
             WHERE id_mantenimiento_muebles = ?";
     
@@ -85,6 +126,61 @@ function actualizarMantenimiento() {
     $stmt->bind_param("iisssdi", $id_mobiliario, $id_taller, $descripcion_mantenimiento, $fecha_mantenimiento, $codigo_serie, $costo_mantenimiento, $id_mantenimiento_muebles);
     
     if ($stmt->execute()) {
+        // REGISTRO DE BITÁCORA - ACTUALIZAR MANTENIMIENTO
+        $cambios = [];
+        
+        // Comparar cambios en mobiliario
+        if ($datos_anterior['id_mobiliario'] != $id_mobiliario) {
+            $mobiliario_anterior = obtenerInfoMobiliario($datos_anterior['id_mobiliario']);
+            $cambios[] = "Mobiliario: '{$mobiliario_anterior['nombre_mobiliario']}' → '{$info_mobiliario_nuevo['nombre_mobiliario']}'";
+        }
+        
+        // Comparar cambios en taller
+        $taller_anterior_id = $datos_anterior['id_taller'];
+        if ($taller_anterior_id != $id_taller) {
+            $taller_anterior = $taller_anterior_id ? obtenerInfoTaller($taller_anterior_id) : null;
+            $taller_anterior_nombre = $taller_anterior ? $taller_anterior['nombre_taller'] : 'Interno';
+            $taller_nuevo_nombre = $info_taller_nuevo ? $info_taller_nuevo['nombre_taller'] : 'Interno';
+            $cambios[] = "Taller: $taller_anterior_nombre → $taller_nuevo_nombre";
+        }
+        
+        // Comparar cambios en descripción
+        if ($datos_anterior['descripcion_mantenimiento'] != $descripcion_mantenimiento) {
+            $desc_anterior = strlen($datos_anterior['descripcion_mantenimiento']) > 30 ? 
+                           substr($datos_anterior['descripcion_mantenimiento'], 0, 30) . "..." : 
+                           $datos_anterior['descripcion_mantenimiento'];
+            $desc_nueva = strlen($descripcion_mantenimiento) > 30 ? 
+                         substr($descripcion_mantenimiento, 0, 30) . "..." : 
+                         $descripcion_mantenimiento;
+            $cambios[] = "Descripción: '$desc_anterior' → '$desc_nueva'";
+        }
+        
+        // Comparar cambios en fecha
+        if ($datos_anterior['fecha_mantenimiento'] != $fecha_mantenimiento) {
+            $cambios[] = "Fecha: {$datos_anterior['fecha_mantenimiento']} → $fecha_mantenimiento";
+        }
+        
+        // Comparar cambios en código de serie
+        if ($datos_anterior['codigo_serie'] != $codigo_serie) {
+            $cambios[] = "Código Serie: '{$datos_anterior['codigo_serie']}' → '$codigo_serie'";
+        }
+        
+        // Comparar cambios en costo
+        if ($datos_anterior['costo_mantenimiento'] != $costo_mantenimiento) {
+            $costo_anterior = number_format($datos_anterior['costo_mantenimiento'], 2);
+            $costo_nuevo = number_format($costo_mantenimiento, 2);
+            $cambios[] = "Costo: Q $costo_anterior → Q $costo_nuevo";
+        }
+        
+        if (!empty($cambios)) {
+            registrarBitacora(
+                $conn,
+                "Mantenimiento Muebles",
+                "Actualizar",
+                "Mantenimiento actualizado (ID: $id_mantenimiento_muebles) - Cambios: " . implode(", ", $cambios)
+            );
+        }
+        
         $_SESSION['mensaje'] = "Mantenimiento actualizado exitosamente";
         $_SESSION['tipo_mensaje'] = "success";
     } else {
@@ -114,29 +210,29 @@ function eliminarMantenimiento() {
     }
     
     try {
-        // Primero verificar si el mantenimiento existe
-        $check_mantenimiento = $conn->prepare("SELECT id_mantenimiento_muebles FROM mantenimiento_muebles WHERE id_mantenimiento_muebles = ?");
-        if (!$check_mantenimiento) {
-            throw new Exception("Error al preparar la consulta: " . $conn->error);
-        }
+        // Obtener información del mantenimiento para la bitácora
+        $sql_info = "SELECT mm.*, im.nombre_mobiliario, tm.descripcion as tipo_mobiliario, t.nombre_taller
+                     FROM mantenimiento_muebles mm
+                     LEFT JOIN inventario_mobiliario im ON mm.id_mobiliario = im.id_mobiliario
+                     LEFT JOIN tipos_mobiliario tm ON im.id_tipo_mobiliario = tm.id_tipo_mobiliario
+                     LEFT JOIN talleres t ON mm.id_taller = t.id_taller
+                     WHERE mm.id_mantenimiento_muebles = ?";
+        $stmt_info = $conn->prepare($sql_info);
+        $stmt_info->bind_param("i", $id_mantenimiento_muebles);
+        $stmt_info->execute();
+        $result_info = $stmt_info->get_result();
         
-        $check_mantenimiento->bind_param("i", $id_mantenimiento_muebles);
-        
-        if (!$check_mantenimiento->execute()) {
-            throw new Exception("Error al ejecutar la consulta: " . $check_mantenimiento->error);
-        }
-        
-        $result_mantenimiento = $check_mantenimiento->get_result();
-        
-        if ($result_mantenimiento->num_rows === 0) {
+        if ($result_info->num_rows === 0) {
             $_SESSION['mensaje'] = "Error: El mantenimiento que intenta eliminar no existe en el sistema.";
             $_SESSION['tipo_mensaje'] = "error";
-            $check_mantenimiento->close();
+            $stmt_info->close();
             desconectar($conn);
             header('Location: mantenimiento_muebles.php');
             exit();
         }
-        $check_mantenimiento->close();
+        
+        $mantenimiento = $result_info->fetch_assoc();
+        $stmt_info->close();
         
         // Proceder con la eliminación
         $sql = "DELETE FROM mantenimiento_muebles WHERE id_mantenimiento_muebles = ?";
@@ -150,6 +246,23 @@ function eliminarMantenimiento() {
         
         if ($stmt->execute()) {
             if ($stmt->affected_rows > 0) {
+                // REGISTRO DE BITÁCORA - ELIMINAR MANTENIMIENTO
+                $descripcion_bitacora = "Mantenimiento eliminado (ID: $id_mantenimiento_muebles) - " .
+                                       "Mobiliario: '{$mantenimiento['nombre_mobiliario']}' ({$mantenimiento['tipo_mobiliario']}) - " .
+                                       ($mantenimiento['nombre_taller'] ? "Taller: {$mantenimiento['nombre_taller']} - " : "Mantenimiento interno - ") .
+                                       "Código Serie: {$mantenimiento['codigo_serie']} - " .
+                                       "Descripción: " . (strlen($mantenimiento['descripcion_mantenimiento']) > 50 ? 
+                                       substr($mantenimiento['descripcion_mantenimiento'], 0, 50) . "..." : $mantenimiento['descripcion_mantenimiento']) . " - " .
+                                       "Fecha: {$mantenimiento['fecha_mantenimiento']} - " .
+                                       "Costo: Q " . number_format($mantenimiento['costo_mantenimiento'], 2);
+                
+                registrarBitacora(
+                    $conn,
+                    "Mantenimiento Muebles",
+                    "Eliminar",
+                    $descripcion_bitacora
+                );
+                
                 $_SESSION['mensaje'] = "Mantenimiento eliminado exitosamente";
                 $_SESSION['tipo_mensaje'] = "success";
             } else {
@@ -192,6 +305,36 @@ function eliminarMantenimiento() {
     desconectar($conn);
     header('Location: mantenimiento_muebles.php');
     exit();
+}
+
+// Funciones auxiliares para bitácoras
+function obtenerInfoMobiliario($id_mobiliario) {
+    $conn = conectar();
+    $sql = "SELECT im.nombre_mobiliario, tm.descripcion as tipo_mobiliario
+            FROM inventario_mobiliario im
+            LEFT JOIN tipos_mobiliario tm ON im.id_tipo_mobiliario = tm.id_tipo_mobiliario
+            WHERE im.id_mobiliario = ?";
+    $stmt = $conn->prepare($sql);
+    $stmt->bind_param("i", $id_mobiliario);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    $mobiliario = $result->fetch_assoc();
+    $stmt->close();
+    desconectar($conn);
+    return $mobiliario;
+}
+
+function obtenerInfoTaller($id_taller) {
+    $conn = conectar();
+    $sql = "SELECT nombre_taller, telefono FROM talleres WHERE id_taller = ?";
+    $stmt = $conn->prepare($sql);
+    $stmt->bind_param("i", $id_taller);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    $taller = $result->fetch_assoc();
+    $stmt->close();
+    desconectar($conn);
+    return $taller;
 }
 
 // Obtener todos los mantenimientos para mostrar en la tabla
