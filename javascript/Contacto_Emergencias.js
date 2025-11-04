@@ -1,3 +1,4 @@
+// <!--Ernesto David Samayoa Jocol 0901-22-3415-->
 document.addEventListener('DOMContentLoaded', function () {
     console.log('[Contacto_Emergencias.js] DOMContentLoaded: inicio');
 

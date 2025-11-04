@@ -1,5 +1,4 @@
-// Empleados.js — gestión de formulario de empleados
-
+// <!--Ernesto David Samayoa Jocol 0901-22-3415-->
 document.addEventListener('DOMContentLoaded', function () {
     // Elementos
     const form = document.getElementById('form-empleado');

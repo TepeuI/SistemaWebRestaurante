@@ -1,4 +1,4 @@
-// Planilla.js — validaciones y confirmaciones coherentes con otros módulos
+// <!--Ernesto David Samayoa Jocol 0901-22-3415-->
 document.addEventListener('DOMContentLoaded', function () {
   const formPlanilla = document.getElementById('form-planilla');
   const btnGenerar = document.getElementById('btn-generar');
@@ -33,7 +33,7 @@ document.addEventListener('DOMContentLoaded', function () {
           text: `Se generará la planilla para ${mes}/${anio} y se guardará en el historial. ¿Continuar?`,
           icon: 'question',
           showCancelButton: true,
-          confirmButtonText: 'Si',
+          confirmButtonText: 'Sí',
           cancelButtonText: 'Cancelar'
         }).then(r => { if (r.isConfirmed) doSubmit(); });
       } else {

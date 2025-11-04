@@ -1,4 +1,4 @@
-// Puestos.js — gestión del formulario de puestos
+// <!--Ernesto David Samayoa Jocol 0901-22-3415-->
 document.addEventListener('DOMContentLoaded', function () {
     console.log('[Puestos.js] DOMContentLoaded: inicio');
 
@@ -181,7 +181,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 text: 'Esta acción no se puede deshacer.',
                 icon: 'warning',
                 showCancelButton: true,
-                confirmButtonText: 'Sí, eliminar',
+                confirmButtonText: 'Sí',
                 cancelButtonText: 'Cancelar'
             }).then(res => { if (res.isConfirmed) frm.submit(); });
         });

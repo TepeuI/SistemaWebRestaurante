@@ -1,4 +1,4 @@
-// Asistencias.js — gestión del formulario de asistencias
+// <!--Ernesto David Samayoa Jocol 0901-22-3415-->
 document.addEventListener('DOMContentLoaded', function () {
     console.log('[Asistencias.js] DOMContentLoaded: inicio');
 
@@ -99,7 +99,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 text: '¿Deseas registrar esta asistencia?',
                 icon: 'question',
                 showCancelButton: true,
-                confirmButtonText: 'Sí, guardar',
+                confirmButtonText: 'Sí',
                 cancelButtonText: 'Cancelar'
             }).then(res => { if (res.isConfirmed) doSubmit(); });
         }
@@ -117,7 +117,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 text: '¿Deseas guardar los cambios?',
                 icon: 'question',
                 showCancelButton: true,
-                confirmButtonText: 'Sí, actualizar',
+                confirmButtonText: 'Sí',
                 cancelButtonText: 'Cancelar'
             }).then(res => { if (res.isConfirmed) doSubmit(); });
         }
@@ -152,7 +152,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 text: '¿Deseas editar este registro?',
                 icon: 'question',
                 showCancelButton: true,
-                confirmButtonText: 'Sí, editar',
+                confirmButtonText: 'Sí',
                 cancelButtonText: 'Cancelar'
             }).then(res => { if (res.isConfirmed) doFill(); });
         });
@@ -168,7 +168,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 text: 'Esta acción no se puede deshacer.',
                 icon: 'warning',
                 showCancelButton: true,
-                confirmButtonText: 'Sí, eliminar',
+                confirmButtonText: 'Sí',
                 cancelButtonText: 'Cancelar'
             }).then(res => { if (res.isConfirmed) frm.submit(); });
         });

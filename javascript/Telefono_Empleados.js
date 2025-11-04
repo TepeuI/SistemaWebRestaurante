@@ -1,5 +1,4 @@
-// TelefonoEmpleados.js — gestión del formulario de teléfonos de empleados
-
+// <!--Ernesto David Samayoa Jocol 0901-22-3415-->
 document.addEventListener('DOMContentLoaded', function () {
     console.log('[Telefono_Empleados.js] DOMContentLoaded: inicio');
 
@@ -15,12 +14,10 @@ document.addEventListener('DOMContentLoaded', function () {
     const idEmpleadoInput = document.getElementById('id_empleado');
     const telefonoInput = document.getElementById('numero_telefono');
 
-    // ------------------ Formato y comportamiento del campo teléfono (4-4 -> 9 chars con '-') ------------------
     if (telefonoInput) {
         // Forzar maxlength a 9 (4 dígitos + '-' + 4 dígitos)
         telefonoInput.maxLength = 9;
 
-        // Normaliza la entrada: permite sólo dígitos, inserta '-' automáticamente después de 4 dígitos
         telefonoInput.addEventListener('input', function (evt) {
             const el = this;
             // Obtener sólo los dígitos

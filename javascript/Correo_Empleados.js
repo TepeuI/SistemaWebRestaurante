@@ -1,4 +1,4 @@
-// Correo_Empleados.js — gestión del formulario de correos de empleados
+// <!--Ernesto David Samayoa Jocol 0901-22-3415-->
 document.addEventListener('DOMContentLoaded', function () {
     console.log('[Correo_Empleados.js] DOMContentLoaded: inicio');
 

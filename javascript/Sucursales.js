@@ -1,4 +1,4 @@
-// Sucursales.js — Gestión del formulario de sucursales
+// <!--Ernesto David Samayoa Jocol 0901-22-3415-->
 document.addEventListener('DOMContentLoaded', function () {
     console.log('[Sucursales.js] DOMContentLoaded: inicio');
 

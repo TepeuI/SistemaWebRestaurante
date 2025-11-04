@@ -1,4 +1,4 @@
-// Penalizacion.js — gestión del formulario de penalizaciones
+// <!--Ernesto David Samayoa Jocol 0901-22-3415-->
 document.addEventListener('DOMContentLoaded', function () {
     console.log('[Penalizacion.js] DOMContentLoaded: inicio');
 
