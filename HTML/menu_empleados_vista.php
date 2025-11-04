@@ -1,3 +1,22 @@
+<?php
+// =============================================
+// 🔧 CONFIGURACIÓN Y SESIÓN SEGURA
+// =============================================
+error_reporting(E_ALL);
+ini_set('display_errors', 1);
+ini_set('display_startup_errors', 1);
+
+session_start();
+require_once 'conexion.php';          // ✅ Corrección: ruta correcta
+require_once 'funciones_globales.php';
+
+// ✅ Verificar sesión activa
+if (!isset($_SESSION['id_usuario'])) {
+    header('Location: ../login.php');
+    exit();
+}
+?>
+
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -8,14 +27,7 @@
     <link rel="stylesheet" href="../css/diseñoMenuEmpleados.css">
 </head>
 <body id="body-empleados">
-    <?php
-    session_start();
-    // Verificar si el usuario está logueado
-    if (!isset($_SESSION['id_usuario'])) {
-        header('Location: login.php');
-        exit();
-    }
-    ?>
+
     
     <header>
         <h1>
@@ -50,17 +62,11 @@
                 </ul>
             </li>
 
-            <li>
-                <a href="#" class="submenu-toggle"><span>📍</span> Gestión Departamental</a>
-                <ul class="submenu">
-                    <li><a href="Reportes_Empleados/Empleados_Sucursal.php">Asignacion de Sucursales a empleados</a></li>
-                </ul>
-            </li>
 
             <li>
                 <a href="#" class="submenu-toggle"><span>🪑</span> Mobiliario</a>
                 <ul class="submenu">
-                    <li><a href="Reportes_gestion_mobiliario/reporte_compras_mobiliario.php">Sonsula de mobiliario</a></li>
+                    <li><a href="Reportes_gestion_mobiliario/reporte_compras_mobiliario.php">Consula de mobiliario</a></li>
                 </ul>
             </li>
 
@@ -81,12 +87,7 @@
                 </ul>
             </li>
 
-            <li>
-                <a href="#" class="submenu-toggle"><span>⚙️</span> Taller de vehiculos</a>
-                <ul class="submenu">
-                    <li><a href="#" class="consulta-only" data-href="../HTML/taller_de_vehiculos/taller_vehiculos.php">Taller</a></li>
-                </ul>
-            </li>
+   
             
              <li>
                 <a href="#" class="submenu-toggle"><span>🍺🍽️</span> Platos Y Bebidas</a>
@@ -110,13 +111,7 @@
                 </ul>
             </li>
 
-            <li>
-                <a href="#" class="submenu-toggle"><span>👤</span> Proveedores</a>
-                <ul class="submenu">
-                    <li><a href="#" class="consulta-only" data-href="../HTML/proveedores/gestion_proveedores.php">Gestion de Proveedores</a></li>
- 
-                </ul>
-            </li>
+
 
             <li>
                 <a href="#" class="submenu-toggle"><span>💰</span> Facturaciones</a>
