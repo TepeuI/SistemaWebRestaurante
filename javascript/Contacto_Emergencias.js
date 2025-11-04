@@ -1,4 +1,3 @@
-// Contacto_Emergencias.js — gestión del formulario de contactos de emergencia
 document.addEventListener('DOMContentLoaded', function () {
     console.log('[Contacto_Emergencias.js] DOMContentLoaded: inicio');
 

@@ -300,6 +300,6 @@ desconectar($conn);
 </main>
 
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-<script src="./Penalizacion.js"></script>
+<script src="/SistemaWebRestaurante/javascript/Penalizacion.js"></script>
 </body>
 </html>

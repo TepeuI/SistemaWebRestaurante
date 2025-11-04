@@ -68,7 +68,28 @@ document.addEventListener('DOMContentLoaded', function () {
   if (anioInput) anioInput.addEventListener('input', syncHidden);
   if (formGuardar) {
     formGuardar.addEventListener('submit', function(e){
-      syncHidden(); 
+      // Validación antes de enviar: mes, año y fecha de generación
+      const errores = [];
+      try {
+        if (!mesSelect || !mesSelect.value) errores.push('Selecciona el Mes.');
+        if (!anioInput || !anioInput.value) errores.push('Ingresa el Año.');
+        if (!fechaGenEl || !fechaGenEl.value) errores.push('Ingresa la Fecha de generación.');
+      } catch (err) {
+        // Silenciar errores inesperados de lectura
+      }
+
+      if (errores.length) {
+        e.preventDefault();
+        if (typeof Swal !== 'undefined') {
+          Swal.fire({ icon: 'warning', title: 'Campos requeridos', html: errores.join('<br>') });
+        } else {
+          alert(errores.join('\n'));
+        }
+        return;
+      }
+
+      // sincronizar campos ocultos justo antes de enviar
+      syncHidden();
     });
   }
 

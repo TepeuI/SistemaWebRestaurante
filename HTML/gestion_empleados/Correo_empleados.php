@@ -307,6 +307,6 @@ desconectar($conn);
 </main>
 
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-<script src="./Correo_Empleados.js"></script>
+<script src="/SistemaWebRestaurante/javascript/Correo_Empleados.js"></script>
 </body>
 </html>

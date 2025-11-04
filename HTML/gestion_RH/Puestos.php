@@ -318,6 +318,6 @@ $puestos = obtenerPuestos();
 </main>
 
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-<script src="./Puestos.js"></script>
+<script src="/SistemaWebRestaurante/javascript/Puestos.js"></script>
 </body>
 </html>

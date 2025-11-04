@@ -275,7 +275,7 @@ $filtro_activo = false;
 </main>
 
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-<script src="./Planilla.js"></script>
+<script src="/SistemaWebRestaurante/javascript/Planilla.js"></script>
 <script>
   (function(){
     const m = window.__mensaje;
@@ -284,38 +284,6 @@ $filtro_activo = false;
       icon: m.tipo==='success'?'success':(m.tipo==='warning'?'warning':'error'),
       title: m.tipo==='success'?'Éxito':(m.tipo==='warning'?'Atención':'Error'),
       text: m.text
-    });
-  })();
-  // Sincronizar y validar campos requeridos para guardar
-  (function(){
-    const mesSel = document.getElementById('mes_select');
-    const anioInput = document.getElementById('anio_input');
-    const fechaGen = document.getElementById('fecha_generacion_manual');
-    const hMes = document.getElementById('hidden_mes');
-    const hAnio = document.getElementById('hidden_anio');
-    const formGuardar = document.getElementById('form-guardar');
-
-    function syncHidden(){
-      hMes.value = mesSel.value || '';
-      hAnio.value = anioInput.value || '';
-    }
-    mesSel.addEventListener('change', syncHidden);
-    anioInput.addEventListener('input', syncHidden);
-    syncHidden();
-
-    formGuardar.addEventListener('submit', function(e){
-      const errores = [];
-      if (!mesSel.value) errores.push('Selecciona el Mes.');
-      if (!anioInput.value) errores.push('Ingresa el Año.');
-      if (!fechaGen.value) errores.push('Ingresa la Fecha de generación.');
-      if (errores.length){
-        e.preventDefault();
-        Swal.fire({
-          icon: 'warning',
-          title: 'Campos requeridos',
-          html: errores.join('<br>')
-        });
-      }
     });
   })();
   </script>

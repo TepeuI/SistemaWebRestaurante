@@ -397,6 +397,7 @@ desconectar($conn);
 </main>
 
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-<script src="./Contacto_Emergencias.js"></script>
+<script src="/SistemaWebRestaurante/javascript/Contacto_Emergencias.js"></script>
+
 </body>
 </html>

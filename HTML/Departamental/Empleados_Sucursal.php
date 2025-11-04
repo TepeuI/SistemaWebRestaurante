@@ -248,6 +248,7 @@ desconectar($conn);
 </main>
 
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-<script src="./Empleados_Sucursal.js"></script>
+<script src="/SistemaWebRestaurante/javascript/Empleados_Sucursal.js"></script>
+
 </body>
 </html>
